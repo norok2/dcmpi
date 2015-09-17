@@ -53,8 +53,8 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.integrate  # SciPy: Integrations facilities
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
-# import PySide.QtCore  # PySide: Core module
-import PySide.QtGui  # PySide GUI module
+# from PySide import QtCore  # PySide: Core module
+from PySide import QtGui  # PySide GUI module
 
 # :: Local Imports
 # import mri_tools.lib.base as mrb
@@ -86,7 +86,7 @@ D_SUBPATH = '[study]/[name]_[date]_[time]_[sys]/dcm'
 
 
 # ======================================================================
-class Main(PySide.QtGui.QWidget):
+class Main(QtGui.QWidget):
 
     def __init__(self):
         super(Main, self).__init__()
@@ -125,40 +125,40 @@ class Main(PySide.QtGui.QWidget):
     # :: initialize
     def initUI(self):
         # :: input
-        self.lblInput = PySide.QtGui.QLabel('Input:', self)
-        self.lstInput = PySide.QtGui.QListWidget(self)
+        self.lblInput = QtGui.QLabel('Input:', self)
+        self.lstInput = QtGui.QListWidget(self)
 
-        self.btnImport = PySide.QtGui.QPushButton('&Import')
+        self.btnImport = QtGui.QPushButton('&Import')
         self.btnImport.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DialogOpenButton))
+                QtGui.QStyle.SP_DialogOpenButton))
         self.btnImport.clicked.connect(self.btnImport_onClicked)
 
-        self.btnExport = PySide.QtGui.QPushButton('&Export')
+        self.btnExport = QtGui.QPushButton('&Export')
         self.btnExport.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DialogSaveButton))
+                QtGui.QStyle.SP_DialogSaveButton))
         self.btnExport.clicked.connect(self.btnExport_onClicked)
 
-        self.btnAdd = PySide.QtGui.QPushButton('&Add')
+        self.btnAdd = QtGui.QPushButton('&Add')
         self.btnAdd.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DirIcon))
+                QtGui.QStyle.SP_DirIcon))
         self.btnAdd.clicked.connect(self.btnAdd_onClicked)
 
-        self.btnRemove = PySide.QtGui.QPushButton('&Remove')
+        self.btnRemove = QtGui.QPushButton('&Remove')
         self.btnRemove.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_TrashIcon))
+                QtGui.QStyle.SP_TrashIcon))
         self.btnRemove.clicked.connect(self.btnRemove_onClicked)
 
-        self.btnClear = PySide.QtGui.QPushButton('&Clear')
+        self.btnClear = QtGui.QPushButton('&Clear')
         self.btnClear.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DialogResetButton))
+                QtGui.QStyle.SP_DialogResetButton))
         self.btnClear.clicked.connect(self.btnClear_onClicked)
 
-        self.hboxButtonsInput = PySide.QtGui.QHBoxLayout()
+        self.hboxButtonsInput = QtGui.QHBoxLayout()
         self.hboxButtonsInput.addWidget(self.btnImport)
         self.hboxButtonsInput.addWidget(self.btnExport)
         self.hboxButtonsInput.addStretch(1.0)
@@ -166,16 +166,16 @@ class Main(PySide.QtGui.QWidget):
         self.hboxButtonsInput.addWidget(self.btnRemove)
         self.hboxButtonsInput.addWidget(self.btnClear)
 
-        self.vboxInput = PySide.QtGui.QVBoxLayout()
+        self.vboxInput = QtGui.QVBoxLayout()
         self.vboxInput.addWidget(self.lblInput)
         self.vboxInput.addWidget(self.lstInput)
         self.vboxInput.addLayout(self.hboxButtonsInput)
 
         # :: output
-        self.lblOutput = PySide.QtGui.QLabel('Output:', self)
+        self.lblOutput = QtGui.QLabel('Output:', self)
         self.lblOutput.setMinimumWidth(60)
         out_dirpath = D_OUTPUT_DIR if os.path.isdir(D_OUTPUT_DIR) else '.'
-        self.lneOutput = PySide.QtGui.QLineEdit(out_dirpath)
+        self.lneOutput = QtGui.QLineEdit(out_dirpath)
         self.lneOutput.setReadOnly(True)
         self.lneOutput.mousePressEvent = self.lneOutput_onClicked
 
@@ -186,32 +186,32 @@ class Main(PySide.QtGui.QWidget):
             subpath_help.find('\n    extra_fields : boolean')]
         subpath_help = subpath_help.replace('        | ', '')
         subpath_help = '\n'.join(subpath_help.split('\n')[1:])
-        self.lblSubdir = PySide.QtGui.QLabel('Subpath:', self)
+        self.lblSubdir = QtGui.QLabel('Subpath:', self)
         self.lblSubdir.setMinimumWidth(60)
-        self.lneSubpath = PySide.QtGui.QLineEdit(D_SUBPATH)
+        self.lneSubpath = QtGui.QLineEdit(D_SUBPATH)
         self.lneSubpath.setToolTip(subpath_help)
 
-        self.hboxOutput = PySide.QtGui.QHBoxLayout()
+        self.hboxOutput = QtGui.QHBoxLayout()
         self.hboxOutput.addWidget(self.lblOutput)
         self.hboxOutput.addWidget(self.lneOutput)
 
-        self.hboxSubdir = PySide.QtGui.QHBoxLayout()
+        self.hboxSubdir = QtGui.QHBoxLayout()
         self.hboxSubdir.addWidget(self.lblSubdir)
         self.hboxSubdir.addWidget(self.lneSubpath)
 
-        self.vboxOutput = PySide.QtGui.QVBoxLayout()
+        self.vboxOutput = QtGui.QVBoxLayout()
         self.vboxOutput.addLayout(self.hboxOutput)
         self.vboxOutput.addLayout(self.hboxSubdir)
 
-        self.vboxIO = PySide.QtGui.QVBoxLayout()
+        self.vboxIO = QtGui.QVBoxLayout()
         self.vboxIO.addLayout(self.vboxInput)
         self.vboxIO.addLayout(self.vboxOutput)
 
         # :: actions
-        self.lblActions = PySide.QtGui.QLabel('Actions:', self)
+        self.lblActions = QtGui.QLabel('Actions:', self)
         self.chkActions = []
         for name, label, default, subdir in self.actions:
-            checkbox = PySide.QtGui.QCheckBox(label, self)
+            checkbox = QtGui.QCheckBox(label, self)
             if default:
                 checkbox.toggle()
             if name == 'import_sources':
@@ -219,7 +219,7 @@ class Main(PySide.QtGui.QWidget):
             checkbox.setToolTip('Warning: toggling actions is experimental.')
             self.chkActions.append(checkbox)
 
-        self.vboxActions = PySide.QtGui.QVBoxLayout()
+        self.vboxActions = QtGui.QVBoxLayout()
         self.vboxActions.addWidget(self.lblActions)
         for checkbox in self.chkActions:
             self.vboxActions.addWidget(checkbox)
@@ -228,25 +228,25 @@ class Main(PySide.QtGui.QWidget):
         self.chkImport_stateChanged()
 
         # :: options
-        self.lblOptions = PySide.QtGui.QLabel('Options:', self)
+        self.lblOptions = QtGui.QLabel('Options:', self)
         self.wdgtOptions = []
         for name, val_type, default, extra in self.options:
             if val_type == bool:
-                widget = PySide.QtGui.QCheckBox(name, self)
+                widget = QtGui.QCheckBox(name, self)
                 if default:
                     widget.checked()
                 self.wdgtOptions.append((widget, None, None))
             elif val_type == int:
-                label = PySide.QtGui.QLabel(name, self)
-                widget = PySide.QtGui.QSpinBox(self)
+                label = QtGui.QLabel(name, self)
+                widget = QtGui.QSpinBox(self)
                 widget.setRange(extra[0], extra[1])
                 widget.setValue(default)
-                box = PySide.QtGui.QHBoxLayout()
+                box = QtGui.QHBoxLayout()
                 box.addWidget(label)
                 box.addWidget(widget)
                 self.wdgtOptions.append((widget, label, box))
 
-        self.vboxOptions = PySide.QtGui.QVBoxLayout()
+        self.vboxOptions = QtGui.QVBoxLayout()
         self.vboxOptions.addWidget(self.lblOptions)
         for widget, label, box in self.wdgtOptions:
             if box:
@@ -255,46 +255,46 @@ class Main(PySide.QtGui.QWidget):
                 self.vboxOptions.addWidget(widget)
         self.vboxOptions.addStretch(1.0)
 
-        self.vboxMore = PySide.QtGui.QVBoxLayout()
+        self.vboxMore = QtGui.QVBoxLayout()
         self.vboxMore.addLayout(self.vboxActions)
         self.vboxMore.addLayout(self.vboxOptions)
 
-        self.hboxIOAndMore = PySide.QtGui.QHBoxLayout()
+        self.hboxIOAndMore = QtGui.QHBoxLayout()
         self.hboxIOAndMore.addLayout(self.vboxIO)
         self.hboxIOAndMore.addLayout(self.vboxMore)
 
         # :: choice of the server
-        self.lblServer = PySide.QtGui.QLabel('Server:', self)
-        self.cmbServer = PySide.QtGui.QComboBox(self)
+        self.lblServer = QtGui.QLabel('Server:', self)
+        self.cmbServer = QtGui.QComboBox(self)
         self.cmbServer.setEditable(True)
         for server in self.server_list:
             self.cmbServer.addItem(server)
 
-        self.hboxServer = PySide.QtGui.QHBoxLayout()
+        self.hboxServer = QtGui.QHBoxLayout()
         self.hboxServer.addStretch(1.0)
         self.hboxServer.addWidget(self.lblServer)
         self.hboxServer.addWidget(self.cmbServer)
 
         # :: buttons
-        self.btnRun = PySide.QtGui.QPushButton('&Run')
+        self.btnRun = QtGui.QPushButton('&Run')
         self.btnRun.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DialogApplyButton))
+                QtGui.QStyle.SP_DialogApplyButton))
         self.btnRun.clicked.connect(self.btnRun_onClicked)
 
-        self.btnClose = PySide.QtGui.QPushButton('&Close')
+        self.btnClose = QtGui.QPushButton('&Close')
         self.btnClose.setIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_DialogCloseButton))
+                QtGui.QStyle.SP_DialogCloseButton))
         self.btnClose.clicked.connect(self.close)
 
-        self.hboxButtons = PySide.QtGui.QHBoxLayout()
+        self.hboxButtons = QtGui.QHBoxLayout()
         self.hboxButtons.addStretch(1.0)
         self.hboxButtons.addWidget(self.btnRun)
         self.hboxButtons.addWidget(self.btnClose)
 
         # :: main
-        self.vboxMain = PySide.QtGui.QVBoxLayout()
+        self.vboxMain = QtGui.QVBoxLayout()
         self.vboxMain.addLayout(self.hboxIOAndMore)
         self.vboxMain.addLayout(self.hboxServer)
         self.vboxMain.addLayout(self.hboxButtons)
@@ -305,7 +305,7 @@ class Main(PySide.QtGui.QWidget):
         self.setWindowTitle('Extract and preprocess DICOM')
         self.setWindowIcon(
             self.style().standardIcon(
-            PySide.QtGui.QStyle.SP_ComputerIcon))
+                QtGui.QStyle.SP_ComputerIcon))
         self.show()
 
     # --------------------------------
@@ -344,9 +344,11 @@ class Main(PySide.QtGui.QWidget):
                         dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT,
                         force, verbose)
                 # optional actions
-                actions = [(a, x[3])
+                actions = [
+                    (a, x[3])
                     for x, c, a in zip(
-                    self.actions[2:], self.chkActions[2:], dcmlib.D_ACTIONS)
+                        self.actions[2:], self.chkActions[2:],
+                        dcmlib.D_ACTIONS)
                     if c.isChecked()]
                 for action, subdir in actions:
                     if action[0] == 'report':
@@ -359,8 +361,9 @@ class Main(PySide.QtGui.QWidget):
                         print('II: output dir: {}'.format(o_dirpath))
                     func, params = action
                     func = globals()[func]
-                    params = [(vars()[par[2:]]
-                        if str(par).startswith('::') else par)
+                    params = [
+                        (vars()[par[2:]]
+                            if str(par).startswith('::') else par)
                         for par in params]
                     if verbose >= VERB_LVL['debug']:
                         print('DBG: {}'.format(params))
@@ -377,7 +380,7 @@ class Main(PySide.QtGui.QWidget):
     def btnImport_onClicked(self, event=None):
         title = self.btnImport.text().strip('&') + ' ' + \
             self.lblInput.text()[:-1] + ' List'
-        target = PySide.QtGui.QFileDialog.getOpenFileName(
+        target = QtGui.QFileDialog.getOpenFileName(
             self, title, '.', '*.json')[0]
         if target:
             try:
@@ -388,13 +391,13 @@ class Main(PySide.QtGui.QWidget):
             except:
                 title = self.btnImport.text().strip('&') + ' Failed'
                 msg = 'Could not import input list from:\n{}'.format(target)
-                PySide.QtGui.QMessageBox.warning(
-                    self, title, msg, PySide.QtGui.QMessageBox.Ok)
+                QtGui.QMessageBox.warning(
+                    self, title, msg, QtGui.QMessageBox.Ok)
 
     def btnExport_onClicked(self, event=None):
         title = self.btnExport.text().strip('&') + ' ' + \
             self.lblInput.text()[:-1] + ' List'
-        target = PySide.QtGui.QFileDialog.getSaveFileName(
+        target = QtGui.QFileDialog.getSaveFileName(
             self, title, '.', '*.json')[0]
         if target:
             input_list = []
@@ -404,9 +407,9 @@ class Main(PySide.QtGui.QWidget):
                 title = self.btnExport.text().strip('&')
                 msg = self.lblInput.text()[:-1] + ' list is empty. ' + \
                     'Do you want to proceed exporting?'
-                proceed = PySide.QtGui.QMessageBox.warning(
-                    self, title, msg, PySide.QtGui.QMessageBox.No,
-                    PySide.QtGui.QMessageBox.Yes)
+                proceed = QtGui.QMessageBox.warning(
+                    self, title, msg, QtGui.QMessageBox.No,
+                    QtGui.QMessageBox.Yes)
             else:
                 proceed = True
             if proceed:
@@ -417,7 +420,7 @@ class Main(PySide.QtGui.QWidget):
     def btnAdd_onClicked(self, event=None):
         # TODO: select multiple directories?
         title = self.btnAdd.text().strip('&') + ' ' + self.lblInput.text()[:-1]
-        target = PySide.QtGui.QFileDialog.getExistingDirectory(
+        target = QtGui.QFileDialog.getExistingDirectory(
             self, title, D_INPUT_DIR)
         if target:
             self.lstInput.addItem(target)
@@ -436,7 +439,7 @@ class Main(PySide.QtGui.QWidget):
 
     def lneOutput_onClicked(self, event):
         title = self.lblOutput.text()[:-1]
-        target = PySide.QtGui.QFileDialog.getExistingDirectory(
+        target = QtGui.QFileDialog.getExistingDirectory(
             self, title, D_OUTPUT_DIR)
         if target:
             self.lneOutput.setText(target)
@@ -453,7 +456,7 @@ class Main(PySide.QtGui.QWidget):
 if __name__ == '__main__':
     begin_time = time.time()
 
-    app = PySide.QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv)
     main = Main()
     sys.exit(app.exec_())
 
