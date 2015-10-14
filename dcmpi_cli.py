@@ -31,7 +31,6 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
-import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -54,24 +53,18 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
-from dcmpi.get_nifti import get_nifti
-from dcmpi.get_prot import get_prot
-from dcmpi.get_meta import get_meta
-from dcmpi.get_info import get_info
-from dcmpi.report import report
-from dcmpi.backup import backup
-import dcmpi.lib.common as dcmlib
+import common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
+from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -150,7 +143,7 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'], get_first_line(__doc__),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

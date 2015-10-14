@@ -61,7 +61,7 @@ D_VERB_LVL = VERB_LVL['low']
 
 # ======================================================================
 # :: get first line (useful for documentation)
-def _firstline(text):
+def get_first_line(text):
     """
     Extract the first line from the text
 
@@ -81,8 +81,7 @@ def _firstline(text):
 
 # ======================================================================
 # Greetings
-MY_GREETINGS = \
-"""
+MY_GREETINGS = """
  ____   ____ __  __ ____ ___
 |  _ \ / ___|  \/  |  _ \_ _|
 | | | | |   | |\/| | |_) | |

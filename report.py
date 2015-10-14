@@ -68,16 +68,16 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
-import dcmpi.lib.common as dcmlib
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
+import common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
+from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -218,14 +218,14 @@ def report(
 
     Parameters
     ==========
-    in_dirpath : string
+    in_dirpath : str
         Path to input directory.
-    out_dirpath : string
+    out_dirpath : str
         Path to output directory.
-    method : string (optional)
+    method : str (optional)
         | Extraction method. Accepted values:
         * pydicom: Use PyDICOM Python module.
-    fmt : string (optional)
+    fmt : str (optional)
         | Output format. HTML will always be present. Accepted values:
         * pydicom: Use PyDICOM Python module.
     force : boolean (optional)
@@ -382,7 +382,7 @@ def report(
                     ' --margin-left {}'.format('15mm'),
                     ' --margin-right {}'.format('15mm'),
                     ' --margin-top {}'.format('15mm'),
-                    ' --no-pdf-compression',
+                    # ' --no-pdf-compression',  # n/a in Ubuntu 14.04
                     )
                 cmd = 'wkhtmltopdf {} {} {}'.format(
                     ' '.join(opts), html_filepath, pdf_filepath)
@@ -426,7 +426,7 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'], get_first_line(__doc__),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

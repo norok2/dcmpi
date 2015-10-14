@@ -72,7 +72,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-# from dcmpi import _firstline
+# from dcmpi import get_first_line
 
 
 # ======================================================================

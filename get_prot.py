@@ -70,16 +70,16 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
-import dcmpi.lib.common as dcmlib
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
+import common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
+from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -95,11 +95,11 @@ def get_prot(
 
     Parameters
     ==========
-    in_dirpath : string
+    in_dirpath : str
         Path to input directory.
-    out_dirpath : string
+    out_dirpath : str
         Path to output directory.
-    method : string (optional)
+    method : str (optional)
         | Extraction method. Accepted values:
         * pydicom: Use PyDICOM Python module.
     type_ext : boolean (optional)
@@ -178,7 +178,7 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'], get_first_line(__doc__),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

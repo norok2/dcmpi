@@ -57,37 +57,30 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 from PySide import QtGui  # PySide GUI module
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
-from dcmpi.get_nifti import get_nifti
-from dcmpi.get_prot import get_prot
-from dcmpi.get_meta import get_meta
-from dcmpi.get_info import get_info
-from dcmpi.report import report
-from dcmpi.backup import backup
-import dcmpi.lib.common as dcmlib
+import common as dcmlib
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-# from dcmpi import _firstline
+# from dcmpi import get_first_line
 
 
 # ======================================================================
-D_INPUT_DIR = '/scr/'
-D_OUTPUT_DIR = '../../raw_data/siemens/'
-#D_INPUT_DIR = '/scr/isar1/TEMP/SOURCE_DICOM'
-#D_OUTPUT_DIR = '/scr/isar1/TEMP/OUTPUT_DICOM'
+D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
+D_OUTPUT_DIR = os.path.join(os.getenv('HOME'), 'isar3/data/siemens')
+# D_INPUT_DIR = '/scr/isar1/TEMP/SOURCE_DICOM'
+# D_OUTPUT_DIR = '/scr/isar1/TEMP/OUTPUT_DICOM'
 D_SUBPATH = '[study]/[name]_[date]_[time]_[sys]/dcm'
 
 
 # ======================================================================
 class Main(QtGui.QWidget):
-
     def __init__(self):
         super(Main, self).__init__()
         if len(sys.argv) > 1:
@@ -117,13 +110,14 @@ class Main(QtGui.QWidget):
         self.options = [
             ('Force', bool, False, None),
             ('Verbosity', int, D_VERB_LVL,
-                (VERB_LVL['none'], VERB_LVL['debug'])),
+             (VERB_LVL['none'], VERB_LVL['debug'])),
         ]
         self.initUI()
 
     # --------------------------------
-    # :: initialize
+    # :: initialize UI
     def initUI(self):
+        """Initialize UI"""
         # :: input
         self.lblInput = QtGui.QLabel('Input:', self)
         self.lstInput = QtGui.QListWidget(self)
@@ -181,9 +175,9 @@ class Main(QtGui.QWidget):
 
         subpath_help = dcmlib.fill_from_dicom.__doc__
         subpath_help = subpath_help[
-            subpath_help.find('format_str : string\n') +
-            len('format_str : string\n'):
-            subpath_help.find('\n    extra_fields : boolean')]
+                       subpath_help.find('format_str : str\n') +
+                       len('format_str : str\n'):
+                       subpath_help.find('\n    extra_fields : boolean')]
         subpath_help = subpath_help.replace('        | ', '')
         subpath_help = '\n'.join(subpath_help.split('\n')[1:])
         self.lblSubdir = QtGui.QLabel('Subpath:', self)
@@ -311,6 +305,7 @@ class Main(QtGui.QWidget):
     # --------------------------------
     # :: actions
     def btnRun_onClicked(self, event=None):
+        """Action on Click Button Run"""
         # TODO: redirect stdout to log box
         # TODO: run as a separate process (eventually in parallel?)
         tot_begin = time.time()
@@ -352,7 +347,8 @@ class Main(QtGui.QWidget):
                     if c.isChecked()]
                 for action, subdir in actions:
                     if action[0] == 'report':
-                        os.path.join(base_dirpath, self.actions[5][3])
+                        i_dirpath = os.path.join(
+                            base_dirpath, self.actions[5][3])
                     else:
                         i_dirpath = dcm_dirpath
                     o_dirpath = os.path.join(base_dirpath, subdir)
@@ -363,10 +359,10 @@ class Main(QtGui.QWidget):
                     func = globals()[func]
                     params = [
                         (vars()[par[2:]]
-                            if str(par).startswith('::') else par)
+                         if str(par).startswith('::') else par)
                         for par in params]
                     if verbose >= VERB_LVL['debug']:
-                        print('DBG: {}'.format(params))
+                        print('DBG: {} {}'.format(func, params))
                     func(*params, force=force, verbose=verbose)
             part_end = time.time()
             if verbose > VERB_LVL['none']:
@@ -378,8 +374,9 @@ class Main(QtGui.QWidget):
                 datetime.timedelta(0, tot_end - tot_begin)))
 
     def btnImport_onClicked(self, event=None):
+        """Action on Click Button Import"""
         title = self.btnImport.text().strip('&') + ' ' + \
-            self.lblInput.text()[:-1] + ' List'
+                self.lblInput.text()[:-1] + ' List'
         target = QtGui.QFileDialog.getOpenFileName(
             self, title, '.', '*.json')[0]
         if target:
@@ -395,8 +392,9 @@ class Main(QtGui.QWidget):
                     self, title, msg, QtGui.QMessageBox.Ok)
 
     def btnExport_onClicked(self, event=None):
+        """Action on Click Button Export"""
         title = self.btnExport.text().strip('&') + ' ' + \
-            self.lblInput.text()[:-1] + ' List'
+                self.lblInput.text()[:-1] + ' List'
         target = QtGui.QFileDialog.getSaveFileName(
             self, title, '.', '*.json')[0]
         if target:
@@ -406,7 +404,7 @@ class Main(QtGui.QWidget):
             if not input_list:
                 title = self.btnExport.text().strip('&')
                 msg = self.lblInput.text()[:-1] + ' list is empty. ' + \
-                    'Do you want to proceed exporting?'
+                      'Do you want to proceed exporting?'
                 proceed = QtGui.QMessageBox.warning(
                     self, title, msg, QtGui.QMessageBox.No,
                     QtGui.QMessageBox.Yes)
@@ -418,6 +416,7 @@ class Main(QtGui.QWidget):
                         input_list, target_file, sort_keys=True, indent=4)
 
     def btnAdd_onClicked(self, event=None):
+        """Action on Click Button Add"""
         # TODO: select multiple directories?
         title = self.btnAdd.text().strip('&') + ' ' + self.lblInput.text()[:-1]
         target = QtGui.QFileDialog.getExistingDirectory(
@@ -427,17 +426,20 @@ class Main(QtGui.QWidget):
         return target
 
     def btnRemove_onClicked(self, event=None):
+        """Action on Click Button Remove"""
         # TODO: confirmation?
         for item in self.lstInput.selectedItems():
             self.lstInput.takeItem(self.lstInput.row(item))
             # print(item.data(0))  # DEBUG
 
     def btnClear_onClicked(self, event=None):
+        """Action on Click Button Clear"""
         # TODO: confirmation?
         for idx in range(self.lstInput.count()):
             self.lstInput.takeItem(0)
 
     def lneOutput_onClicked(self, event):
+        """Action on Click Text Output"""
         title = self.lblOutput.text()[:-1]
         target = QtGui.QFileDialog.getExistingDirectory(
             self, title, D_OUTPUT_DIR)
@@ -446,6 +448,7 @@ class Main(QtGui.QWidget):
         return target
 
     def chkImport_stateChanged(self):
+        """Action on Change Checkbox Import"""
         self.lneSubpath.setEnabled(self.chkActions[0].isChecked())
         self.chkActions[1].setEnabled(not self.chkActions[0].isChecked())
         if self.chkActions[0].isChecked():
