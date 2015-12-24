@@ -1,25 +1,24 @@
 # -*- coding: utf-8 -*-
 
 # ======================================================================
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Instructions to extract information from DICOM using pydicom.
 """
-
 
 # ======================================================================
 # :: Future Imports
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
-#from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 
 # ======================================================================
 # :: Python Standard Library Imports
 # import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 # import datetime  # Basic date and time types
@@ -59,11 +58,11 @@ import time  # Time access and conversions
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import common as dcmlib
-#from dcmpi import INFO
-#from dcmpi import VERB_LVL
-#from dcmpi import D_VERB_LVL
-#from dcmpi import get_first_line
+import dcmpi.common as dcmlib
+
+# from dcmpi import INFO
+# from dcmpi import VERB_LVL
+# from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
@@ -73,25 +72,20 @@ COIL = {
     'C:A24': 'Nova TX:CP / RX:24 Ch.'
 }
 
-
 # ======================================================================
 # :: Siemens's protocol's parameters codec
 SIEMENS_PROT = {
     'partial_fourier': {
-        '0x1': 8 / 8,
-        '0x2': 7 / 8,
+        '0x1': 4 / 8,
+        '0x2': 5 / 8,
         '0x4': 6 / 8,
-        '0x8': 5 / 8,
-        '0x10': 4 / 8,
-        '0x11': 3 / 8,
-        '0x12': 2 / 8,
-        '0x14': 1 / 8,},
+        '0x8': 7 / 8,
+        '0x10': 8 / 8},
     'pat_mode': {
         '0x1': 'None',
         '0x2': 'GRAPPA',
-        '0x4': 'SENSE', },
+        '0x4': 'SENSE',},
 }
-
 
 # ======================================================================
 # :: Generic session information to be extracted
@@ -100,7 +94,7 @@ SESSION = {
         (0x0010, 0x0010), None, None),
     'PatientID': (
         (0x0010, 0x0020), None, None),
-    'PatientBirthDate': ( # reformat
+    'PatientBirthDate': (  # reformat
         (0x0010, 0x0030),
         lambda x, p: time.strftime(p, dcmlib.get_date(x)), '%Y-%m-%d'),
     'PatientAge': (  # reformat
@@ -126,7 +120,7 @@ SESSION = {
     'InstitutionAddress': (
         (0x0008, 0x0081),  # multiple replace
         lambda x, p: reduce(lambda a, kv: a.replace(*kv), p, x),
-        ((',', ', '), )),
+        ((',', ', '),)),
     'StationName': (
         (0x0008, 0x1010), lambda x, p: p[x] if x in p else x, dcmlib.STATION),
     'StationID': (
@@ -154,8 +148,7 @@ SESSION = {
         '%H:%M:%S'),
     'CoilSystem': (  # multiple replace
         (0x0051, 0x100f), lambda x, p: p[x] if x in p else x, COIL),
-    }
-
+}
 
 # ======================================================================
 # :: Acquisition-specific information to be extracted
@@ -190,8 +183,7 @@ ACQUISITION = {
         (0x0018, 0x0024), None, None),
     'ProtocolName': (
         (0x0018, 0x1030), None, None),
-    }
-
+}
 
 # ======================================================================
 # :: Serie-specific information to be extracted
@@ -238,15 +230,15 @@ def get_sequence_info(info_dict, prot_dict):
             'sSliceArray.asSlice[].dThickness',
             lambda x, p: [n[1] for n in x], None),
         # :: resolution  # TODO?
-#        'FieldOfViewReadOut::mm': (
-#            'sSliceArray.asSlice[].dReadoutFOV',
-#            lambda x, p: [n[1] for n in x], None),
-#        'FieldOfViewPhase::mm': (
-#            'sSliceArray.asSlice[].dPhaseFOV',
-#            lambda x, p: [n[1] for n in x], None),
-#        'FieldOfViewSlice::mm': (
-#            'sSliceArray.asSlice[].dThickness',
-#            lambda x, p: [n[1] for n in x], None),
+        #        'FieldOfViewReadOut::mm': (
+        #            'sSliceArray.asSlice[].dReadoutFOV',
+        #            lambda x, p: [n[1] for n in x], None),
+        #        'FieldOfViewPhase::mm': (
+        #            'sSliceArray.asSlice[].dPhaseFOV',
+        #            lambda x, p: [n[1] for n in x], None),
+        #        'FieldOfViewSlice::mm': (
+        #            'sSliceArray.asSlice[].dThickness',
+        #            lambda x, p: [n[1] for n in x], None),
         # :: Positioning (center and rotation angles)
         'CenterPositionSagittal::mm': (
             'sSliceArray.asSlice[].sPosition.dSag',
@@ -304,9 +296,9 @@ def get_sequence_info(info_dict, prot_dict):
         'BandWidth::Hz/px': (
             'sRXSPEC.alDwellTime[]',
             lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
-            for n in x[:p[0]]], (
-            prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None,
-            prot_dict['sKSpace.lBaseResolution']
+                          for n in x[:p[0]]], (
+                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None,
+                prot_dict['sKSpace.lBaseResolution']
                 if 'sKSpace.lBaseResolution' in prot_dict else None)),
         # :: Dwell Time
         'DwellTime::ns': (
@@ -321,13 +313,14 @@ def get_sequence_info(info_dict, prot_dict):
 
     # :: FLASH
     sequence_dict['flash'] = {key: val
-        for key, val in sequence_dict['generic'].items()}
+                              for key, val in sequence_dict['generic'].items()}
     sequence_dict['flash'].update({
     })
 
     # :: MP2RAGE
     sequence_dict['mp2rage'] = {key: val
-        for key, val in sequence_dict['generic'].items()}
+                                for key, val in
+                                sequence_dict['generic'].items()}
     sequence_dict['mp2rage'].update({
         # :: TI
         'InversionTime::ms': (
@@ -336,12 +329,13 @@ def get_sequence_info(info_dict, prot_dict):
         'RepetitionTimeBlock::ms': (
             'lContrasts',
             lambda x, p: \
-            round(p[0][x - 1][1] * 1e-3 + 2 * p[1] * p[2][x - 1][1] * 1e-6, 2),
+                round(p[0][x - 1][1] * 1e-3 + 2 * p[1] * p[2][x - 1][1] * 1e-6,
+                      2),
             (
-            prot_dict['alTE[]'] if 'alTE[]' in prot_dict else None,
-            prot_dict['sKSpace.lBaseResolution']
+                prot_dict['alTE[]'] if 'alTE[]' in prot_dict else None,
+                prot_dict['sKSpace.lBaseResolution']
                 if 'sKSpace.lBaseResolution' in prot_dict else None,
-            prot_dict['sRXSPEC.alDwellTime[]']
+                prot_dict['sRXSPEC.alDwellTime[]']
                 if 'sRXSPEC.alDwellTime[]' in prot_dict else None)),
         # :: k-space coverage
         'UsePhaseInBlock': (
@@ -362,11 +356,11 @@ def identify_sequence(info_dict, prot_dict):
             (info_dict['ProtocolName'] == 'Phoenix Document'),
         'flash':
             (prot_dict and
-            prot_dict['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
+             prot_dict['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
         'mp2rage':
             (prot_dict and
-            prot_dict['tSequenceFileName'] == \
-            '%CustomerSeq%\\mp2rage_wip602B'),
+             prot_dict['tSequenceFileName'] == \
+             '%CustomerSeq%\\mp2rage_wip602B'),
     }
 
     identified_sequence = 'none' if not prot_dict else 'generic'

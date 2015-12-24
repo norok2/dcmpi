@@ -60,11 +60,16 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
-import common as dcmlib
+import dcmpi.common as dcmlib
+from dcmpi.get_nifti import get_nifti
+from dcmpi.get_info import get_info
+from dcmpi.get_prot import get_prot
+from dcmpi.get_meta import get_meta
+from dcmpi.backup import backup
+from dcmpi.report import report
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -124,7 +129,7 @@ def handle_arg():
     # default input directory
     d_input_dir = '.'
     # default output directory
-    d_output_dir = '/scr/isar3/raw_data/siemens/'
+    d_output_dir = '/nobackup/isar3/raw_data/siemens/'
     # default subpaths
     d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
     d_nii_subdir = dcmlib.ID['nifti']
@@ -143,7 +148,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], get_first_line(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

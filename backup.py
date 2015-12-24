@@ -6,14 +6,12 @@ Safely backup DICOM files for later use. This is part of DCMPI.
 Warning: misuse of this program may lead to loss of data.
 """
 
-
 # ======================================================================
 # :: Future Imports
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -58,19 +56,17 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import common as dcmlib
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import get_first_line
-
 
 # ======================================================================
 ARCHIVE_EXT = {
     '7z': '7z',
     'zip': 'zip',
     'txz': 'tar.xz',
-    'gxz': 'tar.gz', }
+    'gxz': 'tar.gz',}
 
 
 # ======================================================================
@@ -149,8 +145,8 @@ def backup(
             shutil.rmtree(in_filepath, ignore_errors=True)
     else:
         if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+            print("II: Output path exists. Skipping. "
+                  "Use 'force' argument to override.")
 
 
 # ======================================================================
@@ -169,43 +165,45 @@ def handle_arg():
     d_method = 'pydicom'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
-        description=__doc__,
-        epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+            description=__doc__,
+            epilog='v.{} - {}\n{}'.format(
+                    INFO['version'], ', '.join(INFO['authors']),
+                    INFO['license']),
+            formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
-        '--ver', '--version',
-        version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], get_first_line(__doc__),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
-        action='version')
+            '--ver', '--version',
+            version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
+                    INFO['version'],
+                    next(line for line in __doc__.splitlines() if line),
+                    INFO['copyright'], ', '.join(INFO['authors']),
+                    INFO['notice']),
+            action='version')
     arg_parser.add_argument(
-        '-v', '--verbose',
-        action='count', default=d_verbose,
-        help='increase the level of verbosity [%(default)s]')
+            '-v', '--verbose',
+            action='count', default=d_verbose,
+            help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='force new processing [%(default)s]')
+            '-f', '--force',
+            action='store_true',
+            help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='INPUT_DIR',
-        default=d_input_dir,
-        help='set input directory [%(default)s]')
+            '-i', '--input', metavar='INPUT_DIR',
+            default=d_input_dir,
+            help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='OUTPUT_DIR',
-        default=d_output_dir,
-        help='set output directory [%(default)s]')
+            '-o', '--output', metavar='OUTPUT_DIR',
+            default=d_output_dir,
+            help='set output directory [%(default)s]')
     arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
+            '-m', '--method', metavar='METHOD',
+            default=d_method,
+            help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-        '-k', '--keep',
-        action='store_true',
-        help='Keep DICOM sources after backup (and test). [%(default)s]')
+            '-k', '--keep',
+            action='store_true',
+            help='Keep DICOM sources after backup (and test). [%(default)s]')
     return arg_parser
 
 
@@ -223,9 +221,9 @@ if __name__ == '__main__':
     begin_time = time.time()
 
     backup(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.keep,
-        ARGS.force, ARGS.verbose)
+            ARGS.input, ARGS.output,
+            ARGS.method, ARGS.keep,
+            ARGS.force, ARGS.verbose)
 
     end_time = time.time()
     if ARGS.verbose > VERB_LVL['low']:

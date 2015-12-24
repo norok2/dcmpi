@@ -60,26 +60,6 @@ D_VERB_LVL = VERB_LVL['low']
 
 
 # ======================================================================
-# :: get first line (useful for documentation)
-def get_first_line(text):
-    """
-    Extract the first line from the text
-
-    Parameters
-    ==========
-    text : str
-        The input string.
-
-    Returns
-    =======
-    text : str
-        The first non-empty line.
-
-    """
-    return [line for line in __doc__.splitlines() if line][0]
-
-
-# ======================================================================
 # Greetings
 MY_GREETINGS = """
  ____   ____ __  __ ____ ___

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
+Extract information from DICOM files and store it as text files.
 
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Note: specifically extract the information on acquisitions as stored in the
+DICOM files, producing easy-to-parse JSON files.
 """
-
 
 # ======================================================================
 # :: Future Imports
@@ -15,12 +13,10 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -33,7 +29,6 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
-
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
 # import scipy as sp  # SciPy (signal and image processing library)
@@ -45,7 +40,6 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
 # import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
@@ -60,12 +54,11 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import common as dcmlib
-import custom_info as custom_info
+import dcmpi.common as dcmlib
+import dcmpi.custom_info as custom_info
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -130,7 +123,7 @@ def get_info(
                     in_filepath = sorted(sources_dict.items())[idx][1][-1]
                     dcm = pydcm.read_file(in_filepath)
                     stop = 'PixelData' in dcm and \
-                        'ImageType' in dcm and 'ORIGINAL' in dcm.ImageType
+                           'ImageType' in dcm and 'ORIGINAL' in dcm.ImageType
                     if stop:
                         read_next_dicom = False
                     else:
@@ -247,7 +240,7 @@ def get_info(
     else:
         if verbose > VERB_LVL['none']:
             print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+                  "Use 'force' argument to override.")
 
 
 # ======================================================================
@@ -274,7 +267,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], get_first_line(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

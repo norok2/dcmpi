@@ -72,11 +72,10 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import common as dcmlib
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -165,11 +164,11 @@ def get_nifti(
                 if verbose >= VERB_LVL['debug']:
                     print(p_stdout)
                     print(p_stderr)
-                term_str = 'GZip...' if compressed else 'Saving '
+                term_str = str('GZip...') if compressed else str('Saving ')
                 # parse result
                 old_name_list = []
                 for line in p_stdout.split('\n'):
-                    if term_str in line:
+                    if term_str in str(line):
                         old_name = line[line.find(term_str) + len(term_str):]
                         old_name_list.append(old_name)
                 if len(old_name_list) == 1:
@@ -224,7 +223,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], get_first_line(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')
@@ -250,11 +250,11 @@ def handle_arg():
         default=d_method,
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-        '-x', '--compressed',
-        action='store_true',
+        '-u', '--uncompressed',
+        action='store_false',
         help='compress output NIfTI images [%(default)s]')
     arg_parser.add_argument(
-        '-g', '--merged',
+        '-p', '--separated',
         action='store_true',
         help='merge timeline series [%(default)s]')
     return arg_parser
@@ -275,7 +275,7 @@ if __name__ == '__main__':
 
     get_nifti(
         ARGS.input, ARGS.output,
-        ARGS.method, ARGS.compressed, ARGS.merged,
+        ARGS.method, not ARGS.uncompressed, not ARGS.separated,
         ARGS.force, ARGS.verbose)
 
     end_time = time.time()

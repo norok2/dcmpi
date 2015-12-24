@@ -64,11 +64,16 @@ from PySide import QtGui  # PySide GUI module
 # from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
-import common as dcmlib
+from dcmpi.get_nifti import get_nifti
+from dcmpi.get_info import get_info
+from dcmpi.get_prot import get_prot
+from dcmpi.get_meta import get_meta
+from dcmpi.backup import backup
+from dcmpi.report import report
+import dcmpi.common as dcmlib
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-# from dcmpi import get_first_line
 
 
 # ======================================================================

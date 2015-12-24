@@ -78,11 +78,10 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import common as dcmlib
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import get_first_line
 
 
 # ======================================================================
@@ -122,7 +121,7 @@ def sorting(
         in_filepath = os.path.join(dirpath, in_filename)
         try:
             dcm = pydcm.read_file(in_filepath)
-        except (IOError):
+        except IOError:
             if verbose >= VERB_LVL['debug']:
                 print('WW: failed processing \'{}\''.format(in_filepath))
         except:
@@ -178,7 +177,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], get_first_line(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')
