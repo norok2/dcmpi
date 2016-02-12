@@ -196,130 +196,128 @@ def get_sequence_info(info_dict, prot_dict):
     """
     Information to extract based on protocol.
     """
-    sequence_dict = {}
+    sequence_dict = {
 
-    # :: NO SEQUENCE!!!
-    sequence_dict['none'] = {
-    }
+        # :: NO SEQUENCE!!!
+        'none': {},
 
-    # :: GENERIC
-    sequence_dict['generic'] = {
-        # :: sequence file name
-        'SequenceFileName': (
-            'tSequenceFileName', None, None),
-        # :: acquisition time
-        'ExpectedScanTime::sec': (
-            'lTotalScanTimeSec', None, None),
-        # :: matrix sizes
-        'MatrixSizeReadOut::px': (
-            'sKSpace.lBaseResolution', None, None),
-        'MatrixSizePhase::px': (
-            'sKSpace.lPhaseEncodingLines', None, None),
-        'MatrixSizeSlice::px': (
-            'sKSpace.lImagesPerSlab', None, None),
-        'MatrixSizeOverSlice::px': (
-            'sKSpace.lPartitions', None, None),
-        # :: FOV
-        'FieldOfViewReadOut::mm': (
-            'sSliceArray.asSlice[].dReadoutFOV',
-            lambda x, p: [n[1] for n in x], None),
-        'FieldOfViewPhase::mm': (
-            'sSliceArray.asSlice[].dPhaseFOV',
-            lambda x, p: [n[1] for n in x], None),
-        'FieldOfViewSlice::mm': (
-            'sSliceArray.asSlice[].dThickness',
-            lambda x, p: [n[1] for n in x], None),
-        # :: resolution  # TODO?
-        #        'FieldOfViewReadOut::mm': (
-        #            'sSliceArray.asSlice[].dReadoutFOV',
-        #            lambda x, p: [n[1] for n in x], None),
-        #        'FieldOfViewPhase::mm': (
-        #            'sSliceArray.asSlice[].dPhaseFOV',
-        #            lambda x, p: [n[1] for n in x], None),
-        #        'FieldOfViewSlice::mm': (
-        #            'sSliceArray.asSlice[].dThickness',
-        #            lambda x, p: [n[1] for n in x], None),
-        # :: Positioning (center and rotation angles)
-        'CenterPositionSagittal::mm': (
-            'sSliceArray.asSlice[].sPosition.dSag',
-            lambda x, p: [n[1] for n in x], None),
-        'CenterPositionCoronal::mm': (
-            'sSliceArray.asSlice[].sPosition.dCor',
-            lambda x, p: [n[1] for n in x], None),
-        'CenterPositionTransverse::mm': (
-            'sSliceArray.asSlice[].sPosition.dTra',
-            lambda x, p: [n[1] for n in x], None),
-        'AngleNormalToCoronal::deg': (
-            'sSliceArray.asSlice[].sNormal.dCor',
-            lambda x, p: [n[1] for n in x], None),
-        'AngleNormalToTransverse::deg': (
-            'sSliceArray.asSlice[].sNormal.dTra',
-            lambda x, p: [n[1] for n in x], None),
-        'AngleInPlane::deg': (
-            'sSliceArray.asSlice[].dInPlaneRot',
-            lambda x, p: [n[1] for n in x], None),
-        # :: Partial Fourier factors
-        'PartialFourierPhase': (
-            'sKSpace.ucPhasePartialFourier',
-            lambda x, p: p[x] if x in p else x,
-            SIEMENS_PROT['partial_fourier']),
-        'PartialFourierSlice': (
-            'sKSpace.ucSlicePartialFourier',
-            lambda x, p: p[x] if x in p else x,
-            SIEMENS_PROT['partial_fourier']),
-        # :: Parallel Acquisition Technique (PAT)
-        'ParallelAcquisitionTechniqueMode': (
-            'sPat.ucPATMode',
-            lambda x, p: p[x] if x in p else x,
-            SIEMENS_PROT['pat_mode']),
-        'ParallelAcquisitionTechniqueAccelerationPhase': (
-            'sPat.lAccelFactPE', None, None),
-        'ParallelAcquisitionTechniqueAccelerationSlice': (
-            'sPat.lAccelFact3D', None, None),
-        'ParallelAcquisitionTechniqueReferenceLinesPhase': (
-            'sPat.lRefLinesPE', None, None),
-        # :: Averages
-        'NumAverages': (
-            'lAverages', None, None),
-        # :: FA
-        'FlipAngle::deg': (
-            'adFlipAngleDegree[]', lambda x, p: [n[1] for n in x], None),
-        # :: TE
-        'NumEchoes': ('lContrasts', None, None),
-        'EchoTime::ms': (
-            'alTE[]', lambda x, p: [n[1] * 1e-3 for n in x[:p]],
-            prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
-        # :: TR
-        'RepetitionTime::ms': (
-            'alTR[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
-        # :: BW
-        'BandWidth::Hz/px': (
-            'sRXSPEC.alDwellTime[]',
-            lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
-                          for n in x[:p[0]]], (
-                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None,
-                prot_dict['sKSpace.lBaseResolution']
-                if 'sKSpace.lBaseResolution' in prot_dict else None)),
-        # :: Dwell Time
-        'DwellTime::ns': (
-            'sRXSPEC.alDwellTime[]',
-            lambda x, p: [n[1] for n in x[:p]],
-            prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
-    }
+        # :: GENERIC
+        'generic': {
+            # :: sequence file name
+            'SequenceFileName': (
+                'tSequenceFileName', None, None),
+            # :: acquisition time
+            'ExpectedScanTime::sec': (
+                'lTotalScanTimeSec', None, None),
+            # :: matrix sizes
+            'MatrixSizeReadOut::px': (
+                'sKSpace.lBaseResolution', None, None),
+            'MatrixSizePhase::px': (
+                'sKSpace.lPhaseEncodingLines', None, None),
+            'MatrixSizeSlice::px': (
+                'sKSpace.lImagesPerSlab', None, None),
+            'MatrixSizeOverSlice::px': (
+                'sKSpace.lPartitions', None, None),
+            # :: FOV
+            'FieldOfViewReadOut::mm': (
+                'sSliceArray.asSlice[].dReadoutFOV',
+                lambda x, p: [n[1] for n in x], None),
+            'FieldOfViewPhase::mm': (
+                'sSliceArray.asSlice[].dPhaseFOV',
+                lambda x, p: [n[1] for n in x], None),
+            'FieldOfViewSlice::mm': (
+                'sSliceArray.asSlice[].dThickness',
+                lambda x, p: [n[1] for n in x], None),
+            # :: resolution  # TODO?
+            #        'FieldOfViewReadOut::mm': (
+            #            'sSliceArray.asSlice[].dReadoutFOV',
+            #            lambda x, p: [n[1] for n in x], None),
+            #        'FieldOfViewPhase::mm': (
+            #            'sSliceArray.asSlice[].dPhaseFOV',
+            #            lambda x, p: [n[1] for n in x], None),
+            #        'FieldOfViewSlice::mm': (
+            #            'sSliceArray.asSlice[].dThickness',
+            #            lambda x, p: [n[1] for n in x], None),
+            # :: Positioning (center and rotation angles)
+            'CenterPositionSagittal::mm': (
+                'sSliceArray.asSlice[].sPosition.dSag',
+                lambda x, p: [n[1] for n in x], None),
+            'CenterPositionCoronal::mm': (
+                'sSliceArray.asSlice[].sPosition.dCor',
+                lambda x, p: [n[1] for n in x], None),
+            'CenterPositionTransverse::mm': (
+                'sSliceArray.asSlice[].sPosition.dTra',
+                lambda x, p: [n[1] for n in x], None),
+            'AngleNormalToSagittal::deg': (
+                'sSliceArray.asSlice[].sNormal.dSag',
+                lambda x, p: [n[1] for n in x], None),
+            'AngleNormalToCoronal::deg': (
+                'sSliceArray.asSlice[].sNormal.dCor',
+                lambda x, p: [n[1] for n in x], None),
+            'AngleNormalToTransverse::deg': (
+                'sSliceArray.asSlice[].sNormal.dTra',
+                lambda x, p: [n[1] for n in x], None),
+            # :: Partial Fourier factors
+            'PartialFourierPhase': (
+                'sKSpace.ucPhasePartialFourier',
+                lambda x, p: p[x] if x in p else x,
+                SIEMENS_PROT['partial_fourier']),
+            'PartialFourierSlice': (
+                'sKSpace.ucSlicePartialFourier',
+                lambda x, p: p[x] if x in p else x,
+                SIEMENS_PROT['partial_fourier']),
+            # :: Parallel Acquisition Technique (PAT)
+            'ParallelAcquisitionTechniqueMode': (
+                'sPat.ucPATMode',
+                lambda x, p: p[x] if x in p else x,
+                SIEMENS_PROT['pat_mode']),
+            'ParallelAcquisitionTechniqueAccelerationPhase': (
+                'sPat.lAccelFactPE', None, None),
+            'ParallelAcquisitionTechniqueAccelerationSlice': (
+                'sPat.lAccelFact3D', None, None),
+            'ParallelAcquisitionTechniqueReferenceLinesPhase': (
+                'sPat.lRefLinesPE', None, None),
+            # :: Averages
+            'NumAverages': (
+                'lAverages', None, None),
+            # :: FA
+            'FlipAngle::deg': (
+                'adFlipAngleDegree[]', lambda x, p: [n[1] for n in x], None),
+            # :: TE
+            'NumEchoes': ('lContrasts', None, None),
+            'EchoTime::ms': (
+                'alTE[]', lambda x, p: [n[1] * 1e-3 for n in x[:p]],
+                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
+            # :: TR
+            'RepetitionTime::ms': (
+                'alTR[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
+            # :: BW
+            'BandWidth::Hz/px': (
+                'sRXSPEC.alDwellTime[]',
+                lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
+                              for n in x[:p[0]]], (
+                    prot_dict[
+                        'lContrasts'] if 'lContrasts' in prot_dict else None,
+                    prot_dict['sKSpace.lBaseResolution']
+                    if 'sKSpace.lBaseResolution' in prot_dict else None)),
+            # :: Dwell Time
+            'DwellTime::ns': (
+                'sRXSPEC.alDwellTime[]',
+                lambda x, p: [n[1] for n in x[:p]],
+                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
+        },
 
-    # :: Phoenix ZIP Report
-    sequence_dict['phoenix_zip_report'] = {
+        # :: Phoenix ZIP Report
+        'phoenix_zip_report': {}
     }
 
     # :: FLASH
-    sequence_dict['flash'] = {key: val
-                              for key, val in sequence_dict['generic'].items()}
-    sequence_dict['flash'].update({
-    })
+    sequence_dict['flash'] = {key: val for key, val in
+                              sequence_dict['generic'].items()}
+    sequence_dict['flash'].update({})
 
     # :: MP2RAGE
-    sequence_dict['mp2rage'] = {key: val
-                                for key, val in
+    sequence_dict['mp2rage'] = {key: val for key, val in
                                 sequence_dict['generic'].items()}
     sequence_dict['mp2rage'].update({
         # :: TI
@@ -328,9 +326,8 @@ def get_sequence_info(info_dict, prot_dict):
         # :: TR_GRE
         'RepetitionTimeBlock::ms': (
             'lContrasts',
-            lambda x, p: \
-                round(p[0][x - 1][1] * 1e-3 + 2 * p[1] * p[2][x - 1][1] * 1e-6,
-                      2),
+            lambda x, p: round(p[0][x - 1][1] * 1e-3 + 2 * p[1] *
+                               p[2][x - 1][1] * 1e-6, 2),
             (
                 prot_dict['alTE[]'] if 'alTE[]' in prot_dict else None,
                 prot_dict['sKSpace.lBaseResolution']
@@ -359,8 +356,8 @@ def identify_sequence(info_dict, prot_dict):
              prot_dict['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
         'mp2rage':
             (prot_dict and
-             prot_dict['tSequenceFileName'] == \
-             '%CustomerSeq%\\mp2rage_wip602B'),
+             prot_dict[
+                 'tSequenceFileName'] == '%CustomerSeq%\\mp2rage_wip602B'),
     }
 
     identified_sequence = 'none' if not prot_dict else 'generic'

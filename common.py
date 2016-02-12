@@ -578,8 +578,8 @@ def get_duration_sec(text):
     time_sec = 0.0
     # parse remaining string (should be: ss.msec|mm:ss|hh:mm:ss)
     if ':' in text:
-        for idx, val in enumerate(text.split(':')[::-1]):
-            time_sec += float(val) * 60 ** idx
+        for i, val in enumerate(text.split(':')[::-1]):
+            time_sec += float(val) * 60 ** i
     else:
         time_sec += float(text)
     # apply multipliers

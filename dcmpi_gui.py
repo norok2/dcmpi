@@ -322,10 +322,10 @@ class Main(QtGui.QWidget):
         subpath = self.lneSubpath.text()
         if not subpath:
             subpath = 'DICOM_TEMP'
-        for idx in range(self.lstInput.count()):
+        for i in range(self.lstInput.count()):
             part_begin = time.time()
             # extract input filepaths
-            in_dirpath = self.lstInput.item(idx).data(0)
+            in_dirpath = self.lstInput.item(i).data(0)
             print('Input:\t{}'.format(in_dirpath))
             # extract output filepath
             out_dirpath = self.lneOutput.text()
@@ -404,8 +404,8 @@ class Main(QtGui.QWidget):
             self, title, '.', '*.json')[0]
         if target:
             input_list = []
-            for idx in range(self.lstInput.count()):
-                input_list.append(self.lstInput.item(idx).data(0))
+            for i in range(self.lstInput.count()):
+                input_list.append(self.lstInput.item(i).data(0))
             if not input_list:
                 title = self.btnExport.text().strip('&')
                 msg = self.lblInput.text()[:-1] + ' list is empty. ' + \
@@ -440,7 +440,7 @@ class Main(QtGui.QWidget):
     def btnClear_onClicked(self, event=None):
         """Action on Click Button Clear"""
         # TODO: confirmation?
-        for idx in range(self.lstInput.count()):
+        for i in range(self.lstInput.count()):
             self.lstInput.takeItem(0)
 
     def lneOutput_onClicked(self, event):

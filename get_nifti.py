@@ -238,11 +238,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='INPUT_DIR',
+        '-i', '--input', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='OUTPUT_DIR',
+        '-o', '--output', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
