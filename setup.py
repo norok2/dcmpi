@@ -130,7 +130,7 @@ setup(
             'dcmpi__get_meta=dcmpi.get_meta:main',
             'dcmpi__get_nifti=dcmpi.get_nifti:main',
             'dcmpi__get_prot=dcmpi.get_prot:main',
-            'dcmpi__report=dcmpi.get_nifti:main',
+            'dcmpi__report=dcmpi.report:main',
             'dcmpi__backup=dcmpi.backup:main',
         ],
     },
