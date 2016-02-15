@@ -102,8 +102,8 @@ def get_info(
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
+    sources = dcmlib.dcm_sources(in_dirpath)
+    groups = dcmlib.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists
@@ -115,15 +115,15 @@ def get_info(
             out_filepath = os.path.join(
                 out_dirpath, dcmlib.D_SUMMARY + '.' + dcmlib.ID['info'])
             out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
-            info_dict = {}
-            # info_dict['_sources'] = sources_dict  # DEBUG
-            info_dict['_measurements'] = groups_dict
+            info = {}
+            # info['_sources'] = sources  # DEBUG
+            info['_measurements'] = groups
             try:
                 read_next_dicom = True
                 idx = -1
                 while read_next_dicom:
                     # get last dicom
-                    in_filepath = sorted(sources_dict.items())[idx][1][-1]
+                    in_filepath = sorted(sources.items())[idx][1][-1]
                     dcm = pydcm.read_file(in_filepath)
                     stop = 'PixelData' in dcm and \
                            'ImageType' in dcm and 'ORIGINAL' in dcm.ImageType
@@ -133,20 +133,20 @@ def get_info(
                         idx -= 1
 
             except Exception as ex:
-                print(sources_dict)
+                print(sources)
                 print("EE: failed during get_info (exceptioon: {})".format(ex))
             else:
                 # DICOM's-ready information
-                info_dict.update(dcmlib.postprocess_info(
+                info.update(dcmlib.postprocess_info(
                     dcm, custom_info.SESSION, lambda x, p: x.value, verbose))
                 # additional information: duration
                 field_id = 'Duration'
                 try:
                     begin_time = time.mktime(time.strptime(
-                        info_dict['BeginDate'] + '_' + info_dict['BeginTime'],
+                        info['BeginDate'] + '_' + info['BeginTime'],
                         '%Y-%m-%d_%H:%M:%S'))
                     end_time = time.mktime(time.strptime(
-                        info_dict['EndDate'] + '_' + info_dict['EndTime'],
+                        info['EndDate'] + '_' + info['EndTime'],
                         '%Y-%m-%d_%H:%M:%S'))
                     field_val = str(
                         datetime.timedelta(0, end_time - begin_time))
@@ -155,51 +155,51 @@ def get_info(
                     if verbose > VERB_LVL['low']:
                         print("WW: Cannot process '{}'.".format(field_id))
                 finally:
-                    info_dict[field_id] = field_val
+                    info[field_id] = field_val
             if verbose > VERB_LVL['none']:
                 out_subpath = out_filepath[len(out_dirpath):]
                 print('Info:\t{}'.format(out_subpath))
             with open(out_filepath, 'w') as info_file:
-                json.dump(info_dict, info_file, sort_keys=True, indent=4)
+                json.dump(info, info_file, sort_keys=True, indent=4)
 
             # :: extract acquisition information
-            for group_id, group_dict in sorted(groups_dict.items()):
+            for group_id, group in sorted(groups.items()):
                 out_filepath = os.path.join(
                     out_dirpath, group_id + '.' + dcmlib.ID['info'])
                 out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
-                info_dict = {}
-                info_dict['_series'] = group_dict
+                info = {}
+                info['_series'] = group
                 in_filepath = sorted(
-                    sources_dict[groups_dict[group_id][0]])[-1]
+                    sources[groups[group_id][0]])[-1]
                 try:
                     dcm = pydcm.read_file(in_filepath)
                 except:
                     print('EE: failed processing \'{}\''.format(in_filepath))
                 else:
-                    info_dict.update(dcmlib.postprocess_info(
+                    info.update(dcmlib.postprocess_info(
                         dcm, custom_info.ACQUISITION, lambda x, p: x.value,
                         verbose))
                     # information from protocol
                     if dcmlib.DCM_ID['hdr_nfo'] in dcm:
                         prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                        prot_dict = dcmlib.parse_protocol(
+                        prot = dcmlib.parse_protocol(
                             dcmlib.get_protocol(prot_src))
                     else:
-                        prot_dict = {}
-                    info_dict.update(dcmlib.postprocess_info(
-                        prot_dict,
-                        custom_info.get_sequence_info(info_dict, prot_dict),
+                        prot = {}
+                    info.update(dcmlib.postprocess_info(
+                        prot,
+                        custom_info.get_sequence_info(info, prot),
                         None, verbose))
                     # additional information: duration
                     field_id = 'Duration'
                     try:
                         begin_time = time.mktime(time.strptime(
-                            info_dict['BeginDate'] + '_' +
-                            info_dict['BeginTime'],
+                            info['BeginDate'] + '_' +
+                            info['BeginTime'],
                             '%Y-%m-%d_%H:%M:%S'))
                         end_time = time.mktime(time.strptime(
-                            info_dict['EndDate'] + '_' +
-                            info_dict['EndTime'],
+                            info['EndDate'] + '_' +
+                            info['EndTime'],
                             '%Y-%m-%d_%H:%M:%S'))
                         field_val = str(
                             datetime.timedelta(0, end_time - begin_time))
@@ -208,35 +208,35 @@ def get_info(
                         if verbose > VERB_LVL['low']:
                             print("WW: Cannot process '{}'.".format(field_id))
                     finally:
-                        info_dict[field_id] = field_val
+                        info[field_id] = field_val
                 if verbose > VERB_LVL['none']:
                     out_subpath = out_filepath[len(out_dirpath):]
                     print('Info:\t{}'.format(out_subpath))
                 with open(out_filepath, 'w') as info_file:
-                    json.dump(info_dict, info_file, sort_keys=True, indent=4)
+                    json.dump(info, info_file, sort_keys=True, indent=4)
 
             # :: extract series information
-            for src_id, in_filepath_list in sorted(sources_dict.items()):
+            for src_id, in_filepath_list in sorted(sources.items()):
                 out_filepath = os.path.join(
                     out_dirpath, src_id + '.' + dcmlib.ID['info'])
                 out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
-                info_dict = {}
-                for acq, series in groups_dict.items():
+                info = {}
+                for acq, series in groups.items():
                     if src_id in series:
-                        info_dict['_acquisition'] = acq
+                        info['_acquisition'] = acq
                     try:
                         dcm = pydcm.read_file(in_filepath)
                     except:
                         print("EE: failed processing '{}'".format(in_filepath))
                     else:
-                        info_dict.update(dcmlib.postprocess_info(
+                        info.update(dcmlib.postprocess_info(
                             dcm, custom_info.SERIES, lambda x, p: x.value,
                             verbose))
                 if verbose > VERB_LVL['none']:
                     out_subpath = out_filepath[len(out_dirpath):]
                     print('Info:\t{}'.format(out_subpath))
                 with open(out_filepath, 'w') as info_file:
-                    json.dump(info_dict, info_file, sort_keys=True, indent=4)
+                    json.dump(info, info_file, sort_keys=True, indent=4)
         else:
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))

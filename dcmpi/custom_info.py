@@ -189,11 +189,18 @@ SERIES = {
 
 
 # ======================================================================
-def get_sequence_info(info_dict, prot_dict):
+def get_sequence_info(info, prot):
     """
     Information to extract based on protocol.
+
+    Args:
+        info (dict): information extracted from the DICOM headers
+        prot (dict): information extracted from the acquisition protocol
+
+    Returns:
+        seq (dict): instruction for information extration
     """
-    sequence_dict = {
+    seq = {
 
         # :: NO SEQUENCE!!!
         'none': {},
@@ -236,6 +243,7 @@ def get_sequence_info(info_dict, prot_dict):
             #            'sSliceArray.asSlice[].dThickness',
             #            lambda x, p: [n[1] for n in x], None),
             # :: Positioning (center and rotation angles)
+            # todo: fix for correct interpretation in terms of angles
             'CenterPositionSagittal::mm': (
                 'sSliceArray.asSlice[].sPosition.dSag',
                 lambda x, p: [n[1] for n in x], None),
@@ -284,8 +292,7 @@ def get_sequence_info(info_dict, prot_dict):
             'NumEchoes': ('lContrasts', None, None),
             'EchoTime::ms': (
                 'alTE[]', lambda x, p: [n[1] * 1e-3 for n in x[:p]],
-                prot_dict[
-                    'lContrasts'] if 'lContrasts' in prot_dict else None),
+                prot['lContrasts'] if 'lContrasts' in prot else None),
             # :: TR
             'RepetitionTime::ms': (
                 'alTR[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
@@ -294,16 +301,16 @@ def get_sequence_info(info_dict, prot_dict):
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
                               for n in x[:p[0]]], (
-                    prot_dict[
-                        'lContrasts'] if 'lContrasts' in prot_dict else None,
-                    prot_dict['sKSpace.lBaseResolution']
-                    if 'sKSpace.lBaseResolution' in prot_dict else None)),
+                    prot[
+                        'lContrasts'] if 'lContrasts' in prot else None,
+                    prot['sKSpace.lBaseResolution']
+                    if 'sKSpace.lBaseResolution' in prot else None)),
             # :: Dwell Time
             'DwellTime::ns': (
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [n[1] for n in x[:p]],
-                prot_dict[
-                    'lContrasts'] if 'lContrasts' in prot_dict else None),
+                prot[
+                    'lContrasts'] if 'lContrasts' in prot else None),
         },
 
         # :: Phoenix ZIP Report
@@ -311,14 +318,14 @@ def get_sequence_info(info_dict, prot_dict):
     }
 
     # :: FLASH
-    sequence_dict['flash'] = {key: val for key, val in
-                              sequence_dict['generic'].items()}
-    sequence_dict['flash'].update({})
+    seq['flash'] = {key: val for key, val in
+                    seq['generic'].items()}
+    seq['flash'].update({})
 
     # :: MP2RAGE
-    sequence_dict['mp2rage'] = {key: val for key, val in
-                                sequence_dict['generic'].items()}
-    sequence_dict['mp2rage'].update({
+    seq['mp2rage'] = {key: val for key, val in
+                      seq['generic'].items()}
+    seq['mp2rage'].update({
         # :: TI
         'InversionTime::ms': (
             'alTI[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
@@ -328,38 +335,74 @@ def get_sequence_info(info_dict, prot_dict):
             lambda x, p: round(p[0][x - 1][1] * 1e-3 + 2 * p[1] *
                                p[2][x - 1][1] * 1e-6, 2),
             (
-                prot_dict['alTE[]'] if 'alTE[]' in prot_dict else None,
-                prot_dict['sKSpace.lBaseResolution']
-                if 'sKSpace.lBaseResolution' in prot_dict else None,
-                prot_dict['sRXSPEC.alDwellTime[]']
-                if 'sRXSPEC.alDwellTime[]' in prot_dict else None)),
+                prot['alTE[]'] if 'alTE[]' in prot else None,
+                prot['sKSpace.lBaseResolution']
+                if 'sKSpace.lBaseResolution' in prot else None,
+                prot['sRXSPEC.alDwellTime[]']
+                if 'sRXSPEC.alDwellTime[]' in prot else None)),
         # :: k-space coverage
         'UsePhaseInBlock': (
             'sWiPMemBlock.alFree[]',
             lambda x, p: True if x[2][1] == 1 else False, None),
     })
 
-    return sequence_dict[identify_sequence(info_dict, prot_dict)]
+    # :: MT FLASH (Sam Hurley)
+    # sWiPMemBlock.alFree[0]                   = 800  <- MT flip
+    # sWiPMemBlock.alFree[1]                   = 17783 <- MT offset
+    # sWiPMemBlock.alFree[2]                   = 20000 <- MT pulse duration
+    # sWiPMemBlock.adFree[3]                   = 169 <- RF spoiling increment
+    # sWiPMemBlock.adFree[4]                   = 1.8 <-FFT scale factor
+    # sWiPMemBlock.adFree[5]                   = 10 <- SS grad spoiler moment
+    # sWiPMemBlock.adFree[6]                   = 10 <- RO grad spoiler moment
+    seq['mt_flash_sah'] = {key: val for key, val in seq['generic'].items()}
+    seq['mt_flash_sah'].update({
+        'MtPulseFreq::Hz': (
+            'sTXSPEC.asNucleusInfo[].lFrequency', None, None),
+        'MtPulseFlipAngle::deg': (
+            'sWipMemBlock.alFree[]', lambda x, p: x[0], None),
+        'MtPulseFreqOffset::Hz': (
+            'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
+        'MtPulseDuration::ms': (
+            'sWipMemBlock.alFree[]', lambda x, p: x[2] * 1e-3, None),
+        'MtPulseSpoilingParameters': (
+            'sWipMemBlock.alFree[]', lambda x, p: x[0, 2, 3], None),
+        'FftScaleFactor': (
+            'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
+    })
+    return seq[identify_sequence(info, prot)]
 
 
 # ======================================================================
-def identify_sequence(info_dict, prot_dict):
+def identify_sequence(info, prot):
     """
-    Information to extract based on protocol.
+    Identify a sequence based on DICOM and protocol information
+
+    Args:
+        info (dict): information extracted from the DICOM headers
+        prot (dict): information extracted from the acquisition protocol
+
+    Returns:
+        identified_sequence (str): sequence identifier
     """
     sequences_dict = {
         'phoenix_zip_report':
-            (info_dict['ProtocolName'] == 'Phoenix Document'),
+            (info['ProtocolName'] == 'Phoenix Document'),
         'flash':
-            (prot_dict and
-             prot_dict['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
+            (prot and
+             prot['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
         'mp2rage':
-            (prot_dict and
-             prot_dict[
-                 'tSequenceFileName'] == '%CustomerSeq%\\mp2rage_wip602B'),
+            (prot and
+             prot['tSequenceFileName'].startswith(
+                 '%CustomerSeq%\\mp2rage')),
+        'mt_flash_sah':
+            (prot and
+             prot['tSequenceFileName'] == '%CustomerSeq%\\sah_gre_qmri'),
+        'afi_nw':
+            (prot and
+             prot['tSequenceFileName'] == '%CustomerSeq%\\nw_b1map3d_v4bkp'),
     }
 
-    identified_sequence = 'none' if not prot_dict else 'generic'
+    identified_sequence = 'none' if not prot else 'generic'
     for seq_id in sorted(sequences_dict.iterkeys()):
         match = sequences_dict[seq_id]
         if match:
