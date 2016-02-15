@@ -77,12 +77,19 @@ SIEMENS_PROT = {
         '0x2': 5 / 8,
         '0x4': 6 / 8,
         '0x8': 7 / 8,
-        '0x10': 8 / 8},
+        '0x10': 8 / 8,
+    },
     'pat_mode': {
         '0x1': 'None',
         '0x2': 'GRAPPA',
-        '0x4': 'SENSE',},
+        '0x4': 'SENSE',
+    },
+    'coil_combine_mode': {
+        '0x01': 'Adaptive',
+        '0x02': 'SumOfSquares',
+    },
 }
+
 
 # ======================================================================
 # :: Generic session information to be extracted
@@ -198,9 +205,9 @@ def get_sequence_info(info, prot):
         prot (dict): information extracted from the acquisition protocol
 
     Returns:
-        seq (dict): instruction for information extration
+        seq_bot (dict): instruction for sequence information extraction
     """
-    seq = {
+    seq_bot = {
 
         # :: NO SEQUENCE!!!
         'none': {},
@@ -274,8 +281,7 @@ def get_sequence_info(info, prot):
             # :: Parallel Acquisition Technique (PAT)
             'ParallelAcquisitionTechniqueMode': (
                 'sPat.ucPATMode',
-                lambda x, p: p[x] if x in p else x,
-                SIEMENS_PROT['pat_mode']),
+                lambda x, p: p[x] if x in p else x, SIEMENS_PROT['pat_mode']),
             'ParallelAcquisitionTechniqueAccelerationPhase': (
                 'sPat.lAccelFactPE', None, None),
             'ParallelAcquisitionTechniqueAccelerationSlice': (
@@ -311,6 +317,11 @@ def get_sequence_info(info, prot):
                 lambda x, p: [n[1] for n in x[:p]],
                 prot[
                     'lContrasts'] if 'lContrasts' in prot else None),
+            # :: Coil Combine Mode
+            'CoilCombineMode': (
+                'ucCoilCombineMode',
+                lambda x, p: p[x] if x in p else x,
+                SIEMENS_PROT['coil_combine_mode']),
         },
 
         # :: Phoenix ZIP Report
@@ -318,14 +329,14 @@ def get_sequence_info(info, prot):
     }
 
     # :: FLASH
-    seq['flash'] = {key: val for key, val in
-                    seq['generic'].items()}
-    seq['flash'].update({})
+    seq_bot['flash'] = {
+        key: val for key, val in seq_bot['generic'].items()}
+    seq_bot['flash'].update({})
 
     # :: MP2RAGE
-    seq['mp2rage'] = {key: val for key, val in
-                      seq['generic'].items()}
-    seq['mp2rage'].update({
+    seq_bot['mp2rage'] = {
+        key: val for key, val in seq_bot['generic'].items()}
+    seq_bot['mp2rage'].update({
         # :: TI
         'InversionTime::ms': (
             'alTI[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
@@ -354,8 +365,9 @@ def get_sequence_info(info, prot):
     # sWiPMemBlock.adFree[4]                   = 1.8 <-FFT scale factor
     # sWiPMemBlock.adFree[5]                   = 10 <- SS grad spoiler moment
     # sWiPMemBlock.adFree[6]                   = 10 <- RO grad spoiler moment
-    seq['mt_flash_sah'] = {key: val for key, val in seq['generic'].items()}
-    seq['mt_flash_sah'].update({
+    seq_bot['mt_flash_sah'] = {
+        key: val for key, val in seq_bot['generic'].items()}
+    seq_bot['mt_flash_sah'].update({
         'MtPulseFreq::Hz': (
             'sTXSPEC.asNucleusInfo[].lFrequency', None, None),
         'MtPulseFlipAngle::deg': (
@@ -369,7 +381,7 @@ def get_sequence_info(info, prot):
         'FftScaleFactor': (
             'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
     })
-    return seq[identify_sequence(info, prot)]
+    return seq_bot[identify_sequence(info, prot)]
 
 
 # ======================================================================
