@@ -11,7 +11,7 @@ See: https://packaging.python.org/en/latest/distributing.html
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
-from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -111,9 +111,9 @@ setup(
 
     install_requires=['pydicom', 'pyside'],
 
-    # package_data={
-    #     'license': ['LICENSE'],
-    # },
+    package_data={
+        'dcmpi': ['report_templates/*.html',],
+    },
 
     # data_files=[('my_data', ['data/data_file'])],
 

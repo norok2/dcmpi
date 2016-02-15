@@ -4,21 +4,6 @@
 Instructions to extract information from DICOM using pydicom.
 """
 
-#    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 # ======================================================================
 # :: Future Imports
 from __future__ import division
@@ -299,7 +284,8 @@ def get_sequence_info(info_dict, prot_dict):
             'NumEchoes': ('lContrasts', None, None),
             'EchoTime::ms': (
                 'alTE[]', lambda x, p: [n[1] * 1e-3 for n in x[:p]],
-                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
+                prot_dict[
+                    'lContrasts'] if 'lContrasts' in prot_dict else None),
             # :: TR
             'RepetitionTime::ms': (
                 'alTR[]', lambda x, p: [n[1] * 1e-3 for n in x], None),
@@ -316,7 +302,8 @@ def get_sequence_info(info_dict, prot_dict):
             'DwellTime::ns': (
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [n[1] for n in x[:p]],
-                prot_dict['lContrasts'] if 'lContrasts' in prot_dict else None),
+                prot_dict[
+                    'lContrasts'] if 'lContrasts' in prot_dict else None),
         },
 
         # :: Phoenix ZIP Report
