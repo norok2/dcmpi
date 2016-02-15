@@ -4,6 +4,20 @@
 Analyze DICOM info to check a given match and performing the specified action.
 """
 
+#    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # ======================================================================
 # :: Future Imports
@@ -11,7 +25,6 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -122,7 +135,7 @@ def send_mail_dcm(
          lambda t: dcmlib.STATION[t] if t in dcmlib.STATION else t),
         ('StudyDescription',
          lambda t: t),
-        )
+    )
     try:
         dcm = pydcm.read_file(dcm_filepath)
         # get recipient
@@ -232,13 +245,13 @@ def dcm_analyze_dir(
             elif action.lower() == 'dcmpi':
                 io_dirs = (dirpath, '/SCR/TEMP')
                 cmd = os.path.dirname(__file__) + \
-                    '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
+                      '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
                 subprocess.call(cmd, shell=True)
             elif action.lower() == 'email+preprocess':
                 send_mail_dcm(dcm_filepath, None, force, verbose)
                 io_dirs = (dirpath, '/SCR/TEMP')
                 cmd = os.path.dirname(__file__) + \
-                    '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
+                      '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
                 subprocess.call(cmd, shell=True)
             else:
                 if verbose > VERB_LVL['none']:
@@ -302,7 +315,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -321,3 +334,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

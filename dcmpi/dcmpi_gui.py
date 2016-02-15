@@ -4,14 +4,12 @@
 Extract and preprocess DICOM files from a single session.
 """
 
-
 # ======================================================================
 # :: Future Imports
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -74,7 +72,6 @@ import dcmpi.common as dcmlib
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-
 
 # ======================================================================
 D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
@@ -461,7 +458,7 @@ class Main(QtGui.QWidget):
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     begin_time = time.time()
 
     app = QtGui.QApplication(sys.argv)
@@ -470,3 +467,8 @@ if __name__ == '__main__':
 
     end_time = time.time()
     print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

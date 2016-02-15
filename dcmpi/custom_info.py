@@ -1,11 +1,23 @@
-# -*- coding: utf-8 -*-
-
-# ======================================================================
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Instructions to extract information from DICOM using pydicom.
 """
+
+#    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # ======================================================================
 # :: Future Imports
@@ -26,7 +38,7 @@ import time  # Time access and conversions
 # import collections  # High-performance container datatypes
 # import argparse  # Parser for command-line options, arguments and subcommands
 # import itertools  # Functions creating iterators for efficient looping
-# import functools  # Higher-order functions and operations on callable objects
+import functools  # Higher-order functions and operations on callable objects
 # import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
@@ -73,7 +85,7 @@ COIL = {
 }
 
 # ======================================================================
-# :: Siemens's protocol's parameters codec
+# :: Siemens's protocol's parameters look-up table
 SIEMENS_PROT = {
     'partial_fourier': {
         '0x1': 4 / 8,
@@ -119,7 +131,7 @@ SESSION = {
         (0x0008, 0x0080), None, None),
     'InstitutionAddress': (
         (0x0008, 0x0081),  # multiple replace
-        lambda x, p: reduce(lambda a, kv: a.replace(*kv), p, x),
+        lambda x, p: functools.reduce(lambda a, kv: a.replace(*kv), p, x),
         ((',', ', '),)),
     'StationName': (
         (0x0008, 0x1010), lambda x, p: p[x] if x in p else x, dcmlib.STATION),

@@ -10,7 +10,6 @@ newly created summary file.
 Note: assumes DICOM files to be sorted.
 """
 
-
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -33,7 +32,6 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -131,7 +129,7 @@ def sorting(
             src_id = dcmlib.INFO_SEP.join(
                 (dcmlib.PREFIX_ID['series'] + '{:0{size}d}'.format(
                     dcm.SeriesNumber, size=dcmlib.D_NUM_DIGITS),
-                dcm.SeriesDescription))
+                 dcm.SeriesDescription))
             if src_id not in input_list_dict:
                 input_list_dict[src_id] = []
             input_list_dict[src_id].append(in_filepath)
@@ -203,7 +201,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -220,3 +218,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

@@ -4,7 +4,6 @@
 Create a report of the acquisitions from imaged data.
 """
 
-
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -28,11 +27,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -92,7 +90,7 @@ def get_session(dirpath, summary):
          lambda t: dcmlib.STATION[t] if t in dcmlib.STATION else t),
         ('StudyDescription',
          lambda t: t),
-        )
+    )
     try:
         subdirs = dirpath.split(os.sep)
         sample_id, study_id = subdirs[-2:-4:-1]
@@ -139,7 +137,7 @@ def sort_param(arg):
         'Position',
         'NumAverages',
         'PAT', 'PartialFourier',
-        )
+    )
     idx = order.index(key) if key in order else len(order) + 1
     return idx, key, val
 
@@ -147,8 +145,9 @@ def sort_param(arg):
 # ======================================================================
 def get_param(acq):
     mask = ('ProtocolName', 'BeginDate', 'BeginTime', 'EndDate', 'EndTime',
-        'AcquisitionTime', 'Duration', 'ExpectedScanTime::sec', 'SequenceName',
-        'DwellTime::ns')
+            'AcquisitionTime', 'Duration', 'ExpectedScanTime::sec',
+            'SequenceName',
+            'DwellTime::ns')
 
     mask_filter = (
         (lambda x: 'Sequence' not in x),
@@ -159,7 +158,7 @@ def get_param(acq):
         (lambda x: 'CenterPosition' not in x),
         (lambda x: 'ParallelAcquisitionTechnique' not in x),
         (lambda x: 'PartialFourier' not in x),
-        )
+    )
 
     report = {}
     # :: add specially grouped fields
@@ -199,7 +198,7 @@ def get_param(acq):
 
     for key, val in acq.items():
         if key not in mask and all([test(key) for test in mask_filter]) and \
-                val != None and val != 'N/A':
+                        val != None and val != 'N/A':
             report[key] = json.dumps(val)
     return report
 
@@ -283,7 +282,7 @@ def report(
                 'report': 'report_template.html',
                 'acq': 'acquisition_template.html',
                 'acq_param': 'acquisition_parameter_template.html',
-                }
+            }
             for key, filename in template.items():
                 tpl_filepath = os.path.join(tpl_dirpath, filename)
                 with open(tpl_filepath, 'r') as tpl_file:
@@ -302,9 +301,9 @@ def report(
                     '[ACQ-PROTOCOL]': acq['ProtocolName'],
                     '[ACQ-SERIES]':
                         ', '.join([series[:series.find(dcmlib.INFO_SEP)]
-                        for series in acq['_series']]),
+                                   for series in acq['_series']]),
                     '[ACQUISITION-PARAMETER-TEMPLATE]': acq_param_html,
-                    }
+                }
                 tmp_acq_html = template['acq']
                 for tag, val in tags.items():
                     tmp_acq_html = tmp_acq_html.replace(tag, val)
@@ -315,16 +314,16 @@ def report(
                 '[SESSION-INFO]': get_session(in_dirpath, summary),
                 '[CUSTOM-PIL]':
                     extra['pil'] if 'pil' in extra else \
-                    html_input('text', '{"maxlength": 4}'),
+                        html_input('text', '{"maxlength": 4}'),
                 '[CUSTOM-U-ID]':
                     extra['uid'] if 'uid' in extra else \
-                    html_input('text', '{"maxlength": 12}'),
+                        html_input('text', '{"maxlength": 12}'),
                 '[CUSTOM-B-ID]':
                     extra['bid'] if 'bid' in extra else \
-                    html_input('text', '{"maxlength": 4}'),
+                        html_input('text', '{"maxlength": 4}'),
                 '[CUSTOM-NUM-7T]':
                     extra['pil'] if 'pil' in extra else \
-                    html_input('text', '{"maxlength": 3}'),
+                        html_input('text', '{"maxlength": 3}'),
                 '[PATIENT-NAME]': summary['PatientName'],
                 '[PATIENT-ID]': summary['PatientID'],
                 '[PATIENT-SEX]': summary['PatientSex'],
@@ -346,7 +345,7 @@ def report(
                 '[PARALLEL-TX]': check_box('ParallelTX', extra),
                 '[OTHERS]':
                     (extra['Others'] if 'Others' in extra and extra['Others'] \
-                    else html_input('text')) + html_input('text'),
+                         else html_input('text')) + html_input('text'),
                 '[STUDY-NAME]': html_input('text', '{"maxlength": 16}'),
                 '[STUDY-ID]': html_input('text', '{"maxlength": 16}'),
                 '[STUDY-DESCR]': summary['StudyDescription'],
@@ -358,7 +357,7 @@ def report(
                 '[PERFORMER]': summary['Performer'],
                 '[OPERATOR]': summary['Operator'],
                 '[ACQUISITION-TEMPLATE]': acq_html
-                }
+            }
             for tag, val in tags.items():
                 if val == 'N/A':
                     val = ''
@@ -382,7 +381,7 @@ def report(
                     ' --margin-right {}'.format('15mm'),
                     ' --margin-top {}'.format('15mm'),
                     # ' --no-pdf-compression',  # n/a in Ubuntu 14.04
-                    )
+                )
                 cmd = 'wkhtmltopdf {} {} {}'.format(
                     ' '.join(opts), html_filepath, pdf_filepath)
                 p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
@@ -459,7 +458,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -479,3 +478,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

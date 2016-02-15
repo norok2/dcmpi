@@ -6,17 +6,66 @@ Setup instructions.
 See: https://packaging.python.org/en/latest/distributing.html
 """
 
-from setuptools import setup, find_packages
-from codecs import open  # use a consistent encoding (in Python 2)
-from dcmpi import __version__ as version_text
-import os
+# ======================================================================
+# :: Future Imports (for Python 2)
+from __future__ import division
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
 
+# ======================================================================
+# :: Python Standard Library Imports
+import os  # Miscellaneous operating system interfaces
+import re  # Regular expression operations
+from codecs import open  # use a consistent encoding (in Python 2)
+
+# ======================================================================
+# :: Choice of the setup tools
+from setuptools import setup
+from setuptools import find_packages
+
+# get the working directory for the setup script
 cwd = os.path.realpath(os.path.dirname(__file__))
 
 # get the long description from the README file
 with open(os.path.join(cwd, 'README'), encoding='utf-8') as readme_file:
     long_description_text = readme_file.read()
 
+
+# ======================================================================
+def fix_version(
+        version=None,
+        source_filepath='dcmpi/__init__.py'):
+    """
+    Fix version in source code.
+
+    Args:
+        version (str): version to be used for fixing the source code
+        source_filepath (str): Path to file where __version__ is located
+
+    Returns:
+        version (str): the actual version text used
+    """
+    if version is None:
+        import setuptools_scm
+
+        version = setuptools_scm.get_version()
+    with open(source_filepath, 'r') as src_file:
+        src_str = src_file.read()
+        src_str = re.sub(
+            r"__version__ = '.*'",
+            "__version__ = '{}'".format(version),
+            src_str)
+
+    with open(source_filepath, 'w') as src_file:
+        src_file.write(src_str)
+    return version
+
+
+version_text = fix_version()
+
+# ======================================================================
+# :: call the setup tool
 setup(
     name='dcmpi',
 
@@ -60,7 +109,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['dicom'],
+    install_requires=['pydicom', 'pyside'],
 
     # package_data={
     #     'license': ['LICENSE'],
@@ -70,7 +119,19 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'hdu=hdu.hdu:main',
+            'dcmpi_gui=dcmpi.dcmpi_gui:main',
+            'dcmpi=dcmpi.dcmpi_cli:main',
+
+            'dcmpi_monitor_folder=dcmpi.dcmpi_monitor_folder:main',
+
+            'dcmpi__import_sources=dcmpi.import_sources:main',
+            'dcmpi__sorting=dcmpi.sorting:main',
+            'dcmpi__get_info=dcmpi.get_info:main',
+            'dcmpi__get_meta=dcmpi.get_meta:main',
+            'dcmpi__get_nifti=dcmpi.get_nifti:main',
+            'dcmpi__get_prot=dcmpi.get_prot:main',
+            'dcmpi__report=dcmpi.get_nifti:main',
+            'dcmpi__backup=dcmpi.backup:main',
         ],
     },
 )

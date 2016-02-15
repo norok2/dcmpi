@@ -1,4 +1,22 @@
-#!/bin/sh
-#python fix_version.py
+#!/usr/bin/env bash
+echo " :: Create package..."
 python setup.py bdist_wheel --universal
-twine upload dist/* --config-file .pypirc
+
+echo " :: Distribute package..."
+PYPIRC_EXT=pypirc
+if [ -z "$1" ]; then
+    for FILE in *.${PYPIRC_EXT}; do
+        CHOICE=${FILE%\.*}"|"$CHOICE
+    done
+    echo -n "choose target ["${CHOICE%?}"]: "
+    read PYPIRC
+else
+    PYPIRC=$1
+fi
+PYPIRC_FILE=${PYPIRC}.${PYPIRC_EXT}
+
+for FILE in dist/*; do
+    if [ -f ${FILE} ] && [ -f ${PYPIRC_FILE} ]; then
+        twine upload ${FILE} --config-file ${PYPIRC_FILE}
+    fi
+done

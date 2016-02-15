@@ -31,11 +31,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -150,7 +149,7 @@ def get_prot(
     else:
         if verbose > VERB_LVL['none']:
             print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+                  "Use 'force' argument to override.")
 
 
 # ======================================================================
@@ -211,7 +210,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -231,3 +230,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

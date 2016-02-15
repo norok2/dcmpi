@@ -4,7 +4,6 @@
 Monitor folder for creation of new DICOM folder.
 """
 
-
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -27,7 +26,6 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
-
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -97,9 +95,10 @@ def monitor_folder(
     """
     Monitor changes in a dir and execute a command upon verify some condition.
     """
+
     def list_dirs(dirpath):
         return [d for d in os.listdir(dirpath)
-            if os.path.isdir(os.path.join(dirpath, d))]
+                if os.path.isdir(os.path.join(dirpath, d))]
 
     sec_in_min = 60
 
@@ -208,7 +207,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -218,6 +217,7 @@ if __name__ == '__main__':
         print()
         print('II:', 'Parsed Arguments:', args)
     print(__doc__)
+
     begin_time = time.time()
 
     monitor_folder(
@@ -231,3 +231,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

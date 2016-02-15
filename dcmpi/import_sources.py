@@ -30,7 +30,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
@@ -118,6 +117,7 @@ def import_sources(
     dcmlib.fill_from_dicom, dcmlib.find_a_dicom
 
     """
+
     # TODO: add the possibility of updating sources (e.g. anonymize, fix, etc.)
     def get_filepaths(dirpath):
         for root, dirs, files in os.walk(in_dirpath):  # no need to sort
@@ -146,7 +146,7 @@ def import_sources(
                 allow_report=True,
                 allow_postprocess=True)
             if is_dicom or is_compressed and \
-                    compression in dcmlib.UNCOMPRESS_METHODS:
+                            compression in dcmlib.UNCOMPRESS_METHODS:
                 if subpath:
                     dcm_subpath = dcmlib.fill_from_dicom(subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
@@ -167,7 +167,7 @@ def import_sources(
                 else:
                     if verbose > VERB_LVL['low']:
                         print("II: Output filepath exists. Skipping. " +
-                            "Use 'force' argument to override.")
+                              "Use 'force' argument to override.")
             else:
                 name = filepath[len(in_dirpath):]
                 if verbose > VERB_LVL['low']:
@@ -236,7 +236,7 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
@@ -256,3 +256,8 @@ if __name__ == '__main__':
     end_time = time.time()
     if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()
