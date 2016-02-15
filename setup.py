@@ -24,18 +24,24 @@ from codecs import open  # use a consistent encoding (in Python 2)
 from setuptools import setup
 from setuptools import find_packages
 
+# ======================================================================
+# project specific variables
+VERSION_SOURCE_FILEPATH = 'dcmpi/__init__.py'
+README_SOURCE_FILE = 'README.rst'
+
 # get the working directory for the setup script
-cwd = os.path.realpath(os.path.dirname(__file__))
+CWD = os.path.realpath(os.path.dirname(__file__))
 
 # get the long description from the README file
-with open(os.path.join(cwd, 'README'), encoding='utf-8') as readme_file:
-    long_description_text = readme_file.read()
+with open(os.path.join(CWD, README_SOURCE_FILE),
+          encoding='utf-8') as readme_file:
+    LONG_DESCRIPTION_TEXT = readme_file.read()
 
 
 # ======================================================================
 def fix_version(
         version=None,
-        source_filepath='dcmpi/__init__.py'):
+        source_filepath=VERSION_SOURCE_FILEPATH):
     """
     Fix version in source code.
 
@@ -59,10 +65,9 @@ def fix_version(
 
     with open(source_filepath, 'w') as src_file:
         src_file.write(src_str)
+
     return version
 
-
-version_text = fix_version()
 
 # ======================================================================
 # :: call the setup tool
@@ -70,9 +75,9 @@ setup(
     name='dcmpi',
 
     description='DICOM Preprocessing Interface.',
-    long_description=long_description_text,
+    long_description=LONG_DESCRIPTION_TEXT,
 
-    version=version_text,
+    version=fix_version(),
 
     url='https://bitbucket.org/norok2/dcmpi',
 
@@ -112,7 +117,7 @@ setup(
     install_requires=['pydicom', 'pyside'],
 
     package_data={
-        'dcmpi': ['report_templates/*.html',],
+        'dcmpi': ['report_templates/*.html', ],
     },
 
     # data_files=[('my_data', ['data/data_file'])],
