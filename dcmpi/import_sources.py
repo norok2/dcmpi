@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
+Extract DICOM files from a directory.
 
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Move (or copy) DICOM files from the input directory onto the output directory,
+for later processing. Assume all DICOM files are from the same session.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -35,7 +34,7 @@ from __future__ import unicode_literals
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -59,7 +58,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -82,15 +81,15 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
+def import_sources(
         in_dirpath,
         out_dirpath,
-        method='pydicom',
-        type_ext=False,
+        clean=False,
+        subpath='[study]/[name]_[date]_[time]_[sys]/dcm',
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
+    Get all DICOM within an input directory.
 
     Parameters
     ==========
@@ -98,59 +97,85 @@ def get_prot(
         Path to input directory.
     out_dirpath : str
         Path to output directory.
-    method : str (optional)
-        | Extraction method. Accepted values:
-        * pydicom: Use PyDICOM Python module.
-    type_ext : boolean (optional)
-        Add type extension to filename.
+    clean : boolean (optional)
+        Move DICOM sources instead of copying.
+    subpath : str (optional)
+        | Extra subpath to append to output dirpath. Interpret fields from
+        | DICOM, according to field specifications: <field::format>.
+        | See dcmlib.fill_from_dicom for more information on accepted syntax.
     force : boolean (optional)
-        Force new processing.
+        Force calculation of output.
     verbose : int (optional)
         Set level of verbosity.
 
     Returns
     =======
-    None.
+    dcm_dirpaths : str set
+        Paths to directories containing DICOM files separated by session.
+
+    See Also
+    ========
+    dcmlib.fill_from_dicom, dcmlib.find_a_dicom
 
     """
+    # TODO: add the possibility of updating sources (e.g. anonymize, fix, etc.)
+    def get_filepaths(dirpath):
+        for root, dirs, files in os.walk(in_dirpath):  # no need to sort
+            for name in files:
+                yield os.path.join(root, name)
+
     if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
+        print(':: Importing sources...')
     if verbose > VERB_LVL['none']:
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
-    # proceed only if output is not likely to be there
-    if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
-        if not os.path.exists(out_dirpath):
-            os.makedirs(out_dirpath)
-        if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
-                out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
+    if os.path.exists(in_dirpath):
+        # :: analyze directory tree
+        dcm_dirpaths = set()
+        for filepath in get_filepaths(in_dirpath):
+            filename = os.path.basename(filepath)
+            is_dicom = dcmlib.is_dicom(
+                filepath,
+                allow_dir=False,
+                allow_report=True,
+                allow_postprocess=True)
+            is_compressed, compression = dcmlib.is_compressed_dicom(
+                filepath,
+                allow_dir=False,
+                allow_report=True,
+                allow_postprocess=True)
+            if is_dicom or is_compressed and \
+                    compression in dcmlib.UNCOMPRESS_METHODS:
+                if subpath:
+                    dcm_subpath = dcmlib.fill_from_dicom(subpath, filepath)
+                    dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
+                    dcm_dirpath = out_dirpath
+                if not os.path.exists(dcm_dirpath):
+                    os.makedirs(dcm_dirpath)
+                if dcm_dirpath not in dcm_dirpaths:
                     if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
-        else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+                        print('Subpath:\t{}'.format(dcm_subpath))
+                    dcm_dirpaths.add(dcm_dirpath)
+                if not os.path.isfile(os.path.join(dcm_dirpath, filename)) \
+                        or force:
+                    if clean:
+                        shutil.move(filepath, dcm_dirpath)
+                    else:
+                        shutil.copy(filepath, dcm_dirpath)
+                else:
+                    if verbose > VERB_LVL['low']:
+                        print("II: Output filepath exists. Skipping. " +
+                            "Use 'force' argument to override.")
+            else:
+                name = filepath[len(in_dirpath):]
+                if verbose > VERB_LVL['low']:
+                    print('WW: Invalid source found \'{}\''.format(name))
     else:
         if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+            print('WW: Input path does NOT exists.')
+    return dcm_dirpaths
 
 
 # ======================================================================
@@ -165,8 +190,8 @@ def handle_arg():
     d_input_dir = '.'
     # default output directory
     d_output_dir = '.'
-    # default method
-    d_method = 'pydicom'
+    # default subpath
+    d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -200,34 +225,34 @@ def handle_arg():
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
-    arg_parser.add_argument(
-        '-t', '--type_ext',
+        '-c', '--clean',
         action='store_true',
-        help='add type extension [%(default)s]')
+        help='Move DICOM sources instead of copying [%(default)s]')
+    arg_parser.add_argument(
+        '-s', '--subpath',
+        default=d_subpath,
+        help='Append DICOM-generated subpath to output [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
 if __name__ == '__main__':
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    import_sources(
+        args.input, args.output,
+        args.clean, args.subpath,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))

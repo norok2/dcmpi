@@ -165,66 +165,71 @@ def handle_arg():
     d_method = 'pydicom'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
-            description=__doc__,
-            epilog='v.{} - {}\n{}'.format(
-                    INFO['version'], ', '.join(INFO['authors']),
-                    INFO['license']),
-            formatter_class=argparse.RawDescriptionHelpFormatter)
+        description=__doc__,
+        epilog='v.{} - {}\n{}'.format(
+            INFO['version'], ', '.join(INFO['authors']),
+            INFO['license']),
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
-            '--ver', '--version',
-            version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-                    INFO['version'],
-                    next(line for line in __doc__.splitlines() if line),
-                    INFO['copyright'], ', '.join(INFO['authors']),
-                    INFO['notice']),
-            action='version')
+        '--ver', '--version',
+        version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
+            INFO['copyright'], ', '.join(INFO['authors']),
+            INFO['notice']),
+        action='version')
     arg_parser.add_argument(
-            '-v', '--verbose',
-            action='count', default=d_verbose,
-            help='increase the level of verbosity [%(default)s]')
+        '-v', '--verbose',
+        action='count', default=d_verbose,
+        help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
-            '-f', '--force',
-            action='store_true',
-            help='force new processing [%(default)s]')
+        '-f', '--force',
+        action='store_true',
+        help='force new processing [%(default)s]')
     arg_parser.add_argument(
-            '-i', '--input', metavar='DIR',
-            default=d_input_dir,
-            help='set input directory [%(default)s]')
+        '-i', '--input', metavar='DIR',
+        default=d_input_dir,
+        help='set input directory [%(default)s]')
     arg_parser.add_argument(
-            '-o', '--output', metavar='DIR',
-            default=d_output_dir,
-            help='set output directory [%(default)s]')
+        '-o', '--output', metavar='DIR',
+        default=d_output_dir,
+        help='set output directory [%(default)s]')
     arg_parser.add_argument(
-            '-m', '--method', metavar='METHOD',
-            default=d_method,
-            help='set extraction method [%(default)s]')
+        '-m', '--method', metavar='METHOD',
+        default=d_method,
+        help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-            '-k', '--keep',
-            action='store_true',
-            help='Keep DICOM sources after backup (and test). [%(default)s]')
+        '-k', '--keep',
+        action='store_true',
+        help='Keep DICOM sources after backup (and test). [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
     backup(
-            ARGS.input, ARGS.output,
-            ARGS.method, ARGS.keep,
-            ARGS.force, ARGS.verbose)
+        args.input, args.output,
+        args.method, args.keep,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

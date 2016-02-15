@@ -461,21 +461,21 @@ def handle_arg():
 # ======================================================================
 if __name__ == '__main__':
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
     report(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.format,
-        ARGS.force, ARGS.verbose)
+        args.input, args.output,
+        args.method, args.format,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))

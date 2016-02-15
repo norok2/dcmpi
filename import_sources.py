@@ -69,16 +69,15 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
-import dcmpi.lib.common as dcmlib
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
 
 
 # ======================================================================
@@ -100,7 +99,7 @@ def import_sources(
         Path to output directory.
     clean : boolean (optional)
         Move DICOM sources instead of copying.
-    subpath : string (optional)
+    subpath : str (optional)
         | Extra subpath to append to output dirpath. Interpret fields from
         | DICOM, according to field specifications: <field::format>.
         | See dcmlib.fill_from_dicom for more information on accepted syntax.
@@ -203,7 +202,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')
@@ -217,11 +217,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='INPUT_DIR',
+        '-i', '--input', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='OUTPUT_DIR',
+        '-o', '--output', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(

@@ -67,16 +67,15 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
-import dcmpi.lib.common as dcmlib
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
 
 
 # ======================================================================
@@ -93,11 +92,11 @@ def get_nifti(
 
     Parameters
     ==========
-    in_dirpath : string
+    in_dirpath : str
         Path to input directory.
-    out_dirpath : string
+    out_dirpath : str
         Path to output directory.
-    method : string (optional)
+    method : str (optional)
         | Extraction method. Accepted values:
         * isis: Use Enrico Reimer's ISIS tool.
         * dcm2nii: Use Chris Rorden's dcm2nii tool.
@@ -165,11 +164,11 @@ def get_nifti(
                 if verbose >= VERB_LVL['debug']:
                     print(p_stdout)
                     print(p_stderr)
-                term_str = 'GZip...' if compressed else 'Saving '
+                term_str = str('GZip...') if compressed else str('Saving ')
                 # parse result
                 old_name_list = []
                 for line in p_stdout.split('\n'):
-                    if term_str in line:
+                    if term_str in str(line):
                         old_name = line[line.find(term_str) + len(term_str):]
                         old_name_list.append(old_name)
                 if len(old_name_list) == 1:
@@ -224,7 +223,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')
@@ -238,11 +238,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='INPUT_DIR',
+        '-i', '--input', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='OUTPUT_DIR',
+        '-o', '--output', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -250,11 +250,11 @@ def handle_arg():
         default=d_method,
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-        '-x', '--compressed',
-        action='store_true',
+        '-u', '--uncompressed',
+        action='store_false',
         help='compress output NIfTI images [%(default)s]')
     arg_parser.add_argument(
-        '-g', '--merged',
+        '-p', '--separated',
         action='store_true',
         help='merge timeline series [%(default)s]')
     return arg_parser
@@ -275,7 +275,7 @@ if __name__ == '__main__':
 
     get_nifti(
         ARGS.input, ARGS.output,
-        ARGS.method, ARGS.compressed, ARGS.merged,
+        ARGS.method, not ARGS.uncompressed, not ARGS.separated,
         ARGS.force, ARGS.verbose)
 
     end_time = time.time()

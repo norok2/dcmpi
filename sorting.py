@@ -73,16 +73,15 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
-import dcmpi.lib.common as dcmlib
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
+import dcmpi.common as dcmlib
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
 
 
 # ======================================================================
@@ -96,9 +95,9 @@ def sorting(
 
     Parameters
     ==========
-    dirpath : string
+    dirpath : str
         Path where to operate.
-    summary : string
+    summary : str
         File name or path where to save grouping summary.
     force : boolean (optional)
         Force calculation of output.
@@ -122,7 +121,7 @@ def sorting(
         in_filepath = os.path.join(dirpath, in_filename)
         try:
             dcm = pydcm.read_file(in_filepath)
-        except (IOError):
+        except IOError:
             if verbose >= VERB_LVL['debug']:
                 print('WW: failed processing \'{}\''.format(in_filepath))
         except:
@@ -178,7 +177,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')

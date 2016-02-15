@@ -25,7 +25,7 @@ Common library of DCMPI.
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
-#from __future__ import unicode_literals
+from __future__ import unicode_literals
 
 
 # ======================================================================
@@ -47,7 +47,6 @@ import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
-
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
 # import scipy as sp  # SciPy (signal and image processing library)
@@ -59,7 +58,6 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
 # import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
@@ -72,8 +70,6 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-# from dcmpi import _firstline
-
 
 # ======================================================================
 # :: General-purposes constants
@@ -91,7 +87,7 @@ FMT_SEP = '::'
 TTY_COLORS = {
     'r': 31, 'g': 32, 'b': 34, 'c': 36, 'm': 35, 'y': 33, 'w': 37, 'k': 30,
     'R': 41, 'G': 42, 'B': 44, 'C': 46, 'M': 45, 'Y': 43, 'W': 47, 'K': 40,
-    }
+}
 
 D_SUMMARY = 'summary'
 
@@ -110,12 +106,13 @@ ID = {
     'prot': 'prot',
     'report': 'report',
     'backup': 'dcm', }
+
 # DICOM indexes
 DCM_ID = {
     'pixel_data': (0x7fe0, 0x0010),  # Binary image data
     'hdr_nfo': (0x0029, 0x1020),  # CSA Series Header Info
     'TA': (0x0051, 0x100a),  # Acquisition Time (Duration)
-    }
+}
 # Time difference (in seconds) between two series for them to be considered
 #    from different acquisition.
 GRACE_PERIOD = 2.0
@@ -140,7 +137,7 @@ UNCOMPRESS_METHODS = {
 
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
-    )
+)
 
 D_ACTIONS = (
     ('get_nifti', ('::i_dirpath', '::o_dirpath', 'dcm2nii', True, True)),
@@ -183,13 +180,13 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
     else:
         try:
             val = int(val_str)
-        except (ValueError):
+        except ValueError:
             try:
                 val = float(val_str)
-            except (ValueError):
+            except ValueError:
                 try:
                     val = complex(val_str)
-                except (ValueError):
+                except ValueError:
                     val = val_str
     return val
 
@@ -224,9 +221,10 @@ def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
         if verbose > VERB_LVL['low']:
             print('Cmd:\t{}'.format(cmd))
         if use_pipes:
-#            # :: deprecated
-#            proc = os.popen3(cmd)
-#            p_stdout, p_stderr = [item.read() for item in proc[1:]]
+            #            # :: deprecated
+            #            proc = os.popen3(cmd)
+            #            p_stdout, p_stderr = [item.read() for item in proc[
+            # 1:]]
             # :: new style
             proc = subprocess.Popen(
                 cmd,
@@ -242,8 +240,8 @@ def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
                 print('stderr:\t{}'.format(p_stderr))
         else:
             p_stdout = p_stderr = None
-#            # :: deprecated
-#            os.system(cmd)
+            #            # :: deprecated
+            #            os.system(cmd)
             # :: new style
             subprocess.call(cmd, shell=True)
     return p_stdout, p_stderr
@@ -265,12 +263,12 @@ def string_between(
     if begin_str in text and end_str in text:
         if greedy:
             text = text[
-                text.find(begin_str) + incl_begin:
-                text.rfind(end_str) + incl_end]
+                   text.find(begin_str) + incl_begin:
+                   text.rfind(end_str) + incl_end]
         else:
             text = text[
-                text.rfind(begin_str) + incl_begin:
-                text.find(end_str) + incl_end]
+                   text.rfind(begin_str) + incl_begin:
+                   text.find(end_str) + incl_end]
     else:
         text = ''
     return text
@@ -327,6 +325,15 @@ def is_dicom(
         allow_postprocess=False):
     """
     Check if the filepath is a valid DICOM file.
+
+    Args:
+        filepath (str): The path to the file.
+        allow_dir (bool): accept DICOM directories as valid
+        allow_report (bool): accept DICOM reports as valid
+        allow_postprocess (bool): accept DICOM post-process data as valid
+
+    Returns:
+        (bool) True if the file is a valid DICOM, false otherwise.
     """
     try:
         dcm = pydcm.read_file(filepath)
@@ -335,11 +342,11 @@ def is_dicom(
         if is_dir and not allow_dir:
             raise
         # check if it is a DICOM report
-        is_report = True if not 'PixelData' in dcm else False
+        is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
             raise
         # check if it is a DICOM postprocess image  # TODO: improve this
-        is_postprocess = True if not 'MagneticFieldStrength' in dcm else False
+        is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
             raise
     except:
@@ -356,6 +363,19 @@ def is_compressed_dicom(
         allow_postprocess=False,
         tmp_path='/tmp',
         known_methods=UNCOMPRESS_METHODS):
+    """
+
+    Args:
+        filepath (str): The path to the file.
+        allow_dir (bool): accept DICOM directories as valid
+        allow_report (bool): accept DICOM reports as valid
+        allow_postprocess (bool): accept DICOM post-process data as valid
+        tmp_path (str): The path for temporary extraction.
+        known_methods:
+
+    Returns:
+
+    """
     """
     Check if the compressed filepath contains a valid DICOM file.
     """
@@ -392,10 +412,10 @@ def find_a_dicom(
         for name in files:
             filename = os.path.join(root, name)
             is_a_dicom = is_dicom(
-                    filename,
-                    allow_dir=allow_dir,
-                    allow_report=allow_report,
-                    allow_postprocess=allow_postprocess)
+                filename,
+                allow_dir=allow_dir,
+                allow_report=allow_report,
+                allow_postprocess=allow_postprocess)
             is_a_compressed, compression = is_compressed_dicom(
                 filename,
                 allow_dir=allow_dir,
@@ -456,12 +476,12 @@ def fill_from_dicom(
             ''),
         'date': (
             'StudyDate',
-             lambda t, f: time.strftime(f, get_date(t)),
-             '%Y-%m-%d'),
+            lambda t, f: time.strftime(f, get_date(t)),
+            '%Y-%m-%d'),
         'time': (
             'StudyTime',
-             lambda t, f: time.strftime(f, get_time(t)),
-             '%H-%M'),
+            lambda t, f: time.strftime(f, get_time(t)),
+            '%H-%M'),
         'name': (
             'PatientName',
             lambda t, f:
@@ -471,7 +491,7 @@ def fill_from_dicom(
             'StationName',
             lambda t, f: STATION[t] if f == 'mpicbs' and t in STATION else t,
             'mpicbs'),
-        }
+    }
 
     filename = os.path.basename(filepath)
     temp_filepath = os.path.join(tmp_path, filename)
@@ -558,8 +578,8 @@ def get_duration_sec(text):
     time_sec = 0.0
     # parse remaining string (should be: ss.msec|mm:ss|hh:mm:ss)
     if ':' in text:
-        for idx, val in enumerate(text.split(':')[::-1]):
-            time_sec += float(val) * 60 ** idx
+        for i, val in enumerate(text.split(':')[::-1]):
+            time_sec += float(val) * 60 ** i
     else:
         time_sec += float(text)
     # apply multipliers
@@ -606,22 +626,22 @@ def group_series(
                     print('WW: failed processing \'{}\''.format(src_dcm))
             else:
                 is_acquisition = DCM_ID['TA'] in dcm \
-                    and 'AcquisitionDate' in dcm \
-                    and 'AcquisitionTime' in dcm \
-                    and 'ProtocolName' in dcm
+                                 and 'AcquisitionDate' in dcm \
+                                 and 'AcquisitionTime' in dcm \
+                                 and 'ProtocolName' in dcm
                 is_report = 'SeriesDescription' in dcm \
-                    and not DCM_ID['pixel_data'] in dcm
+                            and not DCM_ID['pixel_data'] in dcm
                 if is_acquisition:
                     curr_time = get_datetime_sec(
                         dcm.AcquisitionDate + dcm.AcquisitionTime)
                     curr_prot_name = dcm.ProtocolName
                     is_new_group = (curr_time - last_time > GRACE_PERIOD) or \
-                        (curr_prot_name != last_prot_name)
+                                   (curr_prot_name != last_prot_name)
                     if is_new_group:
                         group_id = INFO_SEP.join(
                             (PREFIX_ID['acq'] + '{:0{size}d}'.format(
-                            group_num, size=D_NUM_DIGITS),
-                            dcm.ProtocolName))
+                                group_num, size=D_NUM_DIGITS),
+                             dcm.ProtocolName))
                         if group_id not in groups_dict:
                             groups_dict[group_id] = []
                         group_num += 1
@@ -647,13 +667,20 @@ def group_series(
 # ======================================================================
 def dcm_sources(dirpath):
     """
-    Create source list dictionary from files in dirpath.
+    Create sources dictionary from files in dirpath.
+
+    Args:
+        dirpath (str): The path to the directory
+
+    Returns:
+        (dict):
     """
     sources_dict = {}
     for src_id in sorted(os.listdir(dirpath)):
         src_dirpath = os.path.join(dirpath, src_id)
         if os.path.isdir(src_dirpath):
-            sources_dict[src_id] = [os.path.join(src_dirpath, filename)
+            sources_dict[src_id] = [
+                os.path.join(src_dirpath, filename)
                 for filename in sorted(os.listdir(src_dirpath))]
     return sources_dict
 
@@ -663,6 +690,13 @@ def dcm_dump(
         dcm,
         mask=DICOM_BINARY):
     """
+
+
+    Args:
+        dcm:
+        mask:
+
+    Returns:
 
     """
     dump = {}

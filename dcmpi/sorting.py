@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
+Sort DICOM files for serie and acquisition (saving results to summary file).
 
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Process DICOM files contained in a base directory and move them to new
+subfolders generated from serial number and protocol name.
+Additionally, group them according to acquisition and save grouping in the
+newly created summary file.
+Note: assumes DICOM files to be sorted.
 """
+
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
 #
@@ -35,7 +38,7 @@ from __future__ import unicode_literals
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -82,29 +85,22 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
-        in_dirpath,
-        out_dirpath,
-        method='pydicom',
-        type_ext=False,
+def sorting(
+        dirpath,
+        summary=None,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
+    Sort DICOM files for serie and acquisition. Save results to summary file.
 
     Parameters
     ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
-    method : str (optional)
-        | Extraction method. Accepted values:
-        * pydicom: Use PyDICOM Python module.
-    type_ext : boolean (optional)
-        Add type extension to filename.
+    dirpath : str
+        Path where to operate.
+    summary : str
+        File name or path where to save grouping summary.
     force : boolean (optional)
-        Force new processing.
+        Force calculation of output.
     verbose : int (optional)
         Set level of verbosity.
 
@@ -112,45 +108,51 @@ def get_prot(
     =======
     None.
 
+    See Also
+    ========
+    dcmlib.group_series, dcmlib.dcm_sources
+
     """
+    # :: group dicom files according to serie number
     if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
-    # proceed only if output is not likely to be there
-    if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
-        if not os.path.exists(out_dirpath):
-            os.makedirs(out_dirpath)
-        if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
-                out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
-                else:
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
+        print('Sort:\t{}'.format(dirpath))
+    input_list_dict = {}
+    for in_filename in sorted(os.listdir(dirpath)):
+        in_filepath = os.path.join(dirpath, in_filename)
+        try:
+            dcm = pydcm.read_file(in_filepath)
+        except IOError:
+            if verbose >= VERB_LVL['debug']:
+                print('WW: failed processing \'{}\''.format(in_filepath))
+        except:
+            if verbose > VERB_LVL['low']:
+                print('WW: failed processing \'{}\''.format(in_filepath))
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
-    else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+            src_id = dcmlib.INFO_SEP.join(
+                (dcmlib.PREFIX_ID['series'] + '{:0{size}d}'.format(
+                    dcm.SeriesNumber, size=dcmlib.D_NUM_DIGITS),
+                dcm.SeriesDescription))
+            if src_id not in input_list_dict:
+                input_list_dict[src_id] = []
+            input_list_dict[src_id].append(in_filepath)
+    # :: move dicom files to serie number folder
+    for src_id, sources in sorted(input_list_dict.items()):
+        out_subdirpath = os.path.join(dirpath, src_id)
+        if not os.path.exists(out_subdirpath) or force:
+            if not os.path.exists(out_subdirpath):
+                os.makedirs(out_subdirpath)
+            for in_filepath in sources:
+                out_filepath = os.path.join(
+                    out_subdirpath, os.path.basename(in_filepath))
+                shutil.move(in_filepath, out_filepath)
+    if summary:
+        summary_dirpath = os.path.dirname(summary)
+        if summary_dirpath:
+            if not os.path.exists(summary_dirpath):
+                os.makedirs(os.path.dirname(summary))
+        else:
+            summary = os.path.join(dirpath, summary)
+        dcmlib.group_series(dirpath, summary, force, verbose)
 
 
 # ======================================================================
@@ -162,11 +164,9 @@ def handle_arg():
     # verbosity
     d_verbose = D_VERB_LVL
     # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'pydicom'
+    d_dirpath = '.'
+    # default summary
+    d_summary_filename = dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -192,42 +192,31 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
-        default=d_input_dir,
-        help='set input directory [%(default)s]')
+        '-s', '--summary',
+        default=d_summary_filename,
+        help='set expt. summary filepath (empty to skip) [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
-        default=d_output_dir,
-        help='set output directory [%(default)s]')
-    arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
-    arg_parser.add_argument(
-        '-t', '--type_ext',
-        action='store_true',
-        help='add type extension [%(default)s]')
+        '-d', '--dirpath', metavar='DIR',
+        default=d_dirpath,
+        help='set i/o directory path [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
 if __name__ == '__main__':
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    sorting(args.dirpath, args.summary, args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))

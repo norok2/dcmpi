@@ -31,7 +31,6 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
-import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -54,24 +53,23 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.lib.base as mrb
-# import mri_tools.lib.utils as mru
-# import mri_tools.lib.nifti as mrn
-# import mri_tools.lib.geom_mask as mrgm
-# import mri_tools.lib.mp2rage as mp2rage
+# import mri_tools.modules.base as mrb
+# import mri_tools.modules.utils as mru
+# import mri_tools.modules.nifti as mrn
+# import mri_tools.modules.geometry as mrg
+# from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
+import dcmpi.common as dcmlib
 from dcmpi.get_nifti import get_nifti
+from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
-from dcmpi.get_info import get_info
-from dcmpi.report import report
 from dcmpi.backup import backup
-import dcmpi.lib.common as dcmlib
+from dcmpi.report import report
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi import _firstline
 
 
 # ======================================================================
@@ -131,7 +129,7 @@ def handle_arg():
     # default input directory
     d_input_dir = '.'
     # default output directory
-    d_output_dir = '/scr/isar3/raw_data/siemens/'
+    d_output_dir = '/nobackup/isar3/raw_data/siemens/'
     # default subpaths
     d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
     d_nii_subdir = dcmlib.ID['nifti']
@@ -150,7 +148,8 @@ def handle_arg():
     arg_parser.add_argument(
         '--ver', '--version',
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'], _firstline(__doc__),
+            INFO['version'],
+            next(line for line in __doc__.splitlines() if line),
             INFO['copyright'], ', '.join(INFO['authors']),
             INFO['notice']),
         action='version')
@@ -164,11 +163,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='INPUT_DIR',
+        '-i', '--input', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='OUTPUT_DIR',
+        '-o', '--output', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(

@@ -1,28 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
+Extract metadata information from DICOM files and save to text files.
 
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Note: metadata information are not easy to parse.
 """
-
-#    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 
 # ======================================================================
 # :: Future Imports
@@ -31,11 +13,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -47,7 +28,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
-# import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -82,15 +63,15 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
+def get_meta(
         in_dirpath,
         out_dirpath,
-        method='pydicom',
+        method='isis',
         type_ext=False,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
+    Extract metadata information from DICOM files and save to text files.
 
     Parameters
     ==========
@@ -100,7 +81,9 @@ def get_prot(
         Path to output directory.
     method : str (optional)
         | Extraction method. Accepted values:
+        * isis: Use Enrico Reimer's ISIS tool.
         * pydicom: Use PyDICOM Python module.
+        * strings: Use POSIX 'string' command.
     type_ext : boolean (optional)
         Add type extension to filename.
     force : boolean (optional)
@@ -114,43 +97,74 @@ def get_prot(
 
     """
     if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
+        print(':: Exporting METADATA information ({})...'.format(method))
     if verbose > VERB_LVL['none']:
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
     sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
+    # groups_dict = dcmlib.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
+        # :: create output directory if not exists and copy files there
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
-        if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
+
+        if method == 'isis':
+            for src_id, in_filepath_list in sorted(sources_dict.items()):
+                in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
+                    out_dirpath, src_id + '.' + dcmlib.ID['meta'])
                 out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
-                else:
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
+                if verbose > VERB_LVL['none']:
+                    out_subpath = out_filepath[len(out_dirpath):]
+                    print('Metadata:\t{}'.format(out_subpath))
+                opts = ' -np'  # do not include progress bar
+                opts += ' -rdialect withExtProtocols'  # extended prot info
+                opts += ' -chunks'  # information from each chunk
+                # cmd = 'isisdump -in {} {}'.format(in_filepath, opts)
+                # p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                cmd = 'isisdump -in {} {} > {} &> {}'.format(
+                    in_filepath, opts, out_filepath, out_filepath)
+                dcmlib.execute(cmd, use_pipes=False, verbose=verbose)
+
+        elif method == 'pydicom':
+            for src_id, in_filepath_list in sorted(sources_dict.items()):
+                out_filepath = os.path.join(
+                    out_dirpath, src_id + '.' + dcmlib.ID['meta'])
+                out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
+                info_dict = {}
+                for in_filepath in in_filepath_list:
+                    try:
+                        dcm = pydcm.read_file(in_filepath)
+                    except:
+                        print("EE: failed processing '{}'".format(in_filepath))
+                    else:
+                        dcm_dict = dcmlib.dcm_dump(dcm)
+                        info_dict = dcmlib.dcm_merge_info(info_dict, dcm_dict)
+                if verbose > VERB_LVL['none']:
+                    out_subpath = out_filepath[len(out_dirpath):]
+                    print('Meta:\t{}'.format(out_subpath))
+                with open(out_filepath, 'w') as info_file:
+                    json.dump(info_dict, info_file, sort_keys=True, indent=4)
+
+        elif method == 'dcm_dump':
+            # TODO: implement meaningful super-robust string method.
+            if verbose > VERB_LVL['none']:
+                print('WW: Method \'{}\' not implemented yet.')
+
+        elif method == 'strings':
+            # TODO: implement meaningful super-robust string method.
+            if verbose > VERB_LVL['none']:
+                print('WW: Method \'{}\' not implemented yet.')
+
         else:
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))
     else:
         if verbose > VERB_LVL['none']:
             print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+                  "Use 'force' argument to override.")
 
 
 # ======================================================================
@@ -211,23 +225,28 @@ def handle_arg():
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    get_meta(
+        args.input, args.output,
+        args.method, args.type_ext,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

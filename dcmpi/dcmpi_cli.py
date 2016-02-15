@@ -1,28 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
-
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Extract and preprocess DICOM files from a single session.
 """
-
-#    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 
 # ======================================================================
 # :: Future Imports
@@ -31,14 +11,16 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import sys  # System-specific parameters and functions
+# import shutil  # High-level file operations
+# import platform  # Access to underlying platform’s identifying data
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
+# import re  # Regular expression operations
 # import operator  # Standard operators as functions
 # import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and sub-commands
@@ -47,7 +29,6 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
-# import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -59,7 +40,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -75,82 +56,64 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
+from dcmpi.import_sources import import_sources
+from dcmpi.sorting import sorting
 import dcmpi.common as dcmlib
+from dcmpi.get_nifti import get_nifti
+from dcmpi.get_info import get_info
+from dcmpi.get_prot import get_prot
+from dcmpi.get_meta import get_meta
+from dcmpi.backup import backup
+from dcmpi.report import report
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
+def dcmpi(
         in_dirpath,
         out_dirpath,
-        method='pydicom',
-        type_ext=False,
+        subpath='[study]/[name]_[date]_[time]_[sys]/dcm',
+        nii_subdir=dcmlib.ID['nifti'],
+        meta_subdir=dcmlib.ID['meta'],
+        prot_subdir=dcmlib.ID['prot'],
+        info_subdir=dcmlib.ID['info'],
+        report_subdir=dcmlib.ID['report'],
+        backup_subdir=dcmlib.ID['backup'],
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
-
-    Parameters
-    ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
-    method : str (optional)
-        | Extraction method. Accepted values:
-        * pydicom: Use PyDICOM Python module.
-    type_ext : boolean (optional)
-        Add type extension to filename.
-    force : boolean (optional)
-        Force new processing.
-    verbose : int (optional)
-        Set level of verbosity.
-
-    Returns
-    =======
-    None.
-
+    Standard preprocessing of DICOM files.
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
-    # proceed only if output is not likely to be there
-    if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
-        if not os.path.exists(out_dirpath):
-            os.makedirs(out_dirpath)
-        if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
-                out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
-                else:
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
-        else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
-    else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+    subdirs = (
+        nii_subdir, meta_subdir, prot_subdir, info_subdir, report_subdir,
+        backup_subdir)
+    # core actions (import and sort)
+    dcm_dirpaths = import_sources(
+        in_dirpath, out_dirpath, False, subpath, force, verbose)
+    for dcm_dirpath in dcm_dirpaths:
+        base_dirpath = os.path.dirname(dcm_dirpath)
+        sorting(
+            dcm_dirpath, dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT,
+            force, verbose)
+        # optional actions
+        actions = [(a, d) for a, d in zip(dcmlib.D_ACTIONS, subdirs)
+                   if d.strip()]
+        for action, subdir in actions:
+            i_dirpath = dcm_dirpath if action[0] != 'report' else \
+                os.path.join(base_dirpath, info_subdir)
+            o_dirpath = os.path.join(base_dirpath, subdir)
+            if verbose >= VERB_LVL['debug']:
+                print('II:  input dir: {}'.format(i_dirpath))
+                print('II: output dir: {}'.format(o_dirpath))
+            func, params = action
+            func = globals()[func]
+            params = [(vars()[par[2:]] if str(par).startswith('::') else par)
+                      for par in params]
+            if verbose >= VERB_LVL['debug']:
+                print('DBG: {}'.format(params))
+            func(*params, force=force, verbose=verbose)
 
 
 # ======================================================================
@@ -164,9 +127,15 @@ def handle_arg():
     # default input directory
     d_input_dir = '.'
     # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'pydicom'
+    d_output_dir = '/nobackup/isar3/raw_data/siemens/'
+    # default subpaths
+    d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
+    d_nii_subdir = dcmlib.ID['nifti']
+    d_meta_subdir = dcmlib.ID['meta']
+    d_prot_subdir = dcmlib.ID['prot']
+    d_info_subdir = dcmlib.ID['info']
+    d_report_subdir = dcmlib.ID['report']
+    d_backup_subdir = dcmlib.ID['backup']
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -200,34 +169,60 @@ def handle_arg():
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
+        '-s', '--subpath',
+        default=d_subpath,
+        help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
-        '-t', '--type_ext',
-        action='store_true',
-        help='add type extension [%(default)s]')
+        '-n', '--nii_subdir',
+        default=d_nii_subdir,
+        help='Subdir for NIfTI extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-m', '--meta_subdir',
+        default=d_meta_subdir,
+        help='Subdir for META extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-p', '--prot_subdir',
+        default=d_prot_subdir,
+        help='Subdir for PROT extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-t', '--info_subdir',
+        default=d_info_subdir,
+        help='Subdir for INFO extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-r', '--report_subdir',
+        default=d_report_subdir,
+        help='Subdir for report generation. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-b', '--backup_subdir',
+        default=d_backup_subdir,
+        help='Subdir for backup. Empty to skip [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    dcmpi(
+        args.input, args.output, args.subpath,
+        args.nii_subdir, args.meta_subdir, args.prot_subdir, args.info_subdir,
+        args.report_subdir, args.backup_subdir,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()

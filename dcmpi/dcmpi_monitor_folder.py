@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
-
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Monitor folder for creation of new DICOM folder.
 """
+
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
 #
@@ -35,16 +32,21 @@ from __future__ import unicode_literals
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import sys  # System-specific parameters and functions
+# import shutil  # High-level file operations
+# import platform  # Access to underlying platform’s identifying data
+# import locale  # Internationalization services
 # import math  # Mathematical functions
+import random  # Generate pseudo-random numbers
 import time  # Time access and conversions
 import datetime  # Basic date and time types
+# import re  # Regular expression operations
 # import operator  # Standard operators as functions
 # import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and sub-commands
 # import itertools  # Functions creating iterators for efficient looping
 # import functools  # Higher-order functions and operations on callable objects
-# import subprocess  # Subprocess management
+import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 # import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
@@ -59,7 +61,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -82,75 +84,64 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
-        in_dirpath,
-        out_dirpath,
-        method='pydicom',
-        type_ext=False,
+def monitor_folder(
+        cmd,
+        dirpath,
+        delay,
+        check,
+        on_added=True,
+        max_count=0,
+        delay_variance=0,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
-
-    Parameters
-    ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
-    method : str (optional)
-        | Extraction method. Accepted values:
-        * pydicom: Use PyDICOM Python module.
-    type_ext : boolean (optional)
-        Add type extension to filename.
-    force : boolean (optional)
-        Force new processing.
-    verbose : int (optional)
-        Set level of verbosity.
-
-    Returns
-    =======
-    None.
-
+    Monitor changes in a dir and execute a command upon verify some condition.
     """
+    def list_dirs(dirpath):
+        return [d for d in os.listdir(dirpath)
+            if os.path.isdir(os.path.join(dirpath, d))]
+
+    sec_in_min = 60
+
+    loop = True
+    count = 0
+    old_dirs = list_dirs(dirpath)
     if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
-    # proceed only if output is not likely to be there
-    if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
-        if not os.path.exists(out_dirpath):
-            os.makedirs(out_dirpath)
-        if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
-                out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
-                else:
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
-        else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
-    else:
+        print('Watch:\t{}'.format(dirpath))
+    while loop:
+        new_dirs = list_dirs(dirpath)
+        removed_dirs = [d for d in old_dirs if d not in new_dirs]
+        added_dirs = [d for d in new_dirs if d not in old_dirs]
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S %Z', time.localtime())
+        randomized = (random.random() * 2 - 1) * delay_variance \
+            if delay_variance else 0
+        sleep_delay = (delay + randomized) * sec_in_min
         if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+            if removed_dirs:
+                msg = '{}  --  {}'.format(timestamp, removed_dirs)
+                print(dcmlib.tty_colorify(msg, 'r'))
+            if added_dirs:
+                msg = '{}  ++  {}'.format(timestamp, added_dirs)
+                print(dcmlib.tty_colorify(msg, 'g'))
+        if verbose > VERB_LVL['none'] and not removed_dirs and not added_dirs:
+            msg = 'All quiet on the western front'
+            next_check = time.strftime(
+                '%H:%M:%S', time.localtime(time.time() + sleep_delay))
+            print('{}      {} (next check in ~{} min, at {})'.format(
+                timestamp, msg, int(delay + randomized), next_check))
+        delta_dirs = added_dirs if on_added else removed_dirs
+        for delta in delta_dirs:
+            delta_dirpath = os.path.join(dirpath, delta)
+            if check and check(delta_dirpath):
+                cmd = cmd.format(delta_dirpath)
+                subprocess.call(cmd, shell=True)
+                count += 1
+        time.sleep(sleep_delay)
+        if max_count > 0 and max_count < count:
+            loop = False
+        else:
+            old_dirs = new_dirs
+            loop = True
 
 
 # ======================================================================
@@ -161,12 +152,14 @@ def handle_arg():
     # :: Define DEFAULT values
     # verbosity
     d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'pydicom'
+    # default working directory
+    d_dir = '.'
+    # default delay in min
+    d_delay = 60  # 1 hour
+    # default randomized delay variance in min
+    d_delay_variance = 5
+    # default command
+    d_cmd = os.path.dirname(__file__) + '/dcm_analyze_dir.py {}'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -192,42 +185,49 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
-        default=d_input_dir,
-        help='set input directory [%(default)s]')
+        '-d', '--dir', metavar='DIR',
+        default=d_dir,
+        help='set working directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
-        default=d_output_dir,
-        help='set output directory [%(default)s]')
+        '-l', '--delay', metavar='VAL',
+        type=float, default=d_delay,
+        help='set checking interval in min [%(default)s]')
     arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
+        '-r', '--delay_var', metavar='VAL',
+        type=float, default=d_delay_variance,
+        help='set random variance in the delay in min [%(default)s]')
     arg_parser.add_argument(
-        '-t', '--type_ext',
-        action='store_true',
-        help='add type extension [%(default)s]')
+        '-m', '--max_count', metavar='NUM',
+        type=int, default=d_delay,
+        help='maximum number of actions to be performed [%(default)s]')
+    arg_parser.add_argument(
+        '-c', '--cmd', metavar='EXECUTABLE',
+        default=d_cmd,
+        help='execute when finding a new dir with DICOMs [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
 if __name__ == '__main__':
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    monitor_folder(
+        args.cmd,
+        args.dir, args.delay,
+        lambda x: dcmlib.find_a_dicom(x)[0],
+        True,
+        args.max_count, args.delay_var,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))

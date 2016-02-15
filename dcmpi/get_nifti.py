@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract protocol from DICOM files and store it as text files.
-
-Note: specifically extract sequence protocol as stored by Siemens in their
-custom-made 'CSA Series Header Info' DICOM metadata.
-This information is relatively easy to parse.
+Extract images from DICOM files and store them as NIfTI images.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -31,11 +27,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-#import shutil  # High-level file operations
+# import shutil  # High-level file operations
 # import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
@@ -59,7 +54,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -82,15 +77,16 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def get_prot(
+def get_nifti(
         in_dirpath,
         out_dirpath,
-        method='pydicom',
-        type_ext=False,
+        method='dcm2nii',
+        compressed=True,
+        merged=True,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Extract protocol information from DICOM files and store them as text files.
+    Extract images from DICOM files and store them as NIfTI images.
 
     Parameters
     ==========
@@ -100,9 +96,12 @@ def get_prot(
         Path to output directory.
     method : str (optional)
         | Extraction method. Accepted values:
-        * pydicom: Use PyDICOM Python module.
-    type_ext : boolean (optional)
-        Add type extension to filename.
+        * isis: Use Enrico Reimer's ISIS tool.
+        * dcm2nii: Use Chris Rorden's dcm2nii tool.
+    compressed : boolean (optional)
+        Produce compressed images (using GZip).
+    merged : boolean (optional)
+        Produce merged images (in the 4th dimension, usually time).
     force : boolean (optional)
         Force new processing.
     verbose : int (optional)
@@ -114,43 +113,88 @@ def get_prot(
 
     """
     if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
+        print(':: Exporting NIfTI images ({})...'.format(method))
     if verbose > VERB_LVL['none']:
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
-        # :: create output directory if not exists and extract protocol
+        # :: create output directory if not exists and extract images
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
+        sources_dict = dcmlib.dcm_sources(in_dirpath)
+        d_ext = '.' + dcmlib.NIZ_EXT if compressed else dcmlib.NII_EXT
+        # :: extract nifti
         if method == 'pydicom':
-            for group_id, group in sorted(groups_dict.items()):
-                in_filepath = sources_dict[group[0]][0]
-                out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
-                try:
-                    dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
-                except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
-                else:
+            for src_id in sorted(sources_dict.iterkeys()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+            # TODO: implement to avoid dependencies
+            if verbose > VERB_LVL['low']:
+                print('WW: Pure Python method not implemented.')
+
+        if method == 'isis':
+            for src_id in sorted(sources_dict.iterkeys()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+                out_filepath = os.path.join(out_dirpath, src_id + d_ext)
+                cmd = 'isisconv -in {} -out {}'.format(
+                    in_filepath, out_filepath)
+                p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                if verbose >= VERB_LVL['debug']:
+                    print(p_stdout)
+                    print(p_stderr)
+                if merged:
+                    if verbose > VERB_LVL['low']:
+                        print('WW: (isisconv) merging after not implemented.')
+                        # TODO: implement volume merging
+
+        elif method == 'dcm2nii':
+            for src_id in sorted(sources_dict.iterkeys()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+                # produce nifti file
+                opts = ' -t n'
+                opts += ' -p n -i n -f n -d n -e y'  # influences the filename
+                opts += ' -4 ' + 'y' if merged else 'n'
+                opts += ' -g ' + 'y' if compressed else 'n'
+                cmd = 'dcm2nii {} -o {} {}'.format(
+                    opts, out_dirpath, in_filepath)
+                p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                if verbose >= VERB_LVL['debug']:
+                    print(p_stdout)
+                    print(p_stderr)
+                term_str = str('GZip...') if compressed else str('Saving ')
+                # parse result
+                old_name_list = []
+                for line in p_stdout.split('\n'):
+                    if term_str in str(line):
+                        old_name = line[line.find(term_str) + len(term_str):]
+                        old_name_list.append(old_name)
+                if len(old_name_list) == 1:
+                    old_filepath = os.path.join(out_dirpath, old_name_list[0])
+                    out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                     if verbose > VERB_LVL['none']:
                         out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
-                    with open(out_filepath, 'w') as prot_file:
-                        prot_file.write(prot_str)
+                        print('NIfTI:\t{}'.format(out_subpath))
+                    os.rename(old_filepath, out_filepath)
+
+                else:
+                    for num, old_name in enumerate(old_name_list):
+                        old_filepath = os.path.join(out_dirpath, old_name)
+                        out_filepath = os.path.join(
+                            out_dirpath,
+                            src_id + dcmlib.INFO_SEP + str(num + 1) + d_ext)
+                        if verbose > VERB_LVL['none']:
+                            out_subpath = out_filepath[len(out_dirpath):]
+                            print('NIfTI:\t{}'.format(out_subpath))
+                        os.rename(old_filepath, out_filepath)
+
         else:
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))
     else:
         if verbose > VERB_LVL['none']:
             print("II: Output path exists. Skipping. " +
-                "Use 'force' argument to override.")
+                  "Use 'force' argument to override.")
 
 
 # ======================================================================
@@ -166,7 +210,7 @@ def handle_arg():
     # default output directory
     d_output_dir = '.'
     # default method
-    d_method = 'pydicom'
+    d_method = 'dcm2nii'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -204,30 +248,39 @@ def handle_arg():
         default=d_method,
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-        '-t', '--type_ext',
+        '-u', '--uncompressed',
+        action='store_false',
+        help='compress output NIfTI images [%(default)s]')
+    arg_parser.add_argument(
+        '-p', '--separated',
         action='store_true',
-        help='add type extension [%(default)s]')
+        help='merge timeline series [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
-if __name__ == '__main__':
+def main():
     # :: handle program parameters
-    ARG_PARSER = handle_arg()
-    ARGS = ARG_PARSER.parse_args()
+    arg_parser = handle_arg()
+    args = arg_parser.parse_args()
     # :: print debug info
-    if ARGS.verbose == VERB_LVL['debug']:
-        ARG_PARSER.print_help()
+    if args.verbose == VERB_LVL['debug']:
+        arg_parser.print_help()
         print()
-        print('II:', 'Parsed Arguments:', ARGS)
+        print('II:', 'Parsed Arguments:', args)
     print(__doc__)
     begin_time = time.time()
 
-    get_prot(
-        ARGS.input, ARGS.output,
-        ARGS.method, ARGS.type_ext,
-        ARGS.force, ARGS.verbose)
+    get_nifti(
+        args.input, args.output,
+        args.method, not args.uncompressed, not args.separated,
+        args.force, args.verbose)
 
     end_time = time.time()
-    if ARGS.verbose > VERB_LVL['low']:
+    if args.verbose > VERB_LVL['low']:
         print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+
+
+# ======================================================================
+if __name__ == '__main__':
+    main()
