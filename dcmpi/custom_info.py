@@ -85,11 +85,10 @@ SIEMENS_PROT = {
         '0x4': 'SENSE',
     },
     'coil_combine_mode': {
-        '0x01': 'Adaptive',
-        '0x02': 'SumOfSquares',
+        '0x1': 'Adaptive',
+        '0x2': 'SumOfSquares',
     },
 }
-
 
 # ======================================================================
 # :: Generic session information to be extracted
@@ -307,21 +306,22 @@ def get_sequence_info(info, prot):
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
                               for n in x[:p[0]]], (
-                    prot[
-                        'lContrasts'] if 'lContrasts' in prot else None,
+                    prot['lContrasts'] if 'lContrasts' in prot else None,
                     prot['sKSpace.lBaseResolution']
                     if 'sKSpace.lBaseResolution' in prot else None)),
             # :: Dwell Time
             'DwellTime::ns': (
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [n[1] for n in x[:p]],
-                prot[
-                    'lContrasts'] if 'lContrasts' in prot else None),
+                prot['lContrasts'] if 'lContrasts' in prot else None),
             # :: Coil Combine Mode
             'CoilCombineMode': (
                 'ucCoilCombineMode',
                 lambda x, p: p[x] if x in p else x,
                 SIEMENS_PROT['coil_combine_mode']),
+            # :: WiP parameters (useful for DEBUG)
+            # 'WipD': ('sWiPMemBlock.adFree[]', None, None),
+            # 'WipL': ('sWiPMemBlock.alFree[]', None, None),
         },
 
         # :: Phoenix ZIP Report
@@ -368,20 +368,35 @@ def get_sequence_info(info, prot):
     seq_bot['mt_flash_sah'] = {
         key: val for key, val in seq_bot['generic'].items()}
     seq_bot['mt_flash_sah'].update({
-        'MtPulseFreq::Hz': (
-            'sTXSPEC.asNucleusInfo[].lFrequency', None, None),
+        'MtPulseCarrierFreq::Hz': (
+            'sTXSPEC.asNucleusInfo[].lFrequency',
+            lambda x, p: x[0][1], None),
         'MtPulseFlipAngle::deg': (
-            'sWipMemBlock.alFree[]', lambda x, p: x[0], None),
+            'sWiPMemBlock.alFree[]',
+            lambda x, p: x[0][1] if len(p) > 2 else None,
+            prot['sWiPMemBlock.alFree[]'] if 'sWiPMemBlock.alFree[]' in prot
+            else None),
         'MtPulseFreqOffset::Hz': (
-            'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
+            'sWiPMemBlock.alFree[]',
+            lambda x, p: x[1][1] if len(p) > 2 else None,
+            prot['sWiPMemBlock.alFree[]'] if 'sWiPMemBlock.alFree[]' in prot
+            else None),
         'MtPulseDuration::ms': (
-            'sWipMemBlock.alFree[]', lambda x, p: x[2] * 1e-3, None),
+            'sWiPMemBlock.alFree[]',
+            lambda x, p: x[2][1] * 1e-3 if len(p) > 2 else None,
+            prot['sWiPMemBlock.alFree[]'] if 'sWiPMemBlock.alFree[]' in prot
+            else None),
         'MtPulseSpoilingParameters': (
-            'sWipMemBlock.alFree[]', lambda x, p: x[0, 2, 3], None),
+            'sWiPMemBlock.adFree[]',
+            lambda x, p: [x[i][1] for i in (0, 2, 3)] if len(p) > 2 else None,
+            prot['sWiPMemBlock.alFree[]'] if 'sWiPMemBlock.alFree[]' in prot
+            else None),
         'FftScaleFactor': (
-            'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
+            'sWipMemBlock.adFree[]',
+            lambda x, p: x[0][1] if len(p) > 2 else None,
+            prot['sWiPMemBlock.alFree[]'] if 'sWiPMemBlock.alFree[]' in prot
+            else None),
     })
-
     seq_id = identify_sequence(info, prot)
     if seq_id not in seq_bot:
         seq_id = 'generic'

@@ -71,7 +71,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -87,7 +87,7 @@ def get_session(dirpath, summary):
         ('BeginTime',
          lambda t: time.strftime('%H-%M', time.strptime(t, '%H:%M:%S'))),
         ('StationName',
-         lambda t: dcmlib.STATION[t] if t in dcmlib.STATION else t),
+         lambda t: dpc.STATION[t] if t in dpc.STATION else t),
         ('StudyDescription',
          lambda t: t),
     )
@@ -99,7 +99,7 @@ def get_session(dirpath, summary):
         for key, func in fields:
             info.append(func(summary[key]))
 
-        sample_id = dcmlib.INFO_SEP.join(info[:-1])
+        sample_id = dpc.INFO_SEP.join(info[:-1])
         study_id = info[-1]
     finally:
         result = '{} / {}'.format(sample_id, study_id)
@@ -153,7 +153,6 @@ def get_param(acq):
         (lambda x: 'Sequence' not in x),
         (lambda x: 'FieldOfView' not in x),
         (lambda x: 'MatrixSize' not in x),
-        (lambda x: 'AngleInPlane' not in x),
         (lambda x: 'AngleNormalTo' not in x),
         (lambda x: 'CenterPosition' not in x),
         (lambda x: 'ParallelAcquisitionTechnique' not in x),
@@ -180,7 +179,7 @@ def get_param(acq):
     # position information
     pos_params = (
         'CenterPositionCoronal::mm', 'CenterPositionSagittal::mm',
-        'CenterPositionTransverse::mm', 'AngleInPlane::deg',
+        'CenterPositionTransverse::mm', 'AngleNormalToSagittal::deg',
         'AngleNormalToCoronal::deg', 'AngleNormalToTransverse::deg')
     report['Position'] = json.dumps([acq[key] for key in pos_params])
     # parallel acquisition technique
@@ -262,7 +261,7 @@ def report(
                             extra = json.load(target_file)
                         elif name.startswith('a'):
                             acquisitions.append((
-                                name[:name.find(dcmlib.INFO_SEP)],
+                                name[:name.find(dpc.INFO_SEP)],
                                 json.load(target_file)))
             except:
                 if verbose > VERB_LVL['none']:
@@ -300,7 +299,7 @@ def report(
                     '[ACQ-TIME]': acq['AcquisitionTime'],
                     '[ACQ-PROTOCOL]': acq['ProtocolName'],
                     '[ACQ-SERIES]':
-                        ', '.join([series[:series.find(dcmlib.INFO_SEP)]
+                        ', '.join([series[:series.find(dpc.INFO_SEP)]
                                    for series in acq['_series']]),
                     '[ACQUISITION-PARAMETER-TEMPLATE]': acq_param_html,
                 }
@@ -384,7 +383,7 @@ def report(
                 )
                 cmd = 'wkhtmltopdf {} {} {}'.format(
                     ' '.join(opts), html_filepath, pdf_filepath)
-                p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
                 if verbose >= VERB_LVL['debug']:
                     print(p_stdout)
                     print(p_stderr)
