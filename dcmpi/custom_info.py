@@ -381,7 +381,11 @@ def get_sequence_info(info, prot):
         'FftScaleFactor': (
             'sWipMemBlock.alFree[]', lambda x, p: x[1], None),
     })
-    return seq_bot[identify_sequence(info, prot)]
+
+    seq_id = identify_sequence(info, prot)
+    if seq_id not in seq_bot:
+        seq_id = 'generic'
+    return seq_bot[seq_id]
 
 
 # ======================================================================
@@ -394,7 +398,7 @@ def identify_sequence(info, prot):
         prot (dict): information extracted from the acquisition protocol
 
     Returns:
-        identified_sequence (str): sequence identifier
+        seq_id (str): sequence identifier
     """
     sequences_dict = {
         'phoenix_zip_report':
@@ -414,13 +418,13 @@ def identify_sequence(info, prot):
              prot['tSequenceFileName'] == '%CustomerSeq%\\nw_b1map3d_v4bkp'),
     }
 
-    identified_sequence = 'none' if not prot else 'generic'
-    for seq_id in sorted(sequences_dict.iterkeys()):
-        match = sequences_dict[seq_id]
+    seq_id = 'none' if not prot else 'generic'
+    for tmp_seq_id in sorted(sequences_dict.iterkeys()):
+        match = sequences_dict[tmp_seq_id]
         if match:
-            identified_sequence = seq_id
+            seq_id = tmp_seq_id
             break
-    return identified_sequence
+    return seq_id
 
 
 # ======================================================================
