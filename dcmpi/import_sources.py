@@ -73,7 +73,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -126,29 +126,28 @@ def import_sources(
 
     if verbose > VERB_LVL['none']:
         print(':: Importing sources...')
-    if verbose > VERB_LVL['none']:
         print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
+        if clean:
+            print('W: Files will be moved!')
     if os.path.exists(in_dirpath):
         # :: analyze directory tree
         dcm_dirpaths = set()
         for filepath in get_filepaths(in_dirpath):
             filename = os.path.basename(filepath)
-            is_dicom = dcmlib.is_dicom(
+            is_dicom = dpc.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
-            is_compressed, compression = dcmlib.is_compressed_dicom(
+            is_zipped, zip_method = dpc.is_compressed_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
-            if is_dicom or is_compressed and \
-                            compression in dcmlib.UNCOMPRESS_METHODS:
+            if is_dicom or is_zipped and zip_method in dpc.UNCOMPRESS_METHODS:
                 if subpath:
-                    dcm_subpath = dcmlib.fill_from_dicom(subpath, filepath)
+                    dcm_subpath = dpc.fill_from_dicom(subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
                     dcm_dirpath = out_dirpath

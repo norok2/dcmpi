@@ -44,7 +44,7 @@ D_VERB_LVL = VERB_LVL['low']
 
 # ======================================================================
 # Greetings
-MY_GREETINGS = """
+MY_GREETINGS = r"""
  ____   ____ __  __ ____ ___
 |  _ \ / ___|  \/  |  _ \_ _|
 | | | | |   | |\/| | |_) | |
@@ -53,7 +53,6 @@ MY_GREETINGS = """
 
 """
 # generated with: figlet 'DCMPI' -f standard
-# note: '\' characters need to be escaped (with another '\')
 
 # :: Causes the greetings to be printed any time the library is loaded.
 print(MY_GREETINGS)

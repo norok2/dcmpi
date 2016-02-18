@@ -781,8 +781,6 @@ def parse_protocol(src_str):
                 val.append((indexes, auto_convert(value, '""', '""')))
             else:
                 val = auto_convert(value, '""', '""')
-            # key = name
-            # val = value
             if key:
                 out_dict[key] = val
     return out_dict

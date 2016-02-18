@@ -58,7 +58,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # from mri_tools.modules.sequences import mp2rage
 from dcmpi.import_sources import import_sources
 from dcmpi.sorting import sorting
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
@@ -75,12 +75,12 @@ def dcmpi(
         in_dirpath,
         out_dirpath,
         subpath='[study]/[name]_[date]_[time]_[sys]/dcm',
-        nii_subdir=dcmlib.ID['nifti'],
-        meta_subdir=dcmlib.ID['meta'],
-        prot_subdir=dcmlib.ID['prot'],
-        info_subdir=dcmlib.ID['info'],
-        report_subdir=dcmlib.ID['report'],
-        backup_subdir=dcmlib.ID['backup'],
+        nii_subdir=dpc.ID['nifti'],
+        meta_subdir=dpc.ID['meta'],
+        prot_subdir=dpc.ID['prot'],
+        info_subdir=dpc.ID['info'],
+        report_subdir=dpc.ID['report'],
+        backup_subdir=dpc.ID['backup'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -95,10 +95,10 @@ def dcmpi(
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
         sorting(
-            dcm_dirpath, dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT,
+            dcm_dirpath, dpc.D_SUMMARY + '.' + dpc.JSON_EXT,
             force, verbose)
         # optional actions
-        actions = [(a, d) for a, d in zip(dcmlib.D_ACTIONS, subdirs)
+        actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
                    if d.strip()]
         for action, subdir in actions:
             i_dirpath = dcm_dirpath if action[0] != 'report' else \
@@ -121,21 +121,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '/nobackup/isar3/raw_data/siemens/'
-    # default subpaths
-    d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
-    d_nii_subdir = dcmlib.ID['nifti']
-    d_meta_subdir = dcmlib.ID['meta']
-    d_prot_subdir = dcmlib.ID['prot']
-    d_info_subdir = dcmlib.ID['info']
-    d_report_subdir = dcmlib.ID['report']
-    d_backup_subdir = dcmlib.ID['backup']
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -153,7 +138,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -162,39 +147,39 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-i', '--input', metavar='DIR',
-        default=d_input_dir,
+        default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
         '-o', '--output', metavar='DIR',
-        default=d_output_dir,
+        default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-s', '--subpath',
-        default=d_subpath,
+        default='[study]/[name]_[date]_[time]_[sys]/dcm',
         help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
         '-n', '--nii_subdir',
-        default=d_nii_subdir,
+        default=dpc.ID['nifti'],
         help='Subdir for NIfTI extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-m', '--meta_subdir',
-        default=d_meta_subdir,
+        default=dpc.ID['meta'],
         help='Subdir for META extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-p', '--prot_subdir',
-        default=d_prot_subdir,
+        default=dpc.ID['prot'],
         help='Subdir for PROT extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-t', '--info_subdir',
-        default=d_info_subdir,
+        default=dpc.ID['info'],
         help='Subdir for INFO extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-r', '--report_subdir',
-        default=d_report_subdir,
+        default=dpc.ID['report'],
         help='Subdir for report generation. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-b', '--backup_subdir',
-        default=d_backup_subdir,
+        default=dpc.ID['backup'],
         help='Subdir for backup. Empty to skip [%(default)s]')
     return arg_parser
 

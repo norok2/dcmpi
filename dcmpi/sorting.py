@@ -76,7 +76,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -114,6 +114,7 @@ def sorting(
     # :: group dicom files according to serie number
     if verbose > VERB_LVL['none']:
         print('Sort:\t{}'.format(dirpath))
+    dirpath = os.path.realpath(dirpath)
     input_list_dict = {}
     for in_filename in sorted(os.listdir(dirpath)):
         in_filepath = os.path.join(dirpath, in_filename)
@@ -126,9 +127,9 @@ def sorting(
             if verbose > VERB_LVL['low']:
                 print('WW: failed processing \'{}\''.format(in_filepath))
         else:
-            src_id = dcmlib.INFO_SEP.join(
-                (dcmlib.PREFIX_ID['series'] + '{:0{size}d}'.format(
-                    dcm.SeriesNumber, size=dcmlib.D_NUM_DIGITS),
+            src_id = dpc.INFO_SEP.join(
+                (dpc.PREFIX_ID['series'] + '{:0{size}d}'.format(
+                    dcm.SeriesNumber, size=dpc.D_NUM_DIGITS),
                  dcm.SeriesDescription))
             if src_id not in input_list_dict:
                 input_list_dict[src_id] = []
@@ -150,7 +151,7 @@ def sorting(
                 os.makedirs(os.path.dirname(summary))
         else:
             summary = os.path.join(dirpath, summary)
-        dcmlib.group_series(dirpath, summary, force, verbose)
+        dpc.group_series(dirpath, summary, force, verbose)
 
 
 # ======================================================================
@@ -158,13 +159,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_dirpath = '.'
-    # default summary
-    d_summary_filename = dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -182,7 +176,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -191,11 +185,11 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-s', '--summary',
-        default=d_summary_filename,
+        default=dpc.D_SUMMARY + '.' + dpc.JSON_EXT,
         help='set expt. summary filepath (empty to skip) [%(default)s]')
     arg_parser.add_argument(
         '-d', '--dirpath', metavar='DIR',
-        default=d_dirpath,
+        default='.',
         help='set i/o directory path [%(default)s]')
     return arg_parser
 
