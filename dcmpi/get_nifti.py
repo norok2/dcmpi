@@ -70,7 +70,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -123,8 +123,8 @@ def get_nifti(
         # :: create output directory if not exists and extract images
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
-        sources_dict = dcmlib.dcm_sources(in_dirpath)
-        d_ext = '.' + dcmlib.NIZ_EXT if compressed else dcmlib.NII_EXT
+        sources_dict = dpc.dcm_sources(in_dirpath)
+        d_ext = '.' + dpc.NIZ_EXT if compressed else dpc.NII_EXT
         # :: extract nifti
         if method == 'pydicom':
             for src_id in sorted(sources_dict.iterkeys()):
@@ -139,7 +139,7 @@ def get_nifti(
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 cmd = 'isisconv -in {} -out {}'.format(
                     in_filepath, out_filepath)
-                p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
                 if verbose >= VERB_LVL['debug']:
                     print(p_stdout)
                     print(p_stderr)
@@ -158,17 +158,20 @@ def get_nifti(
                 opts += ' -g ' + 'y' if compressed else 'n'
                 cmd = 'dcm2nii {} -o {} {}'.format(
                     opts, out_dirpath, in_filepath)
-                p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
                 if verbose >= VERB_LVL['debug']:
                     print(p_stdout)
                     print(p_stderr)
-                term_str = str('GZip...') if compressed else str('Saving ')
+                term_str = 'GZip...' if compressed else 'Saving '
                 # parse result
                 old_name_list = []
                 for line in p_stdout.split('\n'):
-                    if term_str in str(line):
+                    if term_str in line:
                         old_name = line[line.find(term_str) + len(term_str):]
                         old_name_list.append(old_name)
+                if verbose >= VERB_LVL['debug']:
+                    print('Parsed names: ')
+                    print('\n'.join(old_name_list))
                 if len(old_name_list) == 1:
                     old_filepath = os.path.join(out_dirpath, old_name_list[0])
                     out_filepath = os.path.join(out_dirpath, src_id + d_ext)
@@ -176,13 +179,12 @@ def get_nifti(
                         out_subpath = out_filepath[len(out_dirpath):]
                         print('NIfTI:\t{}'.format(out_subpath))
                     os.rename(old_filepath, out_filepath)
-
                 else:
                     for num, old_name in enumerate(old_name_list):
                         old_filepath = os.path.join(out_dirpath, old_name)
                         out_filepath = os.path.join(
                             out_dirpath,
-                            src_id + dcmlib.INFO_SEP + str(num + 1) + d_ext)
+                            src_id + dpc.INFO_SEP + str(num + 1) + d_ext)
                         if verbose > VERB_LVL['none']:
                             out_subpath = out_filepath[len(out_dirpath):]
                             print('NIfTI:\t{}'.format(out_subpath))
@@ -249,7 +251,7 @@ def handle_arg():
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
         '-u', '--uncompressed',
-        action='store_false',
+        action='store_true',
         help='compress output NIfTI images [%(default)s]')
     arg_parser.add_argument(
         '-p', '--separated',
