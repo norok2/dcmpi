@@ -361,7 +361,8 @@ def report(
                 if val == 'N/A':
                     val = ''
                 report_html = report_html.replace(tag, val)
-            html_filename = 'report.html'  # better filename?
+            # todo: improve filename (e.g. from upper folder or recalculate)
+            html_filename = 'report' + '.html'
             if verbose > VERB_LVL['none']:
                 print('HTML:\t{}'.format(html_filename))
             html_filepath = os.path.join(out_dirpath, html_filename)

@@ -6,6 +6,7 @@ echo "\n :: Create change log..."
 CHANGELOG=CHANGELOG.txt
 echo -e "Change Log\n==========\n" > ${CHANGELOG}
 git log --oneline --decorate --graph >> ${CHANGELOG}
+echo "${CHANGELOG} successfully created."
 
 
 # ======================================================================

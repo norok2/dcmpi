@@ -505,7 +505,7 @@ def fill_from_dicom(
     try:
         dcm = pydcm.read_file(dcm_filepath)
     except:
-        print('EE: Could not open DICOM file \'\'.'.format(dcm_filepath))
+        print('EE: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
     else:
         out_str = format_str
@@ -514,7 +514,7 @@ def fill_from_dicom(
                 if item[0].isupper():
                     fields_dict[item] = (item, None, None)
         for field_id, fields in sorted(fields_dict.items()):
-            pattern = r'\[{}.*?\]'.format(field_id)
+            pattern = r'\{{}.*?\}'.format(field_id)
             field_match = re.search(pattern, out_str)
             if field_match:
                 matched = out_str[field_match.start():field_match.end()]

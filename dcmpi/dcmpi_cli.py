@@ -155,7 +155,7 @@ def handle_arg():
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-s', '--subpath',
-        default='[study]/[name]_[date]_[time]_[sys]/dcm',
+        default='{study}/{name}_{date}_{time}_{sys}/dcm',
         help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
         '-n', '--nii_subdir',

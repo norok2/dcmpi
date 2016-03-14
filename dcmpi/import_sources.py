@@ -84,7 +84,7 @@ def import_sources(
         in_dirpath,
         out_dirpath,
         clean=False,
-        subpath='[study]/[name]_[date]_[time]_[sys]/dcm',
+        subpath='{study}/{name}_{date}_{time}_{sys}/dcm',
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -190,7 +190,7 @@ def handle_arg():
     # default output directory
     d_output_dir = '.'
     # default subpath
-    d_subpath = '[study]/[name]_[date]_[time]_[sys]/dcm'
+    d_subpath = '{study}/{name}_{date}_{time}_{sys}/dcm'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,

@@ -78,7 +78,7 @@ D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
 D_OUTPUT_DIR = os.path.join(os.getenv('HOME'), 'isar3/data/siemens')
 # D_INPUT_DIR = '/scr/isar1/TEMP/SOURCE_DICOM'
 # D_OUTPUT_DIR = '/scr/isar1/TEMP/OUTPUT_DICOM'
-D_SUBPATH = '[study]/[name]_[date]_[time]_[sys]/dcm'
+D_SUBPATH = '{study}/{name}_{date}_{time}_{sys}/dcm'
 
 
 # ======================================================================

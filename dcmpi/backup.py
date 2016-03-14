@@ -87,7 +87,7 @@ def backup(
     out_dirpath : str
         Path to output directory.
     method : str (optional)
-        | Extraction method. Accepted values:
+        | Compression method. Accepted values:
         * 7z: Use 7z compression format.
     keep : boolean (optional)
         Do NOT remove DICOM sources after backing up (and testing).
@@ -136,6 +136,31 @@ def backup(
             success = True if p_stdout.find('Everything is Ok') > 0 else False
             if success and verbose >= VERB_LVL['low']:
                 print(':: Test was successful.')
+        elif method == 'zip':
+            # :: perform compression
+            cmd_token_list = [
+                'zip',
+                'a', '-mx9',
+                out_filepath,
+                in_filepath, ]
+            cmd = ' '.join(cmd_token_list)
+            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            if verbose >= VERB_LVL['debug']:
+                print(p_stdout)
+                print(p_stderr)
+            success = len(p_stderr) == 0
+            if success and verbose >= VERB_LVL['low']:
+                print(':: Backup was successful.')
+            # :: test archive
+            cmd_token_list = ['7z', 't', out_filepath]
+            cmd = ' '.join(cmd_token_list)
+            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            if verbose >= VERB_LVL['debug']:
+                print(p_stdout)
+                print(p_stderr)
+            success = True if p_stdout.find('Everything is Ok') > 0 else False
+            if success and verbose >= VERB_LVL['low']:
+                print(':: Test was successful.')
         else:
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))
@@ -154,15 +179,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'pydicom'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -181,7 +197,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -190,16 +206,16 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-i', '--input', metavar='DIR',
-        default=d_input_dir,
+        default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
         '-o', '--output', metavar='DIR',
-        default=d_output_dir,
+        default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-m', '--method', metavar='METHOD',
-        default=d_method,
-        help='set extraction method [%(default)s]')
+        default='7z',
+        help='set compression method [%(default)s]')
     arg_parser.add_argument(
         '-k', '--keep',
         action='store_true',
