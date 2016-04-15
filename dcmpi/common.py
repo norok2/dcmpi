@@ -27,7 +27,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
@@ -93,7 +92,7 @@ D_SUMMARY = 'summary'
 
 PREFIX_ID = {
     'series': 's',
-    'acq': 'a', }
+    'acq': 'a',}
 
 D_NUM_DIGITS = 3
 
@@ -105,7 +104,7 @@ ID = {
     'meta': 'meta',
     'prot': 'prot',
     'report': 'report',
-    'backup': 'dcm', }
+    'backup': 'dcm',}
 
 # DICOM indexes
 DCM_ID = {
@@ -133,7 +132,7 @@ UNCOMPRESS_METHODS = {
     'gz': 'gunzip',
     'xz': 'unxz',
     'lzma': 'unlzma',
-    'bz2': 'bzip2 -d', }
+    'bz2': 'bzip2 -d',}
 
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
@@ -468,7 +467,7 @@ def fill_from_dicom(
     The formatted string.
 
     """
-    fields_dict = {
+    fields = {
         'study': (
             'StudyDescription',
             lambda t, f:  # slice according to 2-int tuple set in 'f'
@@ -508,25 +507,17 @@ def fill_from_dicom(
         print('EE: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
     else:
-        out_str = format_str
         if extra_fields:
             for item in dir(dcm):
                 if item[0].isupper():
-                    fields_dict[item] = (item, None, None)
-        for field_id, fields in sorted(fields_dict.items()):
-            pattern = r'\{{}.*?\}'.format(field_id)
-            field_match = re.search(pattern, out_str)
-            if field_match:
-                matched = out_str[field_match.start():field_match.end()]
-                dcm_id, func, field_fmt = fields \
-                    if field_id in fields_dict else ('', None, '')
-                if FMT_SEP in matched:
-                    field_fmt = matched.split(FMT_SEP)[1][:-1]
-                field_replace = getattr(dcm, dcm_id) \
-                    if dcm_id in dcm else matched
-                if func:
-                    field_replace = func(field_replace, field_fmt)
-                out_str = out_str.replace(matched, field_replace)
+                    fields[item] = (item, None, None)
+        format_kwargs = {}
+        for field_id, field_formatter in sorted(fields.items()):
+            dcm_id, fmt_func, field_fmt = field_formatter
+            format_kwargs[field_id] = \
+                fmt_func(getattr(dcm, dcm_id), field_fmt) \
+                    if fmt_func else getattr(dcm, dcm_id)
+        out_str = format_str.format(**format_kwargs)
     finally:
         if os.path.isfile(temp_filepath):
             os.remove(temp_filepath)
@@ -608,12 +599,12 @@ def group_series(
         if save_filepath else ''
     if os.path.exists(summary_filepath) and not force:
         # :: load grouping from file
-        groups_dict = {}
+        groups = {}
         with open(summary_filepath, 'r') as summary_file:
-            groups_dict = json.load(summary_file)
+            groups = json.load(summary_file)
     else:
         sources_dict = dcm_sources(dirpath)
-        groups_dict = {}
+        groups = {}
         group_num = 1
         last_time = 0
         last_prot_name = ''
@@ -642,26 +633,26 @@ def group_series(
                             (PREFIX_ID['acq'] + '{:0{size}d}'.format(
                                 group_num, size=D_NUM_DIGITS),
                              dcm.ProtocolName))
-                        if group_id not in groups_dict:
-                            groups_dict[group_id] = []
+                        if group_id not in groups:
+                            groups[group_id] = []
                         group_num += 1
                     # print('{:32s}\t{:32s}'.format(group_id, src_id))
-                    groups_dict[group_id].append(src_id)
+                    groups[group_id].append(src_id)
                     last_time = curr_time
                     last_prot_name = curr_prot_name
                     # last_duration = get_duration(dcm[DCM_ID['TA']])
                 elif is_report:
                     group_id = dcm.SeriesDescription
-                    if group_id not in groups_dict:
-                        groups_dict[group_id] = []
-                    groups_dict[group_id].append(src_id)
+                    if group_id not in groups:
+                        groups[group_id] = []
+                    groups[group_id].append(src_id)
         # :: save grouping to file
         if summary_filepath:
             if verbose > VERB_LVL['none']:
                 print('Brief:\t{}'.format(summary_filepath))
             with open(summary_filepath, 'w') as summary_file:
-                json.dump(groups_dict, summary_file, sort_keys=True, indent=4)
-    return groups_dict
+                json.dump(groups, summary_file, sort_keys=True, indent=4)
+    return groups
 
 
 # ======================================================================
@@ -675,14 +666,14 @@ def dcm_sources(dirpath):
     Returns:
         (dict):
     """
-    sources_dict = {}
+    sources = {}
     for src_id in sorted(os.listdir(dirpath)):
         src_dirpath = os.path.join(dirpath, src_id)
         if os.path.isdir(src_dirpath):
-            sources_dict[src_id] = [
+            sources[src_id] = [
                 os.path.join(src_dirpath, filename)
                 for filename in sorted(os.listdir(src_dirpath))]
-    return sources_dict
+    return sources
 
 
 # ======================================================================
@@ -755,7 +746,7 @@ def parse_protocol(src_str):
 
     TODO: improve array support?
     """
-    out_dict = {}
+    info = {}
     for line in src_str.split('\n'):
         equal_pos = line.find('=')
         # check that lines contain a key=val pair AND is not a comment (#)
@@ -774,22 +765,22 @@ def parse_protocol(src_str):
             key = key[1:]
             # put data to dict
             if indexes:
-                if key in out_dict:
-                    val = out_dict[key]
+                if key in info:
+                    val = info[key]
                 else:
                     val = []
                 val.append((indexes, auto_convert(value, '""', '""')))
             else:
                 val = auto_convert(value, '""', '""')
             if key:
-                out_dict[key] = val
-    return out_dict
+                info[key] = val
+    return info
 
 
 # ======================================================================
 def postprocess_info(
-        source_dict,
-        postproc_dict,
+        sources,
+        formats,
         access_val=None,
         access_val_params=None,
         verbose=D_VERB_LVL):
@@ -798,9 +789,9 @@ def postprocess_info(
 
     Parameters
     ==========
-    source_dict : dict
+    sources : dict
         Dictionary containing the information to post-process.
-    postproc_dict : dict
+    formats : dict
         | Dictionary containing the following information:
         * key: The name of the information
         * | val: (source_key, format_function, format_function_parameters)
@@ -816,18 +807,18 @@ def postprocess_info(
 
     Returns
     =======
-    info_dict : dict
+    info : dict
         The postprocessed information.
 
     """
-    info_dict = {}
-    for pp_id, postproc in sorted(postproc_dict.items()):
+    info = {}
+    for pp_id, postproc in sorted(formats.items()):
         src_id, fmt, fmt_params = postproc
-        if src_id in source_dict:
+        if src_id in sources:
             if access_val:
-                field_val = access_val(source_dict[src_id], access_val_params)
+                field_val = access_val(sources[src_id], access_val_params)
             else:
-                field_val = source_dict[src_id]
+                field_val = sources[src_id]
             try:
                 if fmt:
                     field_val = fmt(field_val, fmt_params)
@@ -838,8 +829,8 @@ def postprocess_info(
             field_val = 'N/A'
             if verbose > VERB_LVL['low']:
                 print('WW: \'\' field not found.'.format(src_id))
-        info_dict[pp_id] = field_val
-    return info_dict
+        info[pp_id] = field_val
+    return info
 
 
 # ======================================================================

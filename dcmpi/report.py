@@ -251,6 +251,7 @@ def report(
         summary, extra = {}, {}
         acquisitions = []
         if method == 'info':
+            target = None
             try:
                 for name in sorted(os.listdir(in_dirpath)):
                     target = os.path.join(in_dirpath, name)

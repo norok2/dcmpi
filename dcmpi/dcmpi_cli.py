@@ -74,7 +74,7 @@ from dcmpi import D_VERB_LVL
 def dcmpi(
         in_dirpath,
         out_dirpath,
-        subpath='[study]/[name]_[date]_[time]_[sys]/dcm',
+        subpath='{study}/{name}_{date}_{time}_{sys}/dcm',
         nii_subdir=dpc.ID['nifti'],
         meta_subdir=dpc.ID['meta'],
         prot_subdir=dpc.ID['prot'],

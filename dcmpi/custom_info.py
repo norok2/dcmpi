@@ -419,23 +419,19 @@ def identify_sequence(info, prot):
         'phoenix_zip_report':
             (info['ProtocolName'] == 'Phoenix Document'),
         'flash':
-            (prot and
-             prot['tSequenceFileName'] == '%CustomerSeq%\\AS\\as_gre'),
+            (prot and 'as_gre' in prot['tSequenceFileName']),
         'mp2rage':
-            (prot and
-             prot['tSequenceFileName'].startswith(
-                 '%CustomerSeq%\\mp2rage')),
+            (prot and 'mp2rage' in prot['tSequenceFileName']),
         'mt_flash_sah':
-            (prot and
-             prot['tSequenceFileName'] == '%CustomerSeq%\\sah_gre_qmri'),
+            (prot and 'sah_gre_qmri' in prot['tSequenceFileName']),
         'afi_nw':
-            (prot and
-             prot['tSequenceFileName'] == '%CustomerSeq%\\nw_b1map3d_v4bkp'),
+            (prot and 'nw_b1map3d' in prot['tSequenceFileName']),
     }
 
     seq_id = 'none' if not prot else 'generic'
     for tmp_seq_id in sorted(sequences_dict.iterkeys()):
         match = sequences_dict[tmp_seq_id]
+        print(prot['tSequenceFileName'])
         if match:
             seq_id = tmp_seq_id
             break

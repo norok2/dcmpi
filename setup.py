@@ -88,17 +88,23 @@ setup(
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
 
+        'Environment :: Console',
+        'Environment:: X11 Applications:: Qt',
+
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Healthcare Industry',
         'Intended Audience :: System Administrators',
 
-        'Topic :: System :: Shells',
+        'Topic :: Scientific/Engineering :: Medical Science Apps.',
+        'Topic :: System :: Archiving',
         'Topic :: System :: Systems Administration',
-        'Topic :: System :: Filesystems',
         'Topic :: System :: Monitoring',
         'Topic :: Utilities',
 
         'Operating System :: POSIX',
+        'Natural Language :: English',
 
         'License :: OSI Approved :: GNU General Public License v3 or later'
         ' (GPLv3+)',
@@ -107,7 +113,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.4',
     ],
 
     keywords='dicom dcm preprocessing',

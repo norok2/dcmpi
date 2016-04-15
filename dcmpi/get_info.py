@@ -115,9 +115,8 @@ def get_info(
             out_filepath = os.path.join(
                 out_dirpath, dcmlib.D_SUMMARY + '.' + dcmlib.ID['info'])
             out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
-            info = {}
+            info = {'_measurements': groups}
             # info['_sources'] = sources  # DEBUG
-            info['_measurements'] = groups
             try:
                 read_next_dicom = True
                 idx = -1

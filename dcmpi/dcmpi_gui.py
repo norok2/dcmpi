@@ -51,8 +51,9 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.integrate  # SciPy: Integrations facilities
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
-# from PySide import QtCore  # PySide: Core module
-from PySide import QtGui  # PySide GUI module
+
+# from PySide import QtGui  # PySide: Core module
+from PySide import QtGui  # PySide: GUI module
 
 # :: Local Imports
 # import mri_tools.modules.base as mrb
