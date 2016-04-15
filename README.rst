@@ -1,4 +1,5 @@
-DCMPI: DICOM Preprocessing Interface
+====================================
+dcmpi: DICOM Preprocessing Interface
 ====================================
 
 This software implements an automated information extraction tool from DICOM
