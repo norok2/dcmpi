@@ -91,7 +91,7 @@ setup(
         'Development Status :: 3 - Alpha',
 
         'Environment :: Console',
-        'Environment:: X11 Applications :: Qt',
+        'Environment :: X11 Applications :: Qt',
 
         'Intended Audience :: Science/Research',
         'Intended Audience :: Healthcare Industry',
@@ -120,7 +120,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['pydicom', 'pyside'],
+    install_requires=['pydicom', 'PySide'],
 
     package_data={
         'dcmpi': ['report_templates/*.html', ],
