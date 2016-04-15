@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 
 # ======================================================================
 # :: Versioning
-__version__ = '0.0.1.4.dev0+ng1eb2e97.d20160415'
+__version__ = '0.0.1.5.dev0+ng45960de.d20160415'
 
 
 # ======================================================================
@@ -56,3 +56,5 @@ MY_GREETINGS = r"""
 
 # :: Causes the greetings to be printed any time the library is loaded.
 print(MY_GREETINGS)
+
+print(__version__)
