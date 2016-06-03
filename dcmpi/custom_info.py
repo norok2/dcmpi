@@ -431,7 +431,7 @@ def identify_sequence(info, prot):
     seq_id = 'none' if not prot else 'generic'
     for tmp_seq_id in sorted(sequences_dict.iterkeys()):
         match = sequences_dict[tmp_seq_id]
-        print(prot['tSequenceFileName'])
+        # print(prot['tSequenceFileName'])
         if match:
             seq_id = tmp_seq_id
             break
