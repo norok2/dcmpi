@@ -95,6 +95,7 @@ def monitor_folder(
     """
     Monitor changes in a dir and execute a command upon verify some condition.
     """
+    # todo: refactor using blessings
 
     def list_dirs(dirpath):
         return [d for d in os.listdir(dirpath)

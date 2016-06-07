@@ -46,6 +46,9 @@ import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+# import unittest  # Unit testing framework
+import doctest  # Test interactive Python examples
+
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
 # import scipy as sp  # SciPy (signal and image processing library)
@@ -57,6 +60,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
 # import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
@@ -72,6 +76,17 @@ from dcmpi import D_VERB_LVL
 
 # ======================================================================
 # :: General-purposes constants
+EXT = {
+    'None': '',
+    'txt': 'txt',
+    'json': 'json',
+    'dcm': 'ima',  # DICOM image
+    'dcr': 'sr',  # DICOM report
+    'niz': 'nii.gz',
+    'nii': 'nii'
+}
+
+#todo: refactor to use dictionary
 NO_EXT = ''
 TXT_EXT = 'txt'
 JSON_EXT = 'json'
@@ -363,6 +378,7 @@ def is_compressed_dicom(
         tmp_path='/tmp',
         known_methods=UNCOMPRESS_METHODS):
     """
+    Check if the compressed filepath contains a valid DICOM file.
 
     Args:
         filepath (str): The path to the file.
@@ -375,9 +391,7 @@ def is_compressed_dicom(
     Returns:
 
     """
-    """
-    Check if the compressed filepath contains a valid DICOM file.
-    """
+    #todo: fix docs
     filename = os.path.basename(filepath)
     temp_filepath = os.path.join(tmp_path, filename)
     test_filepath = os.path.splitext(temp_filepath)[0]
@@ -529,7 +543,13 @@ def fill_from_dicom(
 # ======================================================================
 def get_date(text):
     """
-    Extract date (return tm_struct) from 'Date' DICOM strings.
+    Extract the date from 'Date' DICOM strings.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        tm_struct (struct_time): The date information.
     """
     tm_struct = time.strptime(text, '%Y%m%d')
     return tm_struct
@@ -538,7 +558,13 @@ def get_date(text):
 # ======================================================================
 def get_time(text):
     """
-    Extract time (return tm_struct) from 'Time' DICOM strings.
+    Extract the time from 'Time' DICOM strings.
+
+    Args:
+        text (str): The input string.
+
+    Returns:
+        tm_struct (time.struct_time): The date information.
     """
     tm_struct = time.strptime(text, '%H%M%S.%f')
     return tm_struct
