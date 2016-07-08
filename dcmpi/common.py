@@ -206,39 +206,34 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
+def execute(
+        cmd,
+        use_pipes=True,
+        dry=False,
+        verbose=D_VERB_LVL):
     """
     Execute command and retrieve output at the end of execution.
 
-    Parameters
-    ==========
-    cmd : str
-        Command to execute.
-    use_pipes : bool (optional)
-        If True, get both stdout and stderr streams from the process.
-    dry : bool (optional)
-        If True, the command is printed instead of being executed (dry run).
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        cmd (str|unicode): Command to execute.
+        use_pipes (bool): Get stdout and stderr streams from the process.
+        dry (bool): Print rather than execute the command (dry run).
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    p_stdout : str
-        The stdout of the process after execution.
-    p_stderr : str
-        The stderr of the process after execution.
-
+    Returns:
+        p_stdout (str|None): if use_pipes the stdout of the process.
+        p_stderr (str|None): if use_pipes the stderr of the process.
     """
+    p_stdout, p_stderr = None, None
     if dry:
         print('Dry:\t{}'.format(cmd))
     else:
-        if verbose > VERB_LVL['low']:
+        if verbose >= VERB_LVL['high']:
             print('Cmd:\t{}'.format(cmd))
         if use_pipes:
-            #            # :: deprecated
-            #            proc = os.popen3(cmd)
-            #            p_stdout, p_stderr = [item.read() for item in proc[
-            # 1:]]
+            # # :: deprecated
+            # proc = os.popen3(cmd)
+            # p_stdout, p_stderr = [item.read() for item in proc[1:]]
             # :: new style
             proc = subprocess.Popen(
                 cmd,
@@ -248,18 +243,15 @@ def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
                 shell=True, close_fds=True)
             p_stdout = proc.stdout.read()
             p_stderr = proc.stderr.read()
-            if verbose > VERB_LVL['medium']:
+            if verbose >= VERB_LVL['debug']:
                 print('stdout:\t{}'.format(p_stdout))
-            if verbose > VERB_LVL['medium']:
                 print('stderr:\t{}'.format(p_stderr))
         else:
-            p_stdout = p_stderr = None
-            #            # :: deprecated
-            #            os.system(cmd)
+            # # :: deprecated
+            # os.system(cmd)
             # :: new style
             subprocess.call(cmd, shell=True)
     return p_stdout, p_stderr
-
 
 # ======================================================================
 def string_between(
@@ -270,65 +262,48 @@ def string_between(
         incl_end=False,
         greedy=True):
     """
-    Isolate the string contained between two tookens
+    Isolate the string contained between two tokens
+
+    Args:
+        text (str): String to parse
+        begin_str (str): Token at the beginning
+        end_str (str): Token at the ending
+        incl_begin (bool): Include 'begin_string' in the result
+        incl_end (bool): Include 'end_str' in the result.
+        greedy (bool): Output the largest possible string.
+
+    Returns:
+        text (str): The string contained between the specified tokens (if any)
+
+    Examples:
+        >>> string_between('roses are red violets are blue', 'ses', 'lets')
+        ' are red vio'
+        >>> string_between('roses are red, or not?', 'a', 'd')
+        're re'
+        >>> string_between('roses are red, or not?', ' ', ' ')
+        'are red, or'
+        >>> string_between('roses are red, or not?', ' ', ' ', greedy=False)
+        'are'
+        >>> string_between('roses are red, or not?', 'r', 'r')
+        'oses are red, o'
+        >>> string_between('roses are red, or not?', 'r', 'r', greedy=False)
+        'oses a'
+        >>> string_between('roses are red, or not?', 'r', 's', True, False)
+        'rose'
     """
     incl_begin = len(begin_str) if not incl_begin else 0
     incl_end = len(end_str) if incl_end else 0
     if begin_str in text and end_str in text:
         if greedy:
-            text = text[
-                   text.find(begin_str) + incl_begin:
-                   text.rfind(end_str) + incl_end]
+            begin = text.find(begin_str) + incl_begin
+            end = text.rfind(end_str) + incl_end
         else:
-            text = text[
-                   text.rfind(begin_str) + incl_begin:
-                   text.find(end_str) + incl_end]
+            begin = text.find(begin_str) + incl_begin
+            end = text[begin:].find(end_str) + incl_end + begin
+        text = text[begin:end]
     else:
         text = ''
     return text
-
-
-# ======================================================================
-def tty_colorify(
-        text,
-        color=None):
-    """
-    Add color TTY-compatible color code to a string, for pretty-printing.
-
-    Parameters
-    ==========
-    text: str
-        The text to be colored.
-    color : str or int or None
-        | A string or number for the color coding.
-        | Lowercase letters modify the forground color.
-        | Uppercase letters modify the background color.
-        | Available colors:
-        * r/R: red
-        * g/G: green
-        * b/B: blue
-        * c/C: cyan
-        * m/M: magenta
-        * y/Y: yellow (brown)
-        * k/K: black (gray)
-        * w/W: white (gray)
-
-    Returns
-    =======
-        The colored string.
-
-    see also: TTY_COLORS
-    """
-    if color in TTY_COLORS:
-        tty_color = TTY_COLORS[color]
-    elif color in TTY_COLORS.values():
-        tty_color = color
-    else:
-        tty_color = None
-    if tty_color and sys.stdout.isatty():
-        return '\x1b[1;{color}m{}\x1b[1;m'.format(text, color=tty_color)
-    else:
-        return text
 
 
 # ======================================================================

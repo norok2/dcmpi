@@ -56,7 +56,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -71,55 +71,47 @@ ARCHIVE_EXT = {
 
 # ======================================================================
 def backup(
-        in_filepath,
-        out_filepath='dcm',
+        in_dirpath,
+        out_dirpath='dcm',
         method='7z',
         keep=False,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Safely backup DICOM files for later use.
+    Safely backup DICOM files and test the produced archive.
 
-    Parameters
-    ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
-    method : str (optional)
-        | Compression method. Accepted values:
-        * 7z: Use 7z compression format.
-    keep : boolean (optional)
-        Do NOT remove DICOM sources after backing up (and testing).
-    force : boolean (optional)
-        Force new processing.
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
+        method (str): The Compression method.
+            Accepted values:
+             - '7z': Use 7z compression format.
+        keep (bool): Do NOT remove DICOM sources afterward.
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    None.
-
+    Returns:
+        None.
     """
     if verbose > VERB_LVL['none']:
         print(':: Backing up DICOM folder...')
     if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_filepath))
+        print('Input:\t{}'.format(in_dirpath))
     if method in ARCHIVE_EXT:
-        out_filepath += '.' + ARCHIVE_EXT[method]
+        out_dirpath += '.' + ARCHIVE_EXT[method]
     if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_filepath))
+        print('Output:\t{}'.format(out_dirpath))
     success = False
-    if not os.path.exists(out_filepath) or force:
+    if not os.path.exists(out_dirpath) or force:
         if method == '7z':
             # :: perform compression
             cmd_token_list = [
                 '7z',
                 'a', '-mx9',
-                out_filepath,
-                in_filepath, ]
+                out_dirpath,
+                in_dirpath, ]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
             if verbose >= VERB_LVL['debug']:
                 print(p_stdout)
                 print(p_stderr)
@@ -127,9 +119,9 @@ def backup(
             if success and verbose >= VERB_LVL['low']:
                 print(':: Backup was successful.')
             # :: test archive
-            cmd_token_list = ['7z', 't', out_filepath]
+            cmd_token_list = ['7z', 't', out_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
             if verbose >= VERB_LVL['debug']:
                 print(p_stdout)
                 print(p_stderr)
@@ -141,10 +133,10 @@ def backup(
             cmd_token_list = [
                 'zip',
                 'a', '-mx9',
-                out_filepath,
-                in_filepath, ]
+                out_dirpath,
+                in_dirpath, ]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
             if verbose >= VERB_LVL['debug']:
                 print(p_stdout)
                 print(p_stderr)
@@ -152,9 +144,9 @@ def backup(
             if success and verbose >= VERB_LVL['low']:
                 print(':: Backup was successful.')
             # :: test archive
-            cmd_token_list = ['7z', 't', out_filepath]
+            cmd_token_list = ['7z', 't', out_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
             if verbose >= VERB_LVL['debug']:
                 print(p_stdout)
                 print(p_stderr)
@@ -164,10 +156,10 @@ def backup(
         else:
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))
-        if success and not keep and os.path.exists(in_filepath):
+        if success and not keep and os.path.exists(in_dirpath):
             if verbose > VERB_LVL['none']:
-                print('Remove:\t{}'.format(in_filepath))
-            shutil.rmtree(in_filepath, ignore_errors=True)
+                print('Remove:\t{}'.format(in_dirpath))
+            shutil.rmtree(in_dirpath, ignore_errors=True)
     else:
         if verbose > VERB_LVL['none']:
             print("II: Output path exists. Skipping. "

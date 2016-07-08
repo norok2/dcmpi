@@ -57,7 +57,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 import dcmpi.custom_info as custom_info
 from dcmpi import INFO
 from dcmpi import VERB_LVL
@@ -102,8 +102,8 @@ def get_info(
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources = dcmlib.dcm_sources(in_dirpath)
-    groups = dcmlib.group_series(in_dirpath)
+    sources = dpc.dcm_sources(in_dirpath)
+    groups = dpc.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists
@@ -113,8 +113,8 @@ def get_info(
         if method == 'pydicom':
             # :: extract session information
             out_filepath = os.path.join(
-                out_dirpath, dcmlib.D_SUMMARY + '.' + dcmlib.ID['info'])
-            out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
+                out_dirpath, dpc.D_SUMMARY + '.' + dpc.ID['info'])
+            out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
             info = {'_measurements': groups}
             # info['_sources'] = sources  # DEBUG
             try:
@@ -136,7 +136,7 @@ def get_info(
                 print("EE: failed during get_info (exceptioon: {})".format(ex))
             else:
                 # DICOM's-ready information
-                info.update(dcmlib.postprocess_info(
+                info.update(dpc.postprocess_info(
                     dcm, custom_info.SESSION, lambda x, p: x.value, verbose))
                 # additional information: duration
                 field_id = 'Duration'
@@ -164,8 +164,8 @@ def get_info(
             # :: extract acquisition information
             for group_id, group in sorted(groups.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['info'])
-                out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
+                    out_dirpath, group_id + '.' + dpc.ID['info'])
+                out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
                 info = {}
                 info['_series'] = group
                 in_filepath = sorted(
@@ -175,17 +175,17 @@ def get_info(
                 except:
                     print('EE: failed processing \'{}\''.format(in_filepath))
                 else:
-                    info.update(dcmlib.postprocess_info(
+                    info.update(dpc.postprocess_info(
                         dcm, custom_info.ACQUISITION, lambda x, p: x.value,
                         verbose))
                     # information from protocol
-                    if dcmlib.DCM_ID['hdr_nfo'] in dcm:
-                        prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                        prot = dcmlib.parse_protocol(
-                            dcmlib.get_protocol(prot_src))
+                    if dpc.DCM_ID['hdr_nfo'] in dcm:
+                        prot_src = dcm[dpc.DCM_ID['hdr_nfo']].value
+                        prot = dpc.parse_protocol(
+                            dpc.get_protocol(prot_src))
                     else:
                         prot = {}
-                    info.update(dcmlib.postprocess_info(
+                    info.update(dpc.postprocess_info(
                         prot,
                         custom_info.get_sequence_info(info, prot),
                         None, verbose))
@@ -217,8 +217,8 @@ def get_info(
             # :: extract series information
             for src_id, in_filepath_list in sorted(sources.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dcmlib.ID['info'])
-                out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
+                    out_dirpath, src_id + '.' + dpc.ID['info'])
+                out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
                 info = {}
                 for acq, series in groups.items():
                     if src_id in series:
@@ -228,7 +228,7 @@ def get_info(
                     except:
                         print("EE: failed processing '{}'".format(in_filepath))
                     else:
-                        info.update(dcmlib.postprocess_info(
+                        info.update(dpc.postprocess_info(
                             dcm, custom_info.SERIES, lambda x, p: x.value,
                             verbose))
                 if verbose > VERB_LVL['none']:

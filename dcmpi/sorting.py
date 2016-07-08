@@ -108,7 +108,7 @@ def sorting(
 
     See Also
     ========
-    dcmlib.group_series, dcmlib.dcm_sources
+    dcmpi.common.group_series, dcm.common.dcm_sources
 
     """
     # :: group dicom files according to serie number

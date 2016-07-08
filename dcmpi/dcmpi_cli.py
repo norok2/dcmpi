@@ -85,6 +85,22 @@ def dcmpi(
         verbose=D_VERB_LVL):
     """
     Standard preprocessing of DICOM files.
+
+    Args:
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
+        subpath ():
+        nii_subdir ():
+        meta_subdir ():
+        prot_subdir ():
+        info_subdir ():
+        report_subdir ():
+        backup_subdir ():
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
+
+    Returns:
+
     """
     subdirs = (
         nii_subdir, meta_subdir, prot_subdir, info_subdir, report_subdir,
