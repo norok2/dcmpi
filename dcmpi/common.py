@@ -201,7 +201,11 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
+def execute(
+        cmd,
+        use_pipes=True,
+        dry=False,
+        verbose=D_VERB_LVL):
     """
     Execute command and retrieve/print output at the end of execution.
 
@@ -267,19 +271,45 @@ def string_between(
         incl_end=False,
         greedy=True):
     """
-    Isolate the string contained between two tookens
+    Isolate the string contained between two tokens
+
+    Args:
+        text (str): String to parse
+        begin_str (str): Token at the beginning
+        end_str (str): Token at the ending
+        incl_begin (bool): Include 'begin_string' in the result
+        incl_end (bool): Include 'end_str' in the result.
+        greedy (bool): Output the largest possible string.
+
+    Returns:
+        text (str): The string contained between the specified tokens (if any)
+
+    Examples:
+        >>> string_between('roses are red violets are blue', 'ses', 'lets')
+        ' are red vio'
+        >>> string_between('roses are red, or not?', 'a', 'd')
+        're re'
+        >>> string_between('roses are red, or not?', ' ', ' ')
+        'are red, or'
+        >>> string_between('roses are red, or not?', ' ', ' ', greedy=False)
+        'are'
+        >>> string_between('roses are red, or not?', 'r', 'r')
+        'oses are red, o'
+        >>> string_between('roses are red, or not?', 'r', 'r', greedy=False)
+        'oses a'
+        >>> string_between('roses are red, or not?', 'r', 's', True, False)
+        'rose'
     """
     incl_begin = len(begin_str) if not incl_begin else 0
     incl_end = len(end_str) if incl_end else 0
     if begin_str in text and end_str in text:
         if greedy:
-            text = text[
-                   text.find(begin_str) + incl_begin:
-                   text.rfind(end_str) + incl_end]
+            begin = text.find(begin_str) + incl_begin
+            end = text.rfind(end_str) + incl_end
         else:
-            text = text[
-                   text.rfind(begin_str) + incl_begin:
-                   text.find(end_str) + incl_end]
+            begin = text.find(begin_str) + incl_begin
+            end = text[begin:].find(end_str) + incl_end + begin
+        text = text[begin:end]
     else:
         text = ''
     return text

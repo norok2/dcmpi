@@ -48,6 +48,7 @@ import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 # import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import blessings  # Wrapper for terminal coloring, styling, and positioning
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -75,7 +76,7 @@ import subprocess  # Subprocess management
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -103,6 +104,8 @@ def monitor_folder(
 
     sec_in_min = 60
 
+    term = blessings.Terminal()
+
     loop = True
     count = 0
     old_dirs = list_dirs(dirpath)
@@ -119,10 +122,10 @@ def monitor_folder(
         if verbose > VERB_LVL['none']:
             if removed_dirs:
                 msg = '{}  --  {}'.format(timestamp, removed_dirs)
-                print(dcmlib.tty_colorify(msg, 'r'))
+                print(term.red(msg))
             if added_dirs:
                 msg = '{}  ++  {}'.format(timestamp, added_dirs)
-                print(dcmlib.tty_colorify(msg, 'g'))
+                print(term.green(msg))
         if verbose > VERB_LVL['none'] and not removed_dirs and not added_dirs:
             msg = 'All quiet on the western front'
             next_check = time.strftime(
@@ -137,7 +140,7 @@ def monitor_folder(
                 subprocess.call(cmd, shell=True)
                 count += 1
         time.sleep(sleep_delay)
-        if max_count > 0 and max_count < count:
+        if 0 < max_count < count:
             loop = False
         else:
             old_dirs = new_dirs
@@ -149,17 +152,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default working directory
-    d_dir = '.'
-    # default delay in min
-    d_delay = 60  # 1 hour
-    # default randomized delay variance in min
-    d_delay_variance = 5
-    # default command
-    d_cmd = os.path.dirname(__file__) + '/dcm_analyze_dir.py {}'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -177,7 +169,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -186,23 +178,23 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-d', '--dir', metavar='DIR',
-        default=d_dir,
+        default='.',
         help='set working directory [%(default)s]')
     arg_parser.add_argument(
         '-l', '--delay', metavar='VAL',
-        type=float, default=d_delay,
+        type=float, default=60.0,
         help='set checking interval in min [%(default)s]')
     arg_parser.add_argument(
         '-r', '--delay_var', metavar='VAL',
-        type=float, default=d_delay_variance,
+        type=float, default=5.0,
         help='set random variance in the delay in min [%(default)s]')
     arg_parser.add_argument(
         '-m', '--max_count', metavar='NUM',
-        type=int, default=d_delay,
+        type=int, default=0,
         help='maximum number of actions to be performed [%(default)s]')
     arg_parser.add_argument(
         '-c', '--cmd', metavar='EXECUTABLE',
-        default=d_cmd,
+        default=os.path.dirname(__file__) + '/dcm_analyze_dir.py {}',
         help='execute when finding a new dir with DICOMs [%(default)s]')
     return arg_parser
 
@@ -224,7 +216,7 @@ def main():
     monitor_folder(
         args.cmd,
         args.dir, args.delay,
-        lambda x: dcmlib.find_a_dicom(x)[0],
+        lambda x: dpc.find_a_dicom(x)[0],
         True,
         args.max_count, args.delay_var,
         args.force, args.verbose)

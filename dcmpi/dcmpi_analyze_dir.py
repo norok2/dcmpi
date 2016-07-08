@@ -73,7 +73,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -90,6 +90,22 @@ def get_email_txt(
         dirpath=None,
         deadline=None,
         delay_days=10):
+    """
+
+    Args:
+        email_from ():
+        email_to ():
+        email_cc ():
+        email_bcc ():
+        signature ():
+        session ():
+        dirpath ():
+        deadline ():
+        delay_days ():
+
+    Returns:
+
+    """
     msg = 'EOF\n'
     session = " from: '{}'".format(session) if session else ''
     dirpath = ' in:\n{}'.format(dirpath) if dirpath else '.'
@@ -118,7 +134,10 @@ def get_email_txt(
 
 # ======================================================================
 def send_mail_dcm(
-        dcm_filepath, email=None, force=False, verbose=D_VERB_LVL):
+        dcm_filepath,
+        email=None,
+        force=False,
+        verbose=D_VERB_LVL):
     """
     Send an email when the measurement was processed.
     """
@@ -132,7 +151,7 @@ def send_mail_dcm(
         ('StudyTime',
          lambda t: time.strftime('%H-%M', time.strptime(t, '%H%M%S.%f'))),
         ('StationName',
-         lambda t: dcmlib.STATION[t] if t in dcmlib.STATION else t),
+         lambda t: dpc.STATION[t] if t in dpc.STATION else t),
         ('StudyDescription',
          lambda t: t),
     )
@@ -152,7 +171,7 @@ def send_mail_dcm(
         for key, func in session_fields:
             if key in dcm:
                 session_info.append(func(getattr(dcm, key)))
-        sample_id = dcmlib.INFO_SEP.join(session_info[:-1])
+        sample_id = dpc.INFO_SEP.join(session_info[:-1])
         study_id = session_info[-1]
         session = '{} / {}'.format(study_id, sample_id)
         # get dirpath
@@ -167,7 +186,7 @@ def send_mail_dcm(
                 email_to=recipient,
                 session=session,
                 dirpath=dirpath))
-        if email == None or email.strip().lower() == recipient.strip().lower():
+        if email is None or email.strip().lower() == recipient.strip().lower():
             subprocess.call(cmd, shell=True)
             if verbose >= VERB_LVL['low']:
                 print('II: Email sent to: <{}>.'.format(recipient))
@@ -188,29 +207,26 @@ def dcm_analyze_dir(
     """
     Analyze a DICOM, performing an action if its data match the request.
 
-    Parameters
-    ==========
-    dirpath : str
-        Directory where to look for DICOM files.
-    match : str JSON-encoded dict
-        | Key: DICOM field. Val: matching REGEX
-        | special: '_concat' ['and', 'or']
-    action : str
-        | Action to be performed.
-        * send_email: send an email to the first e-mail found.
-        * dcmpi: run dcmpi pipeline.
-    force : boolean (optional)
-        Force new processing.
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        dirpath (str): Directory where to look for DICOM files.
+        match (str): A JSON-encoded dict with matching information.
+            Any key not starting with `_` should specify a DICOM field, while
+            the val should contain a regular expression.
+            Keys starting with `_` contain special directives:
+             - `_concat` (str): the concatenation method for matching rules.
+               Accepted values are: ['and'|'or']
+        action (str): Action to be performed.
+            Accepted values are:
+             - send_email: send an email to the first e-mail found.
+             - dcmpi: run dcmpi pipeline.
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    None.
-
+    Returns:
+        None.
     """
+    dcm_filepath = dpc.find_a_dicom(dirpath)[0]
     try:
-        dcm_filepath = dcmlib.find_a_dicom(dirpath)[0]
         dcm = pydcm.read_file(dcm_filepath)
         # check matching
         conditions = json.loads(match)
