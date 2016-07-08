@@ -98,11 +98,6 @@ NIZ_EXT = 'nii.gz'
 INFO_SEP = '__'
 FMT_SEP = '::'
 
-TTY_COLORS = {
-    'r': 31, 'g': 32, 'b': 34, 'c': 36, 'm': 35, 'y': 33, 'w': 37, 'k': 30,
-    'R': 41, 'G': 42, 'B': 44, 'C': 46, 'M': 45, 'Y': 43, 'W': 47, 'K': 40,
-}
-
 D_SUMMARY = 'summary'
 
 PREFIX_ID = {
@@ -208,55 +203,57 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 # ======================================================================
 def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
     """
-    Execute command and retrieve output at the end of execution.
+    Execute command and retrieve/print output at the end of execution.
 
-    Parameters
-    ==========
-    cmd : str
-        Command to execute.
-    use_pipes : bool (optional)
-        If True, get both stdout and stderr streams from the process.
-    dry : bool (optional)
-        If True, the command is printed instead of being executed (dry run).
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        cmd (str|unicode|list[str]): Command to execute.
+        use_pipes (bool): Get stdout and stderr streams from the process.
+        dry (bool): Print rather than execute the command (dry run).
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    p_stdout : str
-        The stdout of the process after execution.
-    p_stderr : str
-        The stderr of the process after execution.
-
+    Returns:
+        p_stdout (str|unicode|None): if use_pipes the stdout of the process.
+        p_stderr (str|unicode|None): if use_pipes the stderr of the process.
     """
+    p_stdout, p_stderr = None, None
+    # ensure cmd is a list of strings
+    try:
+        cmd = cmd.split()
+    except AttributeError:
+        pass
+
     if dry:
-        print('Dry:\t{}'.format(cmd))
+        print('$$ {}'.format(' '.join(cmd)))
     else:
-        if verbose > VERB_LVL['low']:
-            print('Cmd:\t{}'.format(cmd))
+        if verbose >= VERB_LVL['medium']:
+            print('>> {}'.format(' '.join(cmd)))
+
         if use_pipes:
-            #            # :: deprecated
-            #            proc = os.popen3(cmd)
-            #            p_stdout, p_stderr = [item.read() for item in proc[
-            # 1:]]
-            # :: new style
+            # # :: deprecated (since Python 2.4)
+            # proc = os.popen3(cmd)
+            # p_stdout, p_stderr = [item.read() for item in proc[1:]]
+
             proc = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True, close_fds=True)
-            p_stdout = proc.stdout.read()
+            # handle stdout
+            p_stdout = ''
+            while proc.poll() is None:
+                stdout_buffer = proc.stdout.readline()
+                p_stdout += stdout_buffer
+                if verbose >= VERB_LVL['medium']:
+                    print(stdout_buffer, end='')
+            # handle stderr
             p_stderr = proc.stderr.read()
-            if verbose > VERB_LVL['medium']:
-                print('stdout:\t{}'.format(p_stdout))
-            if verbose > VERB_LVL['medium']:
-                print('stderr:\t{}'.format(p_stderr))
+            if verbose >= VERB_LVL['high']:
+                print(p_stderr)
         else:
-            p_stdout = p_stderr = None
-            #            # :: deprecated
-            #            os.system(cmd)
-            # :: new style
+            # # :: deprecated (since Python 2.4)
+            # os.system(cmd)
+
             subprocess.call(cmd, shell=True)
     return p_stdout, p_stderr
 
@@ -286,49 +283,6 @@ def string_between(
     else:
         text = ''
     return text
-
-
-# ======================================================================
-def tty_colorify(
-        text,
-        color=None):
-    """
-    Add color TTY-compatible color code to a string, for pretty-printing.
-
-    Parameters
-    ==========
-    text: str
-        The text to be colored.
-    color : str or int or None
-        | A string or number for the color coding.
-        | Lowercase letters modify the forground color.
-        | Uppercase letters modify the background color.
-        | Available colors:
-        * r/R: red
-        * g/G: green
-        * b/B: blue
-        * c/C: cyan
-        * m/M: magenta
-        * y/Y: yellow (brown)
-        * k/K: black (gray)
-        * w/W: white (gray)
-
-    Returns
-    =======
-        The colored string.
-
-    see also: TTY_COLORS
-    """
-    if color in TTY_COLORS:
-        tty_color = TTY_COLORS[color]
-    elif color in TTY_COLORS.values():
-        tty_color = color
-    else:
-        tty_color = None
-    if tty_color and sys.stdout.isatty():
-        return '\x1b[1;{color}m{}\x1b[1;m'.format(text, color=tty_color)
-    else:
-        return text
 
 
 # ======================================================================
