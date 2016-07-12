@@ -120,7 +120,11 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['pydicom', 'PySide', 'blessings'],
+    install_requires=['pydicom'],
+
+    setup_requires=['setuptools', 'setuptools_scm'],
+
+    extras_require=['PySide', 'blessings'],
 
     package_data={
         'dcmpi': ['report_templates/*.html', ],

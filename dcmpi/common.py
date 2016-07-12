@@ -86,7 +86,7 @@ EXT = {
     'nii': 'nii'
 }
 
-#todo: refactor to use dictionary
+# todo: refactor to use dictionary
 NO_EXT = ''
 TXT_EXT = 'txt'
 JSON_EXT = 'json'
@@ -206,52 +206,111 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(
-        cmd,
-        use_pipes=True,
-        dry=False,
-        verbose=D_VERB_LVL):
+def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
     """
-    Execute command and retrieve output at the end of execution.
+    Execute command and retrieve/print output at the end of execution.
 
     Args:
-        cmd (str|unicode): Command to execute.
+        cmd (str|unicode|list[str]): Command to execute.
         use_pipes (bool): Get stdout and stderr streams from the process.
         dry (bool): Print rather than execute the command (dry run).
         verbose (int): Set level of verbosity.
 
     Returns:
-        p_stdout (str|None): if use_pipes the stdout of the process.
-        p_stderr (str|None): if use_pipes the stderr of the process.
+        p_stdout (str|unicode|None): if use_pipes the stdout of the process.
+        p_stderr (str|unicode|None): if use_pipes the stderr of the process.
     """
     p_stdout, p_stderr = None, None
+    # ensure cmd is a list of strings
+    try:
+        cmd = cmd.split()
+    except AttributeError:
+        pass
+
     if dry:
-        print('Dry:\t{}'.format(cmd))
+        print('$$ {}'.format(' '.join(cmd)))
     else:
-        if verbose >= VERB_LVL['high']:
-            print('Cmd:\t{}'.format(cmd))
+        if verbose >= VERB_LVL['medium']:
+            print('>> {}'.format(' '.join(cmd)))
+
         if use_pipes:
-            # # :: deprecated
+            # # :: deprecated (since Python 2.4)
             # proc = os.popen3(cmd)
             # p_stdout, p_stderr = [item.read() for item in proc[1:]]
-            # :: new style
+
             proc = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=True, close_fds=True)
-            p_stdout = proc.stdout.read()
+            # handle stdout
+            p_stdout = ''
+            while proc.poll() is None:
+                stdout_buffer = proc.stdout.readline()
+                p_stdout += stdout_buffer
+                if verbose >= VERB_LVL['medium']:
+                    print(stdout_buffer, end='')
+            # handle stderr
             p_stderr = proc.stderr.read()
-            if verbose >= VERB_LVL['debug']:
-                print('stdout:\t{}'.format(p_stdout))
-                print('stderr:\t{}'.format(p_stderr))
+            if verbose >= VERB_LVL['high']:
+                print(p_stderr)
         else:
-            # # :: deprecated
+            # # :: deprecated (since Python 2.4)
             # os.system(cmd)
-            # :: new style
+
             subprocess.call(cmd, shell=True)
     return p_stdout, p_stderr
+
+
+# ======================================================================
+def msg(
+        text,
+        verb_lvl,
+        verb_threshold=D_VERB_LVL,
+        fmt=None,
+        *args,
+        **kwargs):
+    """
+    Send a feedback msg to output.
+
+    Args:
+        text (str|unicode): Message text to display.
+        verb_lvl (int): Current level of verbosity.
+        verb_threshold (int): Threshold level of verbosity.
+        fmt (str|unicode): Format of the message (if `blessings` supported).
+            If None, a standard formatting is used.
+        *args (tuple): Positional arguments to be passed to `print`.
+        **kwargs (dict): Keyword arguments to be passed to `print`.
+
+    Returns:
+        None.
+    """
+    if verb_lvl >= verb_threshold:
+        try:
+            import blessings
+
+            term = blessings.Terminal()
+            if not fmt:
+                if verb_lvl == VERB_LVL['medium']:
+                    extra = term.cyan
+                elif verb_lvl == VERB_LVL['high']:
+                    extra = term.yellow
+                elif verb_lvl == VERB_LVL['debug']:
+                    extra = term.magenta + term.bold
+                else:
+                    extra = term.white
+                text = '{e}{t.bold}{fst}{t.normal}{e}{rest}{t.normal}'.format(
+                    t=term, e=extra,
+                    fst=text[:text.find(' ')],
+                    rest=text[text.find(' '):])
+            else:
+                text = fmt.format(text, t=term) + term.normal
+        except ImportError:
+            pass
+        finally:
+            print(text, *args, **kwargs)
+
 
 # ======================================================================
 def string_between(
@@ -366,7 +425,7 @@ def is_compressed_dicom(
     Returns:
 
     """
-    #todo: fix docs
+    # todo: fix docs
     filename = os.path.basename(filepath)
     temp_filepath = os.path.join(tmp_path, filename)
     test_filepath = os.path.splitext(temp_filepath)[0]
