@@ -80,7 +80,7 @@ import dcmpi.common as dcmlib
 # from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
-from dcmpi.common import msg
+from dcmpi import msg
 
 # ======================================================================
 D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
@@ -88,6 +88,21 @@ D_OUTPUT_DIR = os.path.join(os.getenv('HOME'), 'isar3/data/siemens')
 # D_INPUT_DIR = '/scr/isar1/TEMP/SOURCE_DICOM'
 # D_OUTPUT_DIR = '/scr/isar1/TEMP/OUTPUT_DICOM'
 D_SUBPATH = '{study}/{name}_{date}_{time}_{sys}/dcm'
+
+
+# ======================================================================
+class Spinbox(tk.Spinbox):
+    def __init__(self, *args, **kwargs):
+        tk.Spinbox.__init__(self, *args, **kwargs)
+        self.bind('<MouseWheel>', self.mouseWheel)
+        self.bind('<Button-4>', self.mouseWheel)
+        self.bind('<Button-5>', self.mouseWheel)
+
+    def mouseWheel(self, event):
+        if event.num == 5 or event.delta == -120:
+            self.invoke('buttondown')
+        elif event.num == 4 or event.delta == 120:
+            self.invoke('buttonup')
 
 
 # ======================================================================
@@ -115,6 +130,7 @@ class Main(ttk.Frame):
         self.parent.title('DCMPI: DICOM Preprocessing Interface')
 
         self.style = ttk.Style()
+        # print(self.style.theme_names())
         self.style.theme_use('clam')
         self.pack(fill=tk.BOTH, expand=True)
 
@@ -130,7 +146,7 @@ class Main(ttk.Frame):
         self.frmInput.pack(
             side=tk.TOP, fill=tk.BOTH, padx=4, pady=4, expand=True)
         self.lblInput = ttk.Label(self.frmInput, text='Input')
-        self.lblInput.pack(side=tk.TOP, padx=1, pady=1)
+        self.lblInput.pack(padx=1, pady=1)
         self.trvInput = ttk.Treeview(self.frmInput, height=4)
         self.trvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
         self.btnImport = ttk.Button(
@@ -155,12 +171,12 @@ class Main(ttk.Frame):
         self.btnAdd.pack(side=tk.RIGHT, padx=4, pady=4)
 
         self.frmOutput = ttk.Frame(self.frmLeft)
-        self.frmOutput.pack(fill=tk.BOTH, padx=4, pady=4, expand=True)
+        self.frmOutput.pack(fill=tk.X, padx=4, pady=4)
         self.lblOutput = ttk.Label(self.frmOutput, text='Output')
         self.lblOutput.pack(side=tk.TOP, padx=1, pady=1)
 
         self.frmPath = ttk.Frame(self.frmOutput)
-        self.frmPath.pack(fill=tk.BOTH, expand=True)
+        self.frmPath.pack(fill=tk.X, expand=True)
         self.lblPath = ttk.Label(self.frmPath, text='Path', width=8)
         self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entPath = ttk.Entry(self.frmPath)
@@ -168,7 +184,7 @@ class Main(ttk.Frame):
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
 
         self.frmSubpath = ttk.Frame(self.frmOutput)
-        self.frmSubpath.pack(fill=tk.BOTH, expand=True)
+        self.frmSubpath.pack(fill=tk.X, expand=True)
         self.lblSubpath = ttk.Label(self.frmSubpath, text='Subpath', width=8)
         self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entSubpath = ttk.Entry(self.frmSubpath)
@@ -180,53 +196,41 @@ class Main(ttk.Frame):
         self.frmRight.pack(side=tk.RIGHT, fill=tk.BOTH, padx=4, pady=4)
 
         self.lblActions = ttk.Label(self.frmRight, text='Actions')
-        self.lblActions.grid(row=0, columnspan=2, padx=1, pady=1)
+        self.lblActions.pack(padx=1, pady=1)
         self.chkActions = []
         for i, (name, name, default, subdir) in enumerate(self.actions):
-            checkbox_var = tk.BooleanVar()
-            checkbox = ttk.Checkbutton(
-                self.frmRight, text=name, variable=checkbox_var)
-            checkbox.grid(row=i + 1, columnspan=2, padx=1, pady=1, sticky='w')
+            checkbox = ttk.Checkbutton(self.frmRight, text=name)
+            checkbox.pack(fill=tk.X, padx=1, pady=1)
             if default:
-                checkbox_var.set(True)
+                checkbox.invoke()
             if name == 'import_sources':
                 checkbox.bind('<Button>', self.quit)
-            self.chkActions.append((checkbox, checkbox_var))
+            self.chkActions.append(checkbox)
 
         self.lblOptions = ttk.Label(self.frmRight, text='Options')
-        self.lblOptions.grid(
-            row=1 + len(self.chkActions), columnspan=2, padx=1, pady=1)
+        self.lblOptions.pack(padx=1, pady=1)
         self.wdgtOptions = []
         for i, (name, val_type, default, extra) in enumerate(self.options):
             if val_type == bool:
-                checkbox_var = tk.BooleanVar()
-                checkbox = ttk.Checkbutton(
-                    self.frmRight, text=name, variable=checkbox_var)
-                checkbox.grid(
-                    row=2 + len(self.chkActions) + i, columnspan=2, padx=1,
-                    pady=1, sticky='w')
+                checkbox = ttk.Checkbutton(self.frmRight, text=name)
+                checkbox.pack(fill=tk.X, padx=1, pady=1)
                 if default:
-                    checkbox_var.set(True)
-                self.wdgtOptions.append((checkbox, checkbox_var))
+                    checkbox.invoke()
+                self.wdgtOptions.append((checkbox,))
             elif val_type == int:
-                label = ttk.Label(self.frmRight, text=name)
-                label.grid(
-                    row=2 + len(self.chkActions) + i, column=0, padx=1, pady=1,
-                    sticky='w')
-                spinbox_var = tk.IntVar()
-                spinbox = tk.Spinbox(
-                    self.frmRight, from_=extra[0], to=extra[1], width=3,
-                    textvariable=spinbox_var)
-                spinbox_var.set(default)
-                spinbox.grid(
-                    row=2 + len(self.chkActions) + i, column=1, padx=1, pady=1,
-                    sticky='ew')
-                self.wdgtOptions.append((spinbox, spinbox_var))
+                frame = ttk.Frame(self.frmRight)
+                frame.pack(fill=tk.X, padx=1, pady=1)
+                label = ttk.Label(frame, text=name)
+                label.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
+                spinbox = Spinbox(frame, from_=extra[0], to=extra[1], width=3)
+                while not spinbox.get() == str(default):
+                    spinbox.invoke('buttonup')
+                spinbox.pack(
+                    side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+                self.wdgtOptions.append((frame, label, spinbox))
 
         self.frmButtons = ttk.Frame(self.frmRight)
-        self.frmButtons.grid(
-            row=2 + len(self.chkActions) + len(self.wdgtOptions),
-            columnspan=2, )
+        self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
         self.btnClose = ttk.Button(
             self.frmButtons, text='Close', compound=tk.LEFT,
             command=self.quit)
@@ -312,7 +316,7 @@ def main():
     begin_time = time.time()
 
     root = tk.Tk()
-    win = {'w': 760, 'h': 320}
+    win = {'w': 760, 'h': 360}
     screen = {
         'w': root.winfo_screenwidth(), 'h': root.winfo_screenheight()}
     left = screen['w'] // 2 - win['w'] // 2

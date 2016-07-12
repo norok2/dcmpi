@@ -124,7 +124,10 @@ setup(
 
     setup_requires=['setuptools', 'setuptools_scm'],
 
-    extras_require=['PySide', 'blessings'],
+    extras_require={
+        'pyside': 'PySide',
+        'blessings': 'blessings'
+    },
 
     package_data={
         'dcmpi': ['report_templates/*.html', ],
