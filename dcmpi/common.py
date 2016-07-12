@@ -86,7 +86,7 @@ EXT = {
     'nii': 'nii'
 }
 
-#todo: refactor to use dictionary
+# todo: refactor to use dictionary
 NO_EXT = ''
 TXT_EXT = 'txt'
 JSON_EXT = 'json'
@@ -375,7 +375,7 @@ def is_compressed_dicom(
     Returns:
 
     """
-    #todo: fix docs
+    # todo: fix docs
     filename = os.path.basename(filepath)
     temp_filepath = os.path.join(tmp_path, filename)
     test_filepath = os.path.splitext(temp_filepath)[0]

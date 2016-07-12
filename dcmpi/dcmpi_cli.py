@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract and preprocess DICOM files from a single session.
+Extract and preprocess DICOM files.
 """
 
 # ======================================================================
