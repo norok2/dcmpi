@@ -98,11 +98,6 @@ NIZ_EXT = 'nii.gz'
 INFO_SEP = '__'
 FMT_SEP = '::'
 
-TTY_COLORS = {
-    'r': 31, 'g': 32, 'b': 34, 'c': 36, 'm': 35, 'y': 33, 'w': 37, 'k': 30,
-    'R': 41, 'G': 42, 'B': 44, 'C': 46, 'M': 45, 'Y': 43, 'W': 47, 'K': 40,
-}
-
 D_SUMMARY = 'summary'
 
 PREFIX_ID = {
@@ -206,7 +201,11 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
+def execute(
+        cmd,
+        use_pipes=True,
+        dry=False,
+        verbose=D_VERB_LVL):
     """
     Execute command and retrieve/print output at the end of execution.
 
@@ -261,55 +260,6 @@ def execute(cmd, use_pipes=True, dry=False, verbose=D_VERB_LVL):
 
             subprocess.call(cmd, shell=True)
     return p_stdout, p_stderr
-
-
-# ======================================================================
-def msg(
-        text,
-        verb_lvl,
-        verb_threshold=D_VERB_LVL,
-        fmt=None,
-        *args,
-        **kwargs):
-    """
-    Send a feedback msg to output.
-
-    Args:
-        text (str|unicode): Message text to display.
-        verb_lvl (int): Current level of verbosity.
-        verb_threshold (int): Threshold level of verbosity.
-        fmt (str|unicode): Format of the message (if `blessings` supported).
-            If None, a standard formatting is used.
-        *args (tuple): Positional arguments to be passed to `print`.
-        **kwargs (dict): Keyword arguments to be passed to `print`.
-
-    Returns:
-        None.
-    """
-    if verb_lvl >= verb_threshold:
-        try:
-            import blessings
-
-            term = blessings.Terminal()
-            if not fmt:
-                if verb_lvl == VERB_LVL['medium']:
-                    extra = term.cyan
-                elif verb_lvl == VERB_LVL['high']:
-                    extra = term.yellow
-                elif verb_lvl == VERB_LVL['debug']:
-                    extra = term.magenta + term.bold
-                else:
-                    extra = term.white
-                text = '{e}{t.bold}{fst}{t.normal}{e}{rest}{t.normal}'.format(
-                    t=term, e=extra,
-                    fst=text[:text.find(' ')],
-                    rest=text[text.find(' '):])
-            else:
-                text = fmt.format(text, t=term) + term.normal
-        except ImportError:
-            pass
-        finally:
-            print(text, *args, **kwargs)
 
 
 # ======================================================================
