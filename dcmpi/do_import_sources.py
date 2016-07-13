@@ -80,7 +80,7 @@ from dcmpi import D_VERB_LVL
 
 
 # ======================================================================
-def import_sources(
+def do_import_sources(
         in_dirpath,
         out_dirpath,
         clean=False,
@@ -101,7 +101,7 @@ def import_sources(
     subpath : str (optional)
         | Extra subpath to append to output dirpath. Interpret fields from
         | DICOM, according to field specifications: <field::format>.
-        | See dcmlib.fill_from_dicom for more information on accepted syntax.
+        | See dpc.fill_from_dicom for more information on accepted syntax.
     force : boolean (optional)
         Force calculation of output.
     verbose : int (optional)
@@ -114,7 +114,7 @@ def import_sources(
 
     See Also
     ========
-    dcmlib.fill_from_dicom, dcmlib.find_a_dicom
+    dpc.fill_from_dicom, dpc.find_a_dicom
 
     """
 
@@ -195,7 +195,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -203,8 +203,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
@@ -247,7 +246,7 @@ def main():
     print(__doc__)
     begin_time = time.time()
 
-    import_sources(
+    do_import_sources(
         args.input, args.output,
         args.clean, args.subpath,
         args.force, args.verbose)

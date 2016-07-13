@@ -57,9 +57,9 @@ import functools  # Higher-order functions and operations on callable objects
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.common as dpc
 
-# from dcmpi import INFO
-# from dcmpi import VERB_LVL
-# from dcmpi import D_VERB_LVL
+# from dcmpi_cli import INFO
+# from dcmpi_cli import VERB_LVL
+# from dcmpi_cli import D_VERB_LVL
 
 
 # ======================================================================

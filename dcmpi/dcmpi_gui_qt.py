@@ -61,16 +61,16 @@ from PySide import QtGui  # PySide: GUI module
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-from dcmpi.import_sources import import_sources
-from dcmpi.sorting import sorting
+from dcmpi.do_import_sources import do_import_sources
+from dcmpi.do_sorting import sorting
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
 from dcmpi.backup import backup
 from dcmpi.report import report
-import dcmpi.common as dcmlib
-# from dcmpi import INFO
+import dcmpi.common as dpc
+# from dcmpi_cli import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
 
@@ -87,14 +87,14 @@ class Main(QtGui.QWidget):
     def __init__(self):
         super(Main, self).__init__()
         self.actions = [
-            ('import_sources', 'Import Sources', True, None),
-            ('sorting', 'Sort DICOM', True, None),
-            ('get_nifti', 'Get NIfTI images', True, dcmlib.ID['nifti']),
-            ('get_meta', 'Get metadata', True, dcmlib.ID['meta']),
-            ('get_prot', 'Get protocol', True, dcmlib.ID['prot']),
-            ('get_info', 'Get information', True, dcmlib.ID['info']),
-            ('report', 'Create Report', True, dcmlib.ID['report']),
-            ('backup', 'Backup DICOM Sources', True, dcmlib.ID['backup']),
+            ('do_import_sources', 'Import Sources', True, None),
+            ('do_sorting', 'Sort DICOM', True, None),
+            ('get_nifti', 'Get NIfTI images', True, dpc.ID['nifti']),
+            ('get_meta', 'Get metadata', True, dpc.ID['meta']),
+            ('get_prot', 'Get protocol', True, dpc.ID['prot']),
+            ('get_info', 'Get information', True, dpc.ID['info']),
+            ('get_report', 'Create Report', True, dpc.ID['report']),
+            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -162,7 +162,7 @@ class Main(QtGui.QWidget):
         self.lneOutput.setReadOnly(True)
         self.lneOutput.mousePressEvent = self.lneOutput_onClicked
 
-        subpath_help = dcmlib.fill_from_dicom.__doc__
+        subpath_help = dpc.fill_from_dicom.__doc__
         subpath_help = subpath_help[
                        subpath_help.find('format_str : str\n') +
                        len('format_str : str\n'):
@@ -197,7 +197,7 @@ class Main(QtGui.QWidget):
             checkbox = QtGui.QCheckBox(label, self)
             if default:
                 checkbox.toggle()
-            if name == 'import_sources':
+            if name == 'do_import_sources':
                 checkbox.stateChanged.connect(self.chkImport_stateChanged)
             checkbox.setToolTip('Warning: toggling actions is experimental.')
             self.chkActions.append(checkbox)
@@ -303,7 +303,7 @@ class Main(QtGui.QWidget):
             print('Output:\t{}'.format(out_dirpath))
             # core actions (import and sort)
             if self.chkActions[0].isChecked():
-                dcm_dirpaths = import_sources(
+                dcm_dirpaths = do_import_sources(
                     in_dirpath, out_dirpath, False, subpath, force, verbose)
             else:
                 dcm_dirpaths = [in_dirpath]
@@ -312,14 +312,14 @@ class Main(QtGui.QWidget):
                 if self.chkActions[1].isChecked():
                     sorting(
                         dcm_dirpath,
-                        dcmlib.D_SUMMARY + '.' + dcmlib.JSON_EXT,
+                        dpc.D_SUMMARY + '.' + dpc.EXT['json'],
                         force, verbose)
                 # optional actions
                 actions = [
                     (a, x[3])
                     for x, c, a in zip(
                         self.actions[2:], self.chkActions[2:],
-                        dcmlib.D_ACTIONS)
+                        dpc.D_ACTIONS)
                     if c.isChecked()]
                 for action, subdir in actions:
                     if action[0] == 'report':
@@ -442,6 +442,7 @@ def main():
     end_time = time.time()
     print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
     sys.exit(err_code)
+
 
 # ======================================================================
 if __name__ == '__main__':

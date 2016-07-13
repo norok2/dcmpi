@@ -108,7 +108,7 @@ def sorting(
 
     See Also
     ========
-    dcmpi.common.group_series, dcm.common.dcm_sources
+    dcmpi_cli.common.group_series, dcm.common.dcm_sources
 
     """
     # :: group dicom files according to serie number
@@ -163,7 +163,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -171,8 +171,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
@@ -185,7 +184,7 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-s', '--summary',
-        default=dpc.D_SUMMARY + '.' + dpc.JSON_EXT,
+        default=dpc.D_SUMMARY + '.' + dpc.EXT['json'],
         help='set expt. summary filepath (empty to skip) [%(default)s]')
     arg_parser.add_argument(
         '-d', '--dirpath', metavar='DIR',

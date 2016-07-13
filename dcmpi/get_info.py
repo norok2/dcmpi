@@ -114,7 +114,7 @@ def get_info(
             # :: extract session information
             out_filepath = os.path.join(
                 out_dirpath, dpc.D_SUMMARY + '.' + dpc.ID['info'])
-            out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
+            out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
             info = {'_measurements': groups}
             # info['_sources'] = sources  # DEBUG
             try:
@@ -165,7 +165,7 @@ def get_info(
             for group_id, group in sorted(groups.items()):
                 out_filepath = os.path.join(
                     out_dirpath, group_id + '.' + dpc.ID['info'])
-                out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
+                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
                 info = {}
                 info['_series'] = group
                 in_filepath = sorted(
@@ -218,7 +218,7 @@ def get_info(
             for src_id, in_filepath_list in sorted(sources.items()):
                 out_filepath = os.path.join(
                     out_dirpath, src_id + '.' + dpc.ID['info'])
-                out_filepath += ('.' + dpc.JSON_EXT) if type_ext else ''
+                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
                 info = {}
                 for acq, series in groups.items():
                     if src_id in series:
@@ -254,7 +254,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -262,8 +262,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

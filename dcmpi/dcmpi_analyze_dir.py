@@ -218,7 +218,7 @@ def dcm_analyze_dir(
         action (str): Action to be performed.
             Accepted values are:
              - send_email: send an email to the first e-mail found.
-             - dcmpi: run dcmpi pipeline.
+             - dcmpi_cli: run dcmpi_cli pipeline.
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 
@@ -258,7 +258,7 @@ def dcm_analyze_dir(
         if matched:
             if action.lower() == 'send_mail':
                 send_mail_dcm(dcm_filepath, None, force, verbose)
-            elif action.lower() == 'dcmpi':
+            elif action.lower() == 'dcmpi_cli':
                 io_dirs = (dirpath, '/SCR/TEMP')
                 cmd = os.path.dirname(__file__) + \
                       '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
@@ -295,7 +295,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -303,8 +303,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
