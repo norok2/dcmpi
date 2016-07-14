@@ -18,10 +18,9 @@ __version__ = '0.0.1.3.dev15+ng0b85f22.d20160712'
 # ======================================================================
 # :: Project Details
 INFO = {
-    'authors': (
-        'Riccardo Metere <metere@cbs.mpg.de>',
-    ),
-    'copyright': 'Copyright (C) 2015',
+    'name': 'DCMPI',
+    'author': 'Riccardo Metere <metere@cbs.mpg.de>',
+    'copyright': 'Copyright (C) 2016',
     'license': 'License: GNU General Public License version 3 (GPLv3)',
     'notice':
         """

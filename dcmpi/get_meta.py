@@ -56,7 +56,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -102,8 +102,8 @@ def get_meta(
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    # groups_dict = dcmlib.group_series(in_dirpath)
+    sources_dict = dpc.dcm_sources(in_dirpath)
+    # groups_dict = dpc.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and copy files there
@@ -114,8 +114,8 @@ def get_meta(
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dcmlib.ID['meta'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
+                    out_dirpath, src_id + '.' + dpc.ID['meta'])
+                out_filepath += ('.' + dpc.TXT_EXT) if type_ext else ''
                 if verbose > VERB_LVL['none']:
                     out_subpath = out_filepath[len(out_dirpath):]
                     print('Metadata:\t{}'.format(out_subpath))
@@ -123,16 +123,16 @@ def get_meta(
                 opts += ' -rdialect withExtProtocols'  # extended prot info
                 opts += ' -chunks'  # information from each chunk
                 # cmd = 'isisdump -in {} {}'.format(in_filepath, opts)
-                # p_stdout, p_stderr = dcmlib.execute(cmd, verbose=verbose)
+                # p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
                 cmd = 'isisdump -in {} {} > {} &> {}'.format(
                     in_filepath, opts, out_filepath, out_filepath)
-                dcmlib.execute(cmd, use_pipes=False, verbose=verbose)
+                dpc.execute(cmd, use_pipes=False, verbose=verbose)
 
         elif method == 'pydicom':
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dcmlib.ID['meta'])
-                out_filepath += ('.' + dcmlib.JSON_EXT) if type_ext else ''
+                    out_dirpath, src_id + '.' + dpc.ID['meta'])
+                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
                 info_dict = {}
                 for in_filepath in in_filepath_list:
                     try:
@@ -140,8 +140,8 @@ def get_meta(
                     except:
                         print("EE: failed processing '{}'".format(in_filepath))
                     else:
-                        dcm_dict = dcmlib.dcm_dump(dcm)
-                        info_dict = dcmlib.dcm_merge_info(info_dict, dcm_dict)
+                        dcm_dict = dpc.dcm_dump(dcm)
+                        info_dict = dpc.dcm_merge_info(info_dict, dcm_dict)
                 if verbose > VERB_LVL['none']:
                     out_subpath = out_filepath[len(out_dirpath):]
                     print('Meta:\t{}'.format(out_subpath))
@@ -185,7 +185,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -193,8 +193,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

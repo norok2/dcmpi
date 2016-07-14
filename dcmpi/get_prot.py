@@ -58,7 +58,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dcmlib
+import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -102,8 +102,8 @@ def get_prot(
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
         print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dcmlib.dcm_sources(in_dirpath)
-    groups_dict = dcmlib.group_series(in_dirpath)
+    sources_dict = dpc.dcm_sources(in_dirpath)
+    groups_dict = dpc.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and extract protocol
@@ -113,12 +113,12 @@ def get_prot(
             for group_id, group in sorted(groups_dict.items()):
                 in_filepath = sources_dict[group[0]][0]
                 out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dcmlib.ID['prot'])
-                out_filepath += ('.' + dcmlib.TXT_EXT) if type_ext else ''
+                    out_dirpath, group_id + '.' + dpc.ID['prot'])
+                out_filepath += ('.' + dpc.TXT_EXT) if type_ext else ''
                 try:
                     dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dcmlib.DCM_ID['hdr_nfo']].value
-                    prot_str = dcmlib.get_protocol(prot_src)
+                    prot_src = dcm[dpc.DCM_ID['hdr_nfo']].value
+                    prot_str = dpc.get_protocol(prot_src)
                 except:
                     print('EE: failed processing \'{}\''.format(in_filepath))
                 else:
@@ -154,7 +154,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -162,8 +162,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

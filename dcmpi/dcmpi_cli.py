@@ -51,27 +51,33 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.modules.base as mrb
-# import mri_tools.modules.utils as mru
-# import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
-# from mri_tools.modules.sequences import mp2rage
-from dcmpi.import_sources import import_sources
-from dcmpi.sorting import sorting
+from dcmpi.do_import_sources import do_import_sources
+from dcmpi.do_sorting import sorting
 import dcmpi.common as dpc
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
-from dcmpi.backup import backup
-from dcmpi.report import report
+from dcmpi.get_backup import backup
+from dcmpi.get_report import report
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
 
 
+ACTIONS = {
+    get_info: 'ciao',
+}
+print(ACTIONS)
+#     (get_nifti, ),
+#     (get_meta, ),
+#     (get_prot, ),
+#     (get_report, ),
+#     (get_backup, ),
+# )
+
 # ======================================================================
-def dcmpi(
+def dcmpi_cli(
         in_dirpath,
         out_dirpath,
         subpath='{study}/{name}_{date}_{time}_{sys}/dcm',
@@ -100,20 +106,21 @@ def dcmpi(
         verbose (int): Set level of verbosity.
 
     Returns:
-
+        None.
     """
     subdirs = (
         nii_subdir, meta_subdir, prot_subdir, info_subdir, report_subdir,
         backup_subdir)
-    # core actions (import and sort)
-    dcm_dirpaths = import_sources(
+    # import
+    dcm_dirpaths = do_import_sources(
         in_dirpath, out_dirpath, False, subpath, force, verbose)
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
+        # sort
         sorting(
-            dcm_dirpath, dpc.D_SUMMARY + '.' + dpc.JSON_EXT,
+            dcm_dirpath, dpc.D_SUMMARY + '.' + dpc.EXT['json'],
             force, verbose)
-        # optional actions
+        # other actions
         actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
                    if d.strip()]
         for action, subdir in actions:
@@ -141,7 +148,7 @@ def handle_arg():
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
         epilog='v.{} - {}\n{}'.format(
-            INFO['version'], ', '.join(INFO['authors']), INFO['license']),
+            INFO['version'], INFO['author'], INFO['license']),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
@@ -149,8 +156,7 @@ def handle_arg():
         version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
             INFO['version'],
             next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], ', '.join(INFO['authors']),
-            INFO['notice']),
+            INFO['copyright'], INFO['author'], INFO['notice']),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
@@ -213,7 +219,7 @@ def main():
     print(__doc__)
     begin_time = time.time()
 
-    dcmpi(
+    dcmpi_cli(
         args.input, args.output, args.subpath,
         args.nii_subdir, args.meta_subdir, args.prot_subdir, args.info_subdir,
         args.report_subdir, args.backup_subdir,

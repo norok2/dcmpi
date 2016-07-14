@@ -70,7 +70,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# from dcmpi import INFO
+# from dcmpi_cli import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
 
@@ -85,15 +85,6 @@ EXT = {
     'niz': 'nii.gz',
     'nii': 'nii'
 }
-
-# todo: refactor to use dictionary
-NO_EXT = ''
-TXT_EXT = 'txt'
-JSON_EXT = 'json'
-DCM_EXT = 'ima'  # DICOM image
-DCR_EXT = 'sr'  # DICOM report
-NII_EXT = 'nii'
-NIZ_EXT = 'nii.gz'
 
 INFO_SEP = '__'
 FMT_SEP = '::'
@@ -122,6 +113,7 @@ DCM_ID = {
     'hdr_nfo': (0x0029, 0x1020),  # CSA Series Header Info
     'TA': (0x0051, 0x100a),  # Acquisition Time (Duration)
 }
+
 # Time difference (in seconds) between two series for them to be considered
 #    from different acquisition.
 GRACE_PERIOD = 2.0
@@ -147,14 +139,6 @@ UNCOMPRESS_METHODS = {
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
 )
-
-D_ACTIONS = (
-    ('get_nifti', ('::i_dirpath', '::o_dirpath', 'dcm2nii', True, True)),
-    ('get_meta', ('::i_dirpath', '::o_dirpath', 'pydicom', False,)),
-    ('get_prot', ('::i_dirpath', '::o_dirpath', 'pydicom', False,)),
-    ('get_info', ('::i_dirpath', '::o_dirpath', 'pydicom', False,)),
-    ('report', ('::i_dirpath', '::o_dirpath', 'info', 'pdf',)),
-    ('backup', ('::i_dirpath', '::o_dirpath', '7z', False,)))
 
 
 # ======================================================================
