@@ -75,8 +75,8 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.common as dpc
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -134,17 +134,21 @@ def import_sources(
         # :: analyze directory tree
         dcm_dirpaths = set()
         for filepath in get_filepaths(in_dirpath):
+            msg('Analyzing `{}`...'.format(filepath), verbose,
+                VERB_LVL['debug'], fmt='{t.cyan}')
             filename = os.path.basename(filepath)
             is_dicom = dpc.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
-            is_zipped, zip_method = dpc.is_compressed_dicom(
-                filepath,
-                allow_dir=False,
-                allow_report=True,
-                allow_postprocess=True)
+            if not is_dicom:
+                is_zipped, zip_method = dpc.is_compressed_dicom(
+                    filepath,
+                    allow_dir=False,
+                    allow_report=True,
+                    allow_postprocess=True)
+            print(is_dicom, is_zipped, zip_method)
             if is_dicom or is_zipped and zip_method in dpc.UNCOMPRESS_METHODS:
                 if subpath:
                     dcm_subpath = dpc.fill_from_dicom(subpath, filepath)

@@ -236,7 +236,7 @@ def execute(
             # # :: deprecated (since Python 2.4)
             # proc = os.popen3(cmd)
             # p_stdout, p_stderr = [item.read() for item in proc[1:]]
-
+            print(cmd)
             proc = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
@@ -246,7 +246,7 @@ def execute(
             # handle stdout
             p_stdout = ''
             while proc.poll() is None:
-                stdout_buffer = proc.stdout.readline()
+                stdout_buffer = proc.stdout.read(1).decode()
                 p_stdout += stdout_buffer
                 if verbose >= VERB_LVL['medium']:
                     print(stdout_buffer, end='')
@@ -338,16 +338,16 @@ def is_dicom(
         # check if it is a DICOM dir.
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
-            raise
+            raise StopIteration
         # check if it is a DICOM report
         is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
-            raise
+            raise StopIteration
         # check if it is a DICOM postprocess image  # TODO: improve this
         is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
-            raise
-    except:
+            raise StopIteration
+    except StopIteration:
         return False
     else:
         return True
@@ -383,7 +383,7 @@ def is_compressed_dicom(
     result = False
     for compression, cmd in known_methods.items():
         cmd += ' {}'.format(temp_filepath)
-        execute(cmd)
+        execute(cmd, use_pipes=False, verbose=6)
         if os.path.isfile(test_filepath):
             result = is_dicom(
                 test_filepath, allow_dir, allow_report, allow_postprocess)
@@ -413,15 +413,15 @@ def find_a_dicom(
                 allow_dir=allow_dir,
                 allow_report=allow_report,
                 allow_postprocess=allow_postprocess)
-            is_a_compressed, compression = is_compressed_dicom(
-                filename,
-                allow_dir=allow_dir,
-                allow_report=allow_report,
-                allow_postprocess=allow_postprocess)
-            if is_a_dicom:
-                dcm_filename = filename
-                break
-            elif is_a_compressed:
+            if not is_a_dicom:
+                is_a_compressed, compression = is_compressed_dicom(
+                    filename,
+                    allow_dir=allow_dir,
+                    allow_report=allow_report,
+                    allow_postprocess=allow_postprocess)
+            else:
+                is_a_compressed = False
+            if is_a_dicom or is_a_compressed:
                 dcm_filename = filename
                 break
         if dcm_filename:
@@ -512,9 +512,12 @@ def fill_from_dicom(
         format_kwargs = {}
         for field_id, field_formatter in sorted(fields.items()):
             dcm_id, fmt_func, field_fmt = field_formatter
-            format_kwargs[field_id] = \
-                fmt_func(getattr(dcm, dcm_id), field_fmt) \
-                    if fmt_func else getattr(dcm, dcm_id)
+            try:
+                format_kwargs[field_id] = \
+                    fmt_func(getattr(dcm, dcm_id), field_fmt) \
+                        if fmt_func else getattr(dcm, dcm_id)
+            except TypeError:
+                format_kwargs[field_id] = getattr(dcm, dcm_id)
         out_str = format_str.format(**format_kwargs)
     finally:
         if os.path.isfile(temp_filepath):

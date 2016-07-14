@@ -316,13 +316,13 @@ def main():
     begin_time = time.time()
 
     root = tk.Tk()
-    win = {'w': 760, 'h': 360}
-    screen = {
-        'w': root.winfo_screenwidth(), 'h': root.winfo_screenheight()}
-    left = screen['w'] // 2 - win['w'] // 2
-    top = screen['h'] // 2 - win['h'] // 2
-    root.geometry(
-        '{w:d}x{h:d}+{l:d}+{t:d}'.format(l=left, t=top, **win))
+    # win = {'w': 760, 'h': 460}
+    # screen = {
+    #     'w': root.winfo_screenwidth(), 'h': root.winfo_screenheight()}
+    # left = screen['w'] // 2 - win['w'] // 2
+    # top = screen['h'] // 2 - win['h'] // 2
+    # root.geometry(
+    #     '{w:d}x{h:d}+{l:d}+{t:d}'.format(l=left, t=top, **win))
     app = Main(root)
     root.mainloop()
 

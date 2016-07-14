@@ -127,14 +127,14 @@ def get_nifti(
         d_ext = '.' + dpc.NIZ_EXT if compressed else dpc.NII_EXT
         # :: extract nifti
         if method == 'pydicom':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
             # TODO: implement to avoid dependencies
             if verbose > VERB_LVL['low']:
                 print('WW: Pure Python method not implemented.')
 
         if method == 'isis':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 cmd = 'isisconv -in {} -out {}'.format(
@@ -149,7 +149,7 @@ def get_nifti(
                         # TODO: implement volume merging
 
         elif method == 'dcm2nii':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 # produce nifti file
                 opts = ' -t n'
