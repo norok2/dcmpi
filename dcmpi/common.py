@@ -48,6 +48,7 @@ import subprocess  # Subprocess management
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import unittest  # Unit testing framework
 import doctest  # Test interactive Python examples
+import shlex  # Simple lexical analysis
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -74,6 +75,8 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
 
+# todo: VERY IMPORTANT: refactor all get_* to use imported DICOM
+
 # ======================================================================
 # :: General-purposes constants
 EXT = {
@@ -81,7 +84,7 @@ EXT = {
     'txt': 'txt',
     'json': 'json',
     'dcm': 'ima',  # DICOM image
-    'dcr': 'sr',  # DICOM report
+    'dcr': 'sr',  # DICOM get_report
     'niz': 'nii.gz',
     'nii': 'nii'
 }
@@ -104,8 +107,8 @@ ID = {
     'info': 'info',
     'meta': 'meta',
     'prot': 'prot',
-    'report': 'report',
-    'backup': 'dcm',}
+    'get_report': 'get_report',
+    'get_backup': 'dcm',}
 
 # DICOM indexes
 DCM_ID = {
@@ -114,9 +117,9 @@ DCM_ID = {
     'TA': (0x0051, 0x100a),  # Acquisition Time (Duration)
 }
 
-# Time difference (in seconds) between two series for them to be considered
-#    from different acquisition.
-GRACE_PERIOD = 2.0
+# DICOM series with nominal absolute time of acquisition differing more than
+#   GRACE_PERIOD are considered as originating from different acquisitions.
+GRACE_PERIOD = 2.0  # s
 
 PROT_BEGIN = '<XProtocol>'
 PROT_END = '### ASCCONV END ###" \n    }\n  }\n}\n'
@@ -185,28 +188,27 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(
-        cmd,
-        use_pipes=True,
-        dry=False,
-        verbose=D_VERB_LVL):
+def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
     """
     Execute command and retrieve/print output at the end of execution.
 
     Args:
         cmd (str|unicode|list[str]): Command to execute.
-        use_pipes (bool): Get stdout and stderr streams from the process.
+        get_pipes (bool): Get stdout and stderr streams from the process.
+            If True, the program flow is halted until the process is completed.
+            Otherwise, the process is spawn in background, continuing execution.
         dry (bool): Print rather than execute the command (dry run).
         verbose (int): Set level of verbosity.
 
     Returns:
-        p_stdout (str|unicode|None): if use_pipes the stdout of the process.
-        p_stderr (str|unicode|None): if use_pipes the stderr of the process.
+        ret_code (str): if get_pipes, the return code of the command.
+        p_stdout (str|unicode|None): if get_pipes, the stdout of the process.
+        p_stderr (str|unicode|None): if get_pipes, the stderr of the process.
     """
-    p_stdout, p_stderr = None, None
+    p_stdout, p_stderr, ret_code = None, None, None
     # ensure cmd is a list of strings
     try:
-        cmd = cmd.split()
+        cmd = shlex.split(cmd)
     except AttributeError:
         pass
 
@@ -216,34 +218,30 @@ def execute(
         if verbose >= VERB_LVL['medium']:
             print('>> {}'.format(' '.join(cmd)))
 
-        if use_pipes:
-            # # :: deprecated (since Python 2.4)
-            # proc = os.popen3(cmd)
-            # p_stdout, p_stderr = [item.read() for item in proc[1:]]
-            print(cmd)
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True, close_fds=True)
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False, close_fds=True)
+
+        if get_pipes:
             # handle stdout
             p_stdout = ''
             while proc.poll() is None:
-                stdout_buffer = proc.stdout.read(1).decode()
+                stdout_buffer = proc.stdout.read(1)
                 p_stdout += stdout_buffer
                 if verbose >= VERB_LVL['medium']:
-                    print(stdout_buffer, end='')
+                    sys.stdout.write(stdout_buffer)
+                    sys.stdout.flush()
             # handle stderr
             p_stderr = proc.stderr.read()
             if verbose >= VERB_LVL['high']:
                 print(p_stderr)
-        else:
-            # # :: deprecated (since Python 2.4)
-            # os.system(cmd)
+            # finally get the return code
+            ret_code = proc.returncode
 
-            subprocess.call(cmd, shell=True)
-    return p_stdout, p_stderr
+    return p_stdout, p_stderr, ret_code
 
 
 # ======================================================================
@@ -323,7 +321,7 @@ def is_dicom(
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
             raise StopIteration
-        # check if it is a DICOM report
+        # check if it is a DICOM get_report
         is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
             raise StopIteration
@@ -367,7 +365,7 @@ def is_compressed_dicom(
     result = False
     for compression, cmd in known_methods.items():
         cmd += ' {}'.format(temp_filepath)
-        execute(cmd, use_pipes=False, verbose=6)
+        execute(cmd)
         if os.path.isfile(test_filepath):
             result = is_dicom(
                 test_filepath, allow_dir, allow_report, allow_postprocess)

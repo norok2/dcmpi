@@ -115,7 +115,7 @@ def get_meta(
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(
                     out_dirpath, src_id + '.' + dpc.ID['meta'])
-                out_filepath += ('.' + dpc.TXT_EXT) if type_ext else ''
+                out_filepath += ('.' + dpc.EXT['txt']) if type_ext else ''
                 if verbose > VERB_LVL['none']:
                     out_subpath = out_filepath[len(out_dirpath):]
                     print('Metadata:\t{}'.format(out_subpath))
@@ -126,7 +126,7 @@ def get_meta(
                 # p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
                 cmd = 'isisdump -in {} {} > {} &> {}'.format(
                     in_filepath, opts, out_filepath, out_filepath)
-                dpc.execute(cmd, use_pipes=False, verbose=verbose)
+                dpc.execute(cmd, get_pipes=False, verbose=verbose)
 
         elif method == 'pydicom':
             for src_id, in_filepath_list in sorted(sources_dict.items()):

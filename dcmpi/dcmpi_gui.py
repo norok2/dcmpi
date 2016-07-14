@@ -78,8 +78,8 @@ from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
-from dcmpi.backup import backup
-from dcmpi.report import report
+from dcmpi.get_backup import get_backup
+from dcmpi.get_report import get_report
 import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
@@ -189,8 +189,8 @@ class Main(ttk.Frame):
             ('get_meta', 'Get metadata', True, dpc.ID['meta']),
             ('get_prot', 'Get protocol', True, dpc.ID['prot']),
             ('get_info', 'Get information', True, dpc.ID['info']),
-            ('report', 'Create Report', True, dpc.ID['report']),
-            ('backup', 'Backup DICOM Sources', True, dpc.ID['backup']),
+            ('get_report', 'Create Report', True, dpc.ID['get_report']),
+            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['get_backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -384,7 +384,7 @@ class Main(ttk.Frame):
                     if 'selecte' in c.state()]
                 msg(actions)
                 for action, subdir in actions:
-                    if action[0] == 'report':
+                    if action[0] == 'get_report':
                         i_dirpath = os.path.join(
                             base_dirpath, self.actions[5][3])
                     else:

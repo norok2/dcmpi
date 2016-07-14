@@ -90,10 +90,8 @@ def get_nifti(
 
     Parameters
     ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
+    in_dirpath (str): Path to input directory containing sorted DICOM files.
+    out_dirpath (str): Path to output directory where to put NIfTI images.
     method : str (optional)
         | Extraction method. Accepted values:
         * isis: Use Enrico Reimer's ISIS tool.
@@ -124,7 +122,8 @@ def get_nifti(
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
         sources_dict = dpc.dcm_sources(in_dirpath)
-        d_ext = '.' + dpc.NIZ_EXT if compressed else dpc.NII_EXT
+        d_ext = '.' + dpc.EXT['niz'] if compressed else dpc.EXT['nii']
+
         # :: extract nifti
         if method == 'pydicom':
             for src_id in sorted(sources_dict.keys()):
