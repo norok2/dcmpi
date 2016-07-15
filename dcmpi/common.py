@@ -40,7 +40,7 @@ import re  # Regular expression operations
 # import operator  # Standard operators as functions
 # import collections  # High-performance container datatypes
 # import argparse  # Parser for command-line options, arguments and subcommands
-# import itertools  # Functions creating iterators for efficient looping
+import itertools  # Functions creating iterators for efficient looping
 # import functools  # Higher-order functions and operations on callable objects
 import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
@@ -242,6 +242,56 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
             ret_code = proc.returncode
 
     return p_stdout, p_stderr, ret_code
+
+
+# ======================================================================
+def check_redo(
+        in_filepaths,
+        out_filepaths,
+        force=False):
+    """
+    Check if input files are newer than output files, to force calculation.
+
+    Args:
+        in_filepaths (list[str|unicode]): Input filepaths for computation.
+        out_filepaths (list[str|unicode]): Output filepaths for computation.
+        force (bool): Force computation to be re-done.
+
+    Returns:
+        force (bool): True if the computation is to be re-done.
+
+    Raises:
+        IndexError: If the input filepath list is empty.
+        IOError: If any of the input files do not exist.
+    """
+    # todo: include output_dir autocreation
+    # check if input is not empty
+    if not in_filepaths:
+        raise IndexError('List of input files is empty.')
+
+    # check if input exists
+    for in_filepath in in_filepaths:
+        if not os.path.exists(in_filepath):
+            raise IOError('Input file does not exists.')
+
+    # check if output exists
+    if not force:
+        for out_filepath in out_filepaths:
+            if out_filepath:
+                if not os.path.exists(out_filepath):
+                    force = True
+                    break
+
+    # check if input is older than output
+    if not force:
+        for in_filepath, out_filepath in \
+                itertools.product(in_filepaths, out_filepaths):
+            if in_filepath and out_filepath:
+                if os.path.getmtime(in_filepath) \
+                        > os.path.getmtime(out_filepath):
+                    force = True
+                    break
+    return force
 
 
 # ======================================================================
