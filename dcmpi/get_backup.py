@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Safely backup DICOM files for later use. This is part of DCMPI.
+Safely get_backup DICOM files for later use. This is part of DCMPI.
 
 Warning: misuse of this program may lead to loss of data.
 """
@@ -70,7 +70,7 @@ ARCHIVE_EXT = {
 
 
 # ======================================================================
-def backup(
+def get_backup(
         in_dirpath,
         out_dirpath='dcm',
         method='7z',
@@ -78,7 +78,7 @@ def backup(
         force=False,
         verbose=D_VERB_LVL):
     """
-    Safely backup DICOM files and test the produced archive.
+    Safely get_backup DICOM files and test the produced archive.
 
     Args:
         in_dirpath (str): Path to input directory.
@@ -209,7 +209,7 @@ def handle_arg():
     arg_parser.add_argument(
         '-k', '--keep',
         action='store_true',
-        help='Keep DICOM sources after backup (and test). [%(default)s]')
+        help='Keep DICOM sources after get_backup (and test). [%(default)s]')
     return arg_parser
 
 
@@ -226,7 +226,7 @@ def main():
     print(__doc__)
     begin_time = time.time()
 
-    backup(
+    get_backup(
         args.input, args.output,
         args.method, args.keep,
         args.force, args.verbose)

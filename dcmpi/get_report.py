@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Create a report of the acquisitions from imaged data.
+Create a get_report of the acquisitions from imaged data.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -203,7 +203,7 @@ def get_param(acq):
 
 
 # ======================================================================
-def report(
+def get_report(
         in_dirpath,
         out_dirpath,
         method='info',
@@ -236,7 +236,7 @@ def report(
 
     """
     if verbose > VERB_LVL['none']:
-        print(':: Creating HTML and PDF report...')
+        print(':: Creating HTML and PDF get_report...')
     if verbose > VERB_LVL['none']:
         print('Input:\t{}'.format(in_dirpath))
     if verbose > VERB_LVL['none']:
@@ -272,14 +272,14 @@ def report(
             if verbose > VERB_LVL['none']:
                 print("WW: Unknown method '{}'.".format(method))
 
-        # :: create report
+        # :: create get_report
         tpl_dirpath = os.path.join(
             os.path.dirname(__file__), 'report_templates')
         if summary and acquisitions and os.path.isdir(tpl_dirpath):
-            # :: always create HTML report
+            # :: always create HTML get_report
             # import templates
             template = {
-                'report': 'report_template.html',
+                'get_report': 'report_template.html',
                 'acq': 'acquisition_template.html',
                 'acq_param': 'acquisition_parameter_template.html',
             }
@@ -308,7 +308,7 @@ def report(
                 for tag, val in tags.items():
                     tmp_acq_html = tmp_acq_html.replace(tag, val)
                 acq_html += tmp_acq_html
-            report_html = template['report']
+            report_html = template['get_report']
             tags = {
                 '[TIMESTAMP]': time.strftime('%c UTC', time.gmtime()),
                 '[SESSION-INFO]': get_session(in_dirpath, summary),
@@ -363,7 +363,7 @@ def report(
                     val = ''
                 report_html = report_html.replace(tag, val)
             # todo: improve filename (e.g. from upper folder or recalculate)
-            html_filename = 'report' + '.html'
+            html_filename = 'get_report' + '.html'
             if verbose > VERB_LVL['none']:
                 print('HTML:\t{}'.format(html_filename))
             html_filepath = os.path.join(out_dirpath, html_filename)
@@ -470,7 +470,7 @@ def main():
     print(__doc__)
     begin_time = time.time()
 
-    report(
+    get_report(
         args.input, args.output,
         args.method, args.format,
         args.force, args.verbose)

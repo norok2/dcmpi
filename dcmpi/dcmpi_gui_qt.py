@@ -93,8 +93,8 @@ class Main(QtGui.QWidget):
             ('get_meta', 'Get metadata', True, dpc.ID['meta']),
             ('get_prot', 'Get protocol', True, dpc.ID['prot']),
             ('get_info', 'Get information', True, dpc.ID['info']),
-            ('get_report', 'Create Report', True, dpc.ID['report']),
-            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['backup']),
+            ('get_report', 'Create Report', True, dpc.ID['get_report']),
+            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['get_backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -322,7 +322,7 @@ class Main(QtGui.QWidget):
                         dpc.D_ACTIONS)
                     if c.isChecked()]
                 for action, subdir in actions:
-                    if action[0] == 'report':
+                    if action[0] == 'get_report':
                         i_dirpath = os.path.join(
                             base_dirpath, self.actions[5][3])
                     else:

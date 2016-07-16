@@ -81,7 +81,7 @@ EXT = {
     'txt': 'txt',
     'json': 'json',
     'dcm': 'ima',  # DICOM image
-    'dcr': 'sr',  # DICOM report
+    'dcr': 'sr',  # DICOM get_report
     'niz': 'nii.gz',
     'nii': 'nii'
 }
@@ -104,8 +104,8 @@ ID = {
     'info': 'info',
     'meta': 'meta',
     'prot': 'prot',
-    'report': 'report',
-    'backup': 'dcm',}
+    'get_report': 'get_report',
+    'get_backup': 'dcm',}
 
 # DICOM indexes
 DCM_ID = {
@@ -323,7 +323,7 @@ def is_dicom(
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
             raise
-        # check if it is a DICOM report
+        # check if it is a DICOM get_report
         is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
             raise

@@ -58,8 +58,8 @@ from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
-from dcmpi.get_backup import backup
-from dcmpi.get_report import report
+from dcmpi.get_backup import get_backup
+from dcmpi.get_report import get_report
 from dcmpi import INFO
 from dcmpi import VERB_LVL
 from dcmpi import D_VERB_LVL
@@ -85,8 +85,8 @@ def dcmpi_cli(
         meta_subdir=dpc.ID['meta'],
         prot_subdir=dpc.ID['prot'],
         info_subdir=dpc.ID['info'],
-        report_subdir=dpc.ID['report'],
-        backup_subdir=dpc.ID['backup'],
+        report_subdir=dpc.ID['get_report'],
+        backup_subdir=dpc.ID['get_backup'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -124,7 +124,7 @@ def dcmpi_cli(
         actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
                    if d.strip()]
         for action, subdir in actions:
-            i_dirpath = dcm_dirpath if action[0] != 'report' else \
+            i_dirpath = dcm_dirpath if action[0] != 'get_report' else \
                 os.path.join(base_dirpath, info_subdir)
             o_dirpath = os.path.join(base_dirpath, subdir)
             if verbose >= VERB_LVL['debug']:
@@ -197,12 +197,12 @@ def handle_arg():
         help='Subdir for INFO extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-r', '--report_subdir',
-        default=dpc.ID['report'],
-        help='Subdir for report generation. Empty to skip [%(default)s]')
+        default=dpc.ID['get_report'],
+        help='Subdir for get_report generation. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-b', '--backup_subdir',
-        default=dpc.ID['backup'],
-        help='Subdir for backup. Empty to skip [%(default)s]')
+        default=dpc.ID['get_backup'],
+        help='Subdir for get_backup. Empty to skip [%(default)s]')
     return arg_parser
 
 

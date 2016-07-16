@@ -149,8 +149,8 @@ setup(
             'dcmpi__get_meta=dcmpi_cli.get_meta:main',
             'dcmpi__get_nifti=dcmpi_cli.get_nifti:main',
             'dcmpi__get_prot=dcmpi_cli.get_prot:main',
-            'dcmpi__report=dcmpi_cli.report:main',
-            'dcmpi__backup=dcmpi_cli.backup:main',
+            'dcmpi__report=dcmpi_cli.get_report:main',
+            'dcmpi__backup=dcmpi_cli.get_backup:main',
         ],
     },
 )
