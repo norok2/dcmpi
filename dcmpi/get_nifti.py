@@ -90,10 +90,8 @@ def get_nifti(
 
     Parameters
     ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
+    in_dirpath (str): Path to input directory containing sorted DICOM files.
+    out_dirpath (str): Path to output directory where to put NIfTI images.
     method : str (optional)
         | Extraction method. Accepted values:
         * isis: Use Enrico Reimer's ISIS tool.
@@ -124,17 +122,18 @@ def get_nifti(
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
         sources_dict = dpc.dcm_sources(in_dirpath)
-        d_ext = '.' + dpc.NIZ_EXT if compressed else dpc.NII_EXT
+        d_ext = '.' + dpc.EXT['niz'] if compressed else dpc.EXT['nii']
+
         # :: extract nifti
         if method == 'pydicom':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
             # TODO: implement to avoid dependencies
             if verbose > VERB_LVL['low']:
                 print('WW: Pure Python method not implemented.')
 
         if method == 'isis':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 cmd = 'isisconv -in {} -out {}'.format(
@@ -149,7 +148,7 @@ def get_nifti(
                         # TODO: implement volume merging
 
         elif method == 'dcm2nii':
-            for src_id in sorted(sources_dict.iterkeys()):
+            for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 # produce nifti file
                 opts = ' -t n'

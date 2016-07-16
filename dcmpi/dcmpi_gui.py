@@ -61,7 +61,6 @@ except ImportError:
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 # import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import PySide  # PySide (Python QT bindings)
-import appdirs
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -558,6 +557,13 @@ def main():
     begin_time = time.time()
 
     root = tk.Tk()
+    # win = {'w': 760, 'h': 460}
+    # screen = {
+    #     'w': root.winfo_screenwidth(), 'h': root.winfo_screenheight()}
+    # left = screen['w'] // 2 - win['w'] // 2
+    # top = screen['h'] // 2 - win['h'] // 2
+    # root.geometry(
+    #     '{w:d}x{h:d}+{l:d}+{t:d}'.format(l=left, t=top, **win))
     app = Main(root, args)
     root.mainloop()
 

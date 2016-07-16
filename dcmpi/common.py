@@ -40,7 +40,7 @@ import re  # Regular expression operations
 # import operator  # Standard operators as functions
 # import collections  # High-performance container datatypes
 # import argparse  # Parser for command-line options, arguments and subcommands
-# import itertools  # Functions creating iterators for efficient looping
+import itertools  # Functions creating iterators for efficient looping
 # import functools  # Higher-order functions and operations on callable objects
 import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
@@ -48,6 +48,7 @@ import subprocess  # Subprocess management
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import unittest  # Unit testing framework
 import doctest  # Test interactive Python examples
+import shlex  # Simple lexical analysis
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -81,7 +82,7 @@ EXT = {
     'txt': 'txt',
     'json': 'json',
     'dcm': 'ima',  # DICOM image
-    'dcr': 'sr',  # DICOM get_report
+    'dcr': 'sr',  # DICOM report
     'niz': 'nii.gz',
     'nii': 'nii'
 }
@@ -104,8 +105,8 @@ ID = {
     'info': 'info',
     'meta': 'meta',
     'prot': 'prot',
-    'get_report': 'get_report',
-    'get_backup': 'dcm',}
+    'report': 'report',
+    'backup': 'dcm',}
 
 # DICOM indexes
 DCM_ID = {
@@ -114,9 +115,9 @@ DCM_ID = {
     'TA': (0x0051, 0x100a),  # Acquisition Time (Duration)
 }
 
-# Time difference (in seconds) between two series for them to be considered
-#    from different acquisition.
-GRACE_PERIOD = 2.0
+# DICOM series with nominal absolute time of acquisition differing more than
+#   GRACE_PERIOD are considered as originating from different acquisitions.
+GRACE_PERIOD = 2.0  # s
 
 PROT_BEGIN = '<XProtocol>'
 PROT_END = '### ASCCONV END ###" \n    }\n  }\n}\n'
@@ -187,7 +188,7 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 # ======================================================================
 def execute(
         cmd,
-        use_pipes=True,
+        get_pipes=True,
         dry=False,
         verbose=D_VERB_LVL):
     """
@@ -195,18 +196,21 @@ def execute(
 
     Args:
         cmd (str|unicode|list[str]): Command to execute.
-        use_pipes (bool): Get stdout and stderr streams from the process.
+        get_pipes (bool): Get stdout and stderr streams from the process.
+            If True, the program flow is halted until the process is completed.
+            Otherwise, the process is spawn in background, continuing execution.
         dry (bool): Print rather than execute the command (dry run).
         verbose (int): Set level of verbosity.
 
     Returns:
-        p_stdout (str|unicode|None): if use_pipes the stdout of the process.
-        p_stderr (str|unicode|None): if use_pipes the stderr of the process.
+        ret_code (str): if get_pipes, the return code of the command.
+        p_stdout (str|unicode|None): if get_pipes, the stdout of the process.
+        p_stderr (str|unicode|None): if get_pipes, the stderr of the process.
     """
-    p_stdout, p_stderr = None, None
+    p_stdout, p_stderr, ret_code = None, None, None
     # ensure cmd is a list of strings
     try:
-        cmd = cmd.split()
+        cmd = shlex.split(cmd)
     except AttributeError:
         pass
 
@@ -216,34 +220,80 @@ def execute(
         if verbose >= VERB_LVL['medium']:
             print('>> {}'.format(' '.join(cmd)))
 
-        if use_pipes:
-            # # :: deprecated (since Python 2.4)
-            # proc = os.popen3(cmd)
-            # p_stdout, p_stderr = [item.read() for item in proc[1:]]
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False, close_fds=True)
 
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=True, close_fds=True)
+        if get_pipes:
             # handle stdout
             p_stdout = ''
             while proc.poll() is None:
-                stdout_buffer = proc.stdout.readline()
+                stdout_buffer = proc.stdout.read(1)
                 p_stdout += stdout_buffer
                 if verbose >= VERB_LVL['medium']:
-                    print(stdout_buffer, end='')
+                    sys.stdout.write(stdout_buffer)
+                    sys.stdout.flush()
             # handle stderr
             p_stderr = proc.stderr.read()
             if verbose >= VERB_LVL['high']:
                 print(p_stderr)
-        else:
-            # # :: deprecated (since Python 2.4)
-            # os.system(cmd)
+            # finally get the return code
+            ret_code = proc.returncode
 
-            subprocess.call(cmd, shell=True)
-    return p_stdout, p_stderr
+    return p_stdout, p_stderr, ret_code
+
+
+# ======================================================================
+def check_redo(
+        in_filepaths,
+        out_filepaths,
+        force=False):
+    """
+    Check if input files are newer than output files, to force calculation.
+
+    Args:
+        in_filepaths (list[str|unicode]): Input filepaths for computation.
+        out_filepaths (list[str|unicode]): Output filepaths for computation.
+        force (bool): Force computation to be re-done.
+
+    Returns:
+        force (bool): True if the computation is to be re-done.
+
+    Raises:
+        IndexError: If the input filepath list is empty.
+        IOError: If any of the input files do not exist.
+    """
+    # todo: include output_dir autocreation
+    # check if input is not empty
+    if not in_filepaths:
+        raise IndexError('List of input files is empty.')
+
+    # check if input exists
+    for in_filepath in in_filepaths:
+        if not os.path.exists(in_filepath):
+            raise IOError('Input file does not exists.')
+
+    # check if output exists
+    if not force:
+        for out_filepath in out_filepaths:
+            if out_filepath:
+                if not os.path.exists(out_filepath):
+                    force = True
+                    break
+
+    # check if input is older than output
+    if not force:
+        for in_filepath, out_filepath in \
+                itertools.product(in_filepaths, out_filepaths):
+            if in_filepath and out_filepath:
+                if os.path.getmtime(in_filepath) \
+                        > os.path.getmtime(out_filepath):
+                    force = True
+                    break
+    return force
 
 
 # ======================================================================
@@ -322,16 +372,16 @@ def is_dicom(
         # check if it is a DICOM dir.
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
-            raise
+            raise StopIteration
         # check if it is a DICOM get_report
         is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
-            raise
+            raise StopIteration
         # check if it is a DICOM postprocess image  # TODO: improve this
         is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
-            raise
-    except:
+            raise StopIteration
+    except StopIteration:
         return False
     else:
         return True
@@ -397,15 +447,15 @@ def find_a_dicom(
                 allow_dir=allow_dir,
                 allow_report=allow_report,
                 allow_postprocess=allow_postprocess)
-            is_a_compressed, compression = is_compressed_dicom(
-                filename,
-                allow_dir=allow_dir,
-                allow_report=allow_report,
-                allow_postprocess=allow_postprocess)
-            if is_a_dicom:
-                dcm_filename = filename
-                break
-            elif is_a_compressed:
+            if not is_a_dicom:
+                is_a_compressed, compression = is_compressed_dicom(
+                    filename,
+                    allow_dir=allow_dir,
+                    allow_report=allow_report,
+                    allow_postprocess=allow_postprocess)
+            else:
+                is_a_compressed = False
+            if is_a_dicom or is_a_compressed:
                 dcm_filename = filename
                 break
         if dcm_filename:
@@ -496,9 +546,12 @@ def fill_from_dicom(
         format_kwargs = {}
         for field_id, field_formatter in sorted(fields.items()):
             dcm_id, fmt_func, field_fmt = field_formatter
-            format_kwargs[field_id] = \
-                fmt_func(getattr(dcm, dcm_id), field_fmt) \
-                    if fmt_func else getattr(dcm, dcm_id)
+            try:
+                format_kwargs[field_id] = \
+                    fmt_func(getattr(dcm, dcm_id), field_fmt) \
+                        if fmt_func else getattr(dcm, dcm_id)
+            except TypeError:
+                format_kwargs[field_id] = getattr(dcm, dcm_id)
         out_str = format_str.format(**format_kwargs)
     finally:
         if os.path.isfile(temp_filepath):

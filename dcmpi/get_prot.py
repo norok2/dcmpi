@@ -114,7 +114,7 @@ def get_prot(
                 in_filepath = sources_dict[group[0]][0]
                 out_filepath = os.path.join(
                     out_dirpath, group_id + '.' + dpc.ID['prot'])
-                out_filepath += ('.' + dpc.TXT_EXT) if type_ext else ''
+                out_filepath += ('.' + dpc.EXT['txt']) if type_ext else ''
                 try:
                     dcm = pydcm.read_file(in_filepath)
                     prot_src = dcm[dpc.DCM_ID['hdr_nfo']].value
