@@ -44,10 +44,10 @@ except ImportError:
     import tkFileDialog as filedialog
 
 # Configuration file parser
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
+# try:
+#     import configparser
+# except ImportError:
+#     import ConfigParser as configparser
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -61,6 +61,7 @@ except ImportError:
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 # import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import PySide  # PySide (Python QT bindings)
+import appdirs
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -112,6 +113,7 @@ def default_config():
         'output_subpath': '{study}/{name}_{date}_{time}_{sys}/dcm',
     }
     return cfg
+
 
 # ======================================================================
 def load_config(
@@ -172,6 +174,7 @@ class Spinbox(tk.Spinbox):
 class Main(ttk.Frame):
     def __init__(self, parent, args):
         # get config data
+        cfg = {}
         self.cfg = default_config()
         for dirpath in CFG_DIRPATHS:
             self.cfg_filepath = os.path.join(dirpath, args.config)
@@ -184,7 +187,6 @@ class Main(ttk.Frame):
             self.cfg_filepath = os.path.join(
                 DIRS.user_config_dir, CFG_FILENAME)
 
-
         self.actions = [
             ('do_import_sources', 'Import Sources', True, None),
             ('sorting', 'Sort DICOM', True, None),
@@ -192,8 +194,8 @@ class Main(ttk.Frame):
             ('get_meta', 'Get metadata', True, dpc.ID['meta']),
             ('get_prot', 'Get protocol', True, dpc.ID['prot']),
             ('get_info', 'Get information', True, dpc.ID['info']),
-            ('get_report', 'Create Report', True, dpc.ID['get_report']),
-            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['get_backup']),
+            ('get_report', 'Create Report', True, dpc.ID['report']),
+            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -329,6 +331,27 @@ class Main(ttk.Frame):
             self.frmButtons, text='Close', compound=tk.LEFT,
             command=self.onClose)
         self.btnClose.pack(side=tk.LEFT, padx=4, pady=4)
+        self.centered()
+
+    def centered(self, width=None, height=None):
+        self.update_idletasks()
+        screen = self.parent.winfo_screenwidth(), \
+                 self.parent.winfo_screenheight()
+        if not width:
+            for val in (self.winfo_width(), screen[0] // 3):
+                if val > 1:
+                    width = val
+                    break
+        if not height:
+            for val in (self.winfo_height(), screen[1] // 3):
+                if val > 1:
+                    height = val
+                    break
+        left = screen[0] // 2 - width // 2
+        top = screen[1] // 2 - height // 2
+        self.parent.geometry(
+            '{w:d}x{h:d}+{l:d}+{t:d}'.format(
+                l=left, t=top, w=width, h=height))
 
     def get_config_from_ui(self):
         """Get the config information from the UI"""

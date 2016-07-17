@@ -38,7 +38,7 @@ import datetime  # Basic date and time types
 import string  # Common string operations
 import re  # Regular expression operations
 # import operator  # Standard operators as functions
-# import collections  # High-performance container datatypes
+import collections  # High-performance container datatypes
 # import argparse  # Parser for command-line options, arguments and subcommands
 import itertools  # Functions creating iterators for efficient looping
 # import functools  # Higher-order functions and operations on callable objects
@@ -140,6 +140,11 @@ UNCOMPRESS_METHODS = {
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
 )
+
+
+ACTIONS = collections.OrderedDict((
+    ('one', ('a', 'b')),
+))
 
 
 # ======================================================================

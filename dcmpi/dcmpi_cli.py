@@ -85,8 +85,8 @@ def dcmpi_cli(
         meta_subdir=dpc.ID['meta'],
         prot_subdir=dpc.ID['prot'],
         info_subdir=dpc.ID['info'],
-        report_subdir=dpc.ID['get_report'],
-        backup_subdir=dpc.ID['get_backup'],
+        report_subdir=dpc.ID['report'],
+        backup_subdir=dpc.ID['backup'],
         force=False,
         verbose=D_VERB_LVL):
     """

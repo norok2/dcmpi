@@ -78,42 +78,36 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.common as dpc
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
 def sorting(
         dirpath,
-        summary=None,
+        summary=dpc.D_SUMMARY + '.' + dpc.EXT['json'],
         force=False,
         verbose=D_VERB_LVL):
     """
-    Sort DICOM files for serie and acquisition. Save results to summary file.
+    Sort DICOM files for series and acquisition.
 
-    Parameters
-    ==========
-    dirpath : str
-        Path where to operate.
-    summary : str
-        File name or path where to save grouping summary.
-    force : boolean (optional)
-        Force calculation of output.
-    verbose : int (optional)
-        Set level of verbosity.
+    Results are saved to a summary file.
 
-    Returns
-    =======
-    None.
+    Args:
+        dirpath (str): Path containing DICOM files to sort.
+        summary (str): File name or path where to save grouping summary.
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
 
-    See Also
-    ========
-    dcmpi_cli.common.group_series, dcm.common.dcm_sources
+    Returns:
+        summary (dict): Summary of acquisitions .
 
+    See Also:
+        dcmpi.common.group_series, dcmpi.common.dcm_sources
     """
     # :: group dicom files according to serie number
-    if verbose > VERB_LVL['none']:
-        print('Sort:\t{}'.format(dirpath))
+    msg('Sort: {}'.format(dirpath))
+
     dirpath = os.path.realpath(dirpath)
     input_list_dict = {}
     for in_filename in sorted(os.listdir(dirpath)):
@@ -121,11 +115,11 @@ def sorting(
         try:
             dcm = pydcm.read_file(in_filepath)
         except IOError:
-            if verbose >= VERB_LVL['debug']:
-                print('WW: failed processing \'{}\''.format(in_filepath))
+            msg('W: unable to process `{}`'.format(in_filepath),
+                verbose, VERB_LVL['debug'])
         except:
-            if verbose > VERB_LVL['low']:
-                print('WW: failed processing \'{}\''.format(in_filepath))
+            msg('W: failed processing `{}`'.format(in_filepath),
+                verbose, VERB_LVL['debug'])
         else:
             src_id = dpc.INFO_SEP.join(
                 (dpc.PREFIX_ID['series'] + '{:0{size}d}'.format(
@@ -151,7 +145,8 @@ def sorting(
                 os.makedirs(os.path.dirname(summary))
         else:
             summary = os.path.join(dirpath, summary)
-        dpc.group_series(dirpath, summary, force, verbose)
+        summary = dpc.group_series(dirpath, summary, force, verbose)
+    return summary
 
 
 # ======================================================================

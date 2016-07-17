@@ -90,26 +90,19 @@ def do_import_sources(
     """
     Get all DICOM within an input directory.
 
-    Parameters
-    ==========
-    in_dirpath : str
-        Path to input directory.
-    out_dirpath : str
-        Path to output directory.
-    clean : boolean (optional)
-        Move DICOM sources instead of copying.
-    subpath : str (optional)
-        | Extra subpath to append to output dirpath. Interpret fields from
-        | DICOM, according to field specifications: <field::format>.
-        | See dpc.fill_from_dicom for more information on accepted syntax.
-    force : boolean (optional)
-        Force calculation of output.
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
+        clean (bool): Move DICOM sources instead of copying.
+        subpath (str): Extra subpath to append to output dirpath.
+            Extract and interpret fields from DICOM, according to field
+            specifications: <field::format>.
+            For more information on accepted syntax, see `dpc.fill_from_dicom`.
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    dcm_dirpaths : str set
+    Returns:
+        dcm_dirpaths : str set
         Paths to directories containing DICOM files separated by session.
 
     See Also
@@ -129,7 +122,7 @@ def do_import_sources(
         print('Input:\t{}'.format(in_dirpath))
         print('Output:\t{}'.format(out_dirpath))
         if clean:
-            print('W: Files will be moved!')
+            msg('W: Files will be moved!', fmt='{t.yellow}{t.bold}')
     if os.path.exists(in_dirpath):
         # :: analyze directory tree
         dcm_dirpaths = set()
@@ -148,7 +141,8 @@ def do_import_sources(
                     allow_dir=False,
                     allow_report=True,
                     allow_postprocess=True)
-            print(is_dicom, is_zipped, zip_method)
+            else:
+                is_zipped
             if is_dicom or is_zipped and zip_method in dpc.UNCOMPRESS_METHODS:
                 if subpath:
                     dcm_subpath = dpc.fill_from_dicom(subpath, filepath)
@@ -176,8 +170,7 @@ def do_import_sources(
                 if verbose > VERB_LVL['low']:
                     print('WW: Invalid source found \'{}\''.format(name))
     else:
-        if verbose > VERB_LVL['none']:
-            print('WW: Input path does NOT exists.')
+        msg('W: Input path does NOT exists.', verbose, VERB_LVL['low'])
     return dcm_dirpaths
 
 
