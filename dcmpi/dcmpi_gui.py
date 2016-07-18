@@ -63,7 +63,6 @@ except ImportError:
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 # import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import PySide  # PySide (Python QT bindings)
-import appdirs
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -82,13 +81,31 @@ from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
 # ======================================================================
-DIRS = appdirs.AppDirs(INFO['name'], INFO['author'])
-CFG_FILENAME = os.path.splitext(os.path.basename(__file__))[0] + '.json'
+try:
+    import appdirs
+
+    _app_dirs = appdirs.AppDirs(INFO['name'], INFO['author'])
+    PATHS = {
+        'usr_cfg': _app_dirs.user_config_dir,
+        'sys_cfg': _app_dirs.site_config_dir,
+    }
+except ImportError:
+    PATHS = {
+        'usr_cfg': os.path.realpath('.'),
+        'sys_cfg': os.path.dirname(__file__),
+    }
+    PATHS = collections.namedtuple(
+        'DIRS', ['user_config_dir', 'site_config_dir'])
+    PATHS.user_config_dir = PATHS.site_config_dir = os.path.realpath('.')
+
+# ======================================================================
+CFG_FILENAME = os.path.splitext(os.path.basename(__file__))[0] + '__cfg.json'
 CFG_DIRPATHS = (
-    os.path.dirname(__file__),
-    DIRS.user_config_dir,
+    PATHS['usr_cfg'],
+    os.path.realpath('.'),
     os.getenv('HOME'),
-    DIRS.site_config_dir)
+    os.path.dirname(__file__),
+    PATHS['sys_cfg'])
 
 
 # ======================================================================
@@ -102,12 +119,25 @@ def default_config():
 
     """
     cfg = {
-        'input_dir': os.getenv('HOME'),
-        'input_dirs': [],
-        'output_dir': os.getenv('HOME'),
+        'add_path': os.path.realpath('.'),
+        'import_path': os.path.realpath('.'),
+        'export_path': os.path.realpath('.'),
+        'input_paths': [],
+        'output_path': os.path.realpath('.'),
         'output_subpath': '{study}/{name}_{date}_{time}_{sys}',
+        'import_subpath': dpc.ID['dicom'],
+        'niz_subpath': dpc.ID['nifti'],
+        'meta_subpath': dpc.ID['meta'],
+        'prot_subpath': dpc.ID['prot'],
+        'info_subpath': dpc.ID['info'],
+        'report_template': dpc.TPL['report'],
+        'backup_template': dpc.TPL['backup'],
+        'force': False,
+        'verbose': D_VERB_LVL,
         'use_mp': True,
         'num_processes': multiprocessing.cpu_count(),
+        'gui_style_tk': 'default',
+        'save_on_exit': True,
     }
     return cfg
 
@@ -126,8 +156,11 @@ def load_config(
     cfg = {}
     if os.path.exists(cfg_filepath):
         msg('Load configuration from `{}`.'.format(cfg_filepath))
-        with open(cfg_filepath, 'r') as cfg_file:
-            cfg = json.load(cfg_file)
+        try:
+            with open(cfg_filepath, 'r') as cfg_file:
+                cfg = json.load(cfg_file)
+        except json.JSONDecodeError:
+            pass
     return cfg
 
 
@@ -153,27 +186,61 @@ def save_config(
 
 
 # ======================================================================
-def centered(target, container=None, width=None, height=None):
+def _centered(target, container=None):
     target.update_idletasks()
-    if not container:
-        container = target.parent
-    screen = container.winfo_screenwidth(), \
-             container.winfo_screenheight()
-    if not width:
-        for val in (target.winfo_width(), screen[0] // 3):
-            if val > 1:
-                width = val
-                break
-    if not height:
-        for val in (target.winfo_height(), screen[1] // 3):
-            if val > 1:
-                height = val
-                break
-    left = screen[0] // 2 - width // 2
-    top = screen[1] // 2 - height // 2
-    container.geometry(
-        '{w:d}x{h:d}+{l:d}+{t:d}'.format(
-            l=left, t=top, w=width, h=height))
+    if container is None:
+        parent = {
+            'w': target.winfo_screenwidth(),
+            'h': target.winfo_screenheight()}
+    else:
+        container.update_idletasks()
+        parent = {
+            'w': container.winfo_width(), 'h': container.winfo_height(),
+            't': container.winfo_y(), 'l': container.winfo_x()}
+    item = {'w': target.winfo_width(), 'h': target.winfo_height()}
+    item['l'] = parent['w'] // 2 - item['w'] // 2 + parent['l']
+    item['t'] = parent['h'] // 2 - item['h'] // 2 + parent['t']
+    target.geometry('{w:d}x{h:d}+{l:d}+{t:d}'.format(**item))
+
+
+# ======================================================================
+class Entry(ttk.Entry):
+    def __init__(self, *args, **kwargs):
+        ttk.Entry.__init__(self, *args, **kwargs)
+
+    def get_val(self):
+        return self.get()
+
+    def set_val(self, val=''):
+        try:
+            if val is not None:
+                val = str(val)
+            else:
+                raise ValueError
+        except ValueError:
+            val = ''
+        state = self['state']
+        self['state'] = 'enabled'
+        self.delete(0, tk.END)
+        self.insert(0, val)
+        self['state'] = state
+
+
+# ======================================================================
+class Checkbutton(ttk.Checkbutton):
+    def __init__(self, *args, **kwargs):
+        ttk.Checkbutton.__init__(self, *args, **kwargs)
+
+    def get_val(self):
+        return 'selected' in self.state()
+
+    def set_val(self, val=True):
+        # if (val and not self.get_val()) or (not val and self.get_val()):
+        if bool(val) ^ bool(self.get_val()):  # bitwise xor
+            self.toggle()
+
+    def toggle(self):
+        self.invoke()
 
 
 # ======================================================================
@@ -183,12 +250,78 @@ class Spinbox(tk.Spinbox):
         self.bind('<MouseWheel>', self.mouseWheel)
         self.bind('<Button-4>', self.mouseWheel)
         self.bind('<Button-5>', self.mouseWheel)
+        self.sys_events = {
+            'scroll_up': {'unix': 4, 'win': +120},
+            'scroll_down': {'unix': 5, 'win': -120}}
 
     def mouseWheel(self, event):
-        if event.num == 5 or event.delta == -120:
-            self.invoke('buttondown')
-        elif event.num == 4 or event.delta == 120:
+        scroll_up = (
+            event.num == self.sys_events['scroll_up']['unix'] or
+            event.delta == self.sys_events['scroll_up']['win'])
+        scroll_down = (
+            event.num == self.sys_events['scroll_down']['unix'] or
+            event.delta == self.sys_events['scroll_down']['win'])
+        if scroll_up:
             self.invoke('buttonup')
+        elif scroll_down:
+            self.invoke('buttondown')
+
+    def get_values(self):
+        return [
+            dpc.auto_convert(item)
+            for item in self.configure('values')[-1].split()]
+
+    def get_val(self):
+        return dpc.auto_convert(self.get())
+
+    def set_val(self, val=''):
+        if val in self.get_values():
+            state = self['state']
+            self['state'] = 'normal'
+            self.delete(0, tk.END)
+            self.insert(0, val)
+            self['state'] = state
+        else:
+            raise ValueError('Spinbox: value `{}` not allowed.'.format(val))
+
+
+# ======================================================================
+class Listbox(ttk.Combobox):
+    def __init__(self, *args, **kwargs):
+        ttk.Combobox.__init__(self, *args, **kwargs)
+        self['state'] = 'readonly'
+
+    def get_values(self):
+        return self.configure('values')[-1]
+
+    def get_val(self):
+        return self.get()
+
+    def set_val(self, val=''):
+        self.set(val)
+
+
+# ======================================================================
+class Listview(ttk.Treeview):
+    def __init__(self, *args, **kwargs):
+        ttk.Treeview.__init__(self, *args, **kwargs)
+
+    def get_items(self):
+        return [self.item(child, 'text') for child in self.get_children('')]
+
+    def add_item(self, item, unique=False):
+        items = self.get_items()
+        if not unique or unique and item not in items:
+            self.insert('', tk.END, text=item)
+
+    def del_item(self, item):
+        for child in self.get_children(''):
+            if self.item(child, 'text') == item:
+                self.delete(child)
+
+    def clear(self):
+        for child in self.get_children(''):
+            self.delete(child)
 
 
 # ======================================================================
@@ -199,9 +332,9 @@ class About(tk.Toplevel):
         self.parent = parent
         self.title('About {}'.format(INFO['name']))
         self.resizable(False, False)
-        self.frame = ttk.Frame(self)
-        self.frame.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frame)
+        self.frm = ttk.Frame(self)
+        self.frm.pack(fill=tk.BOTH, expand=True)
+        self.frmMain = ttk.Frame(self.frm)
         self.frmMain.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
 
         about_txt = '\n'.join((
@@ -212,7 +345,7 @@ class About(tk.Toplevel):
                 INFO['name'], INFO['version'],
                 INFO['copyright'], INFO['author'], INFO['notice'])
         ))
-        print(about_txt)
+        msg(about_txt)
         self.lblInfo = ttk.Label(
             self.frmMain, text=about_txt, anchor=tk.CENTER,
             background='#333', foreground='#ccc', font='TkFixedFont')
@@ -224,36 +357,39 @@ class About(tk.Toplevel):
         self.bind('<Return>', self.destroy)
         self.bind('<Escape>', self.destroy)
 
-        centered(self.frame, self)
+        _centered(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
 
 
 # ======================================================================
-class Config(tk.Toplevel):
+class Settings(tk.Toplevel):
     def __init__(self, parent, app):
         self.settings = collections.OrderedDict((
-            ('use_mp', {
-                'label': 'Use parallel processing',
-                'dtype': bool,
-                'default': app.cfg['use_mp'],}),
+            ('use_mp', {'label': 'Use parallel processing', 'dtype': bool,}),
             ('num_processes', {
                 'label': 'Number of parallel processes',
                 'dtype': int,
-                'default': app.cfg['num_processes'],
                 'values': list(range(1, 2 * multiprocessing.cpu_count())),}),
+            ('gui_style_tk', {
+                'label': 'GUI Style (Tk)',
+                'dtype': tuple,
+                'values': app.style.theme_names()
+            })
         ))
+        for name, info in self.settings.items():
+            self.settings[name]['default'] = app.cfg[name]
         self.result = None
 
         self.win = tk.Toplevel.__init__(self, parent)
         self.transient(parent)
         self.parent = parent
         self.app = app
-        self.title('{} Configuration'.format(INFO['name']))
-        self.frame = ttk.Frame(self)
-        self.frame.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frame)
+        self.title('{} Advanced Settings'.format(INFO['name']))
+        self.frm = ttk.Frame(self)
+        self.frm.pack(fill=tk.BOTH, expand=True)
+        self.frmMain = ttk.Frame(self.frm)
         self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
 
         self.frmSpacers = []
@@ -261,22 +397,30 @@ class Config(tk.Toplevel):
         self.wdgOptions = {}
         for name, info in self.settings.items():
             if info['dtype'] == bool:
-                checkbox = ttk.Checkbutton(self.frmMain, text=info['label'])
-                checkbox.pack(fill=tk.X, padx=1, pady=1)
-                if info['default']:
-                    checkbox.state(['selected'])
-                self.wdgOptions[name] = (checkbox,)
+                chk = Checkbutton(self.frmMain, text=info['label'])
+                chk.pack(fill=tk.X, padx=1, pady=1)
+                chk.set_val(info['default'])
+                self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frame = ttk.Frame(self.frmMain)
-                frame.pack(fill=tk.X, padx=1, pady=1)
-                label = ttk.Label(frame, text=info['label'])
-                label.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spinbox = Spinbox(frame, values=info['values'], width=3)
-                while not spinbox.get() == str(info['default']):
-                    spinbox.invoke('buttonup')
-                spinbox.pack(
+                frm = ttk.Frame(self.frmMain)
+                frm.pack(fill=tk.X, padx=1, pady=1)
+                lbl = ttk.Label(frm, text=info['label'])
+                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+                spb = Spinbox(frm, values=info['values'])
+                spb.set_val(info['default'])
+                spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
-                self.wdgOptions[name] = (frame, label, spinbox)
+                self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
+            elif info['dtype'] == tuple:
+                frm = ttk.Frame(self.frmMain)
+                frm.pack(fill=tk.X, padx=1, pady=1)
+                lbl = ttk.Label(frm, text=info['label'])
+                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+                lst = Listbox(frm, values=info['values'])
+                lst.set_val(info['default'])
+                lst.pack(
+                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'lst': lst}
 
         self.frmButtons = ttk.Frame(self.frmMain)
         self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
@@ -298,7 +442,7 @@ class Config(tk.Toplevel):
         self.bind('<Return>', self.ok)
         self.bind('<Escape>', self.cancel)
 
-        centered(self.frame, self)
+        _centered(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -318,31 +462,36 @@ class Config(tk.Toplevel):
         self.destroy()
 
     def reset(self, event=None):
-        for name, vals in self.settings.items():
-            if vals['dtype'] == bool:
-                self.wdgOptions[name][0].state(
-                    ['selected' if self.app.cfg[name] else 'normal'])
-            elif vals['dtype'] == int:
-                self.wdgOptions[name][2].delete(0, tk.END)
-                self.wdgOptions[name][2].insert(0, str(self.app.cfg[name]))
+        for name, info in self.settings.items():
+            if info['dtype'] == bool:
+                self.wdgOptions[name]['chk'].set_val(self.app.cfg[name])
+            elif info['dtype'] == int:
+                self.wdgOptions[name]['spb'].set_val(self.app.cfg[name])
+            elif info['dtype'] == str:
+                self.wdgOptions[name]['ent'].set_val(self.app.cfg[name])
+            elif info['dtype'] == tuple:
+                self.wdgOptions[name]['lst'].set_val(self.app.cfg[name])
 
     def validate(self, event=None):
         return True
 
     def apply(self, event=None):
         self.result = {}
-        for name, vals in self.settings.items():
-            if vals['dtype'] == bool:
-                self.result[name] = \
-                    'selected' in self.wdgOptions[name][0].state()
-            elif vals['dtype'] == int:
-                self.result[name] = self.wdgOptions[name][2].get()
+        for name, info in self.settings.items():
+            if info['dtype'] == bool:
+                self.result[name] = self.wdgOptions[name]['chk'].get_val()
+            elif info['dtype'] == int:
+                self.result[name] = self.wdgOptions[name]['spb'].get_val()
+            elif info['dtype'] == str:
+                self.result[name] = self.wdgOptions[name]['ent'].get_val()
+            elif info['dtype'] == tuple:
+                self.result[name] = self.wdgOptions[name]['lst'].get_val()
 
 
 # ======================================================================
 class Main(ttk.Frame):
     def __init__(self, parent, args):
-        # get config data
+        # get_val config data
         cfg = {}
         self.cfg = default_config()
         for dirpath in CFG_DIRPATHS:
@@ -354,47 +503,24 @@ class Main(ttk.Frame):
             self.cfg.update(cfg)
         else:
             self.cfg_filepath = os.path.join(
-                DIRS.user_config_dir, CFG_FILENAME)
+                PATHS['usr_cfg'], CFG_FILENAME)
 
         self.modules = collections.OrderedDict([
-            ('import_subpath', {
-                'label': 'DICOM',
-                'default': True,
-                'extra_subpath': dpc.ID['dicom']}),
-            ('niz_subpath', {
-                'label': 'NIfTI Image',
-                'default': True,
-                'extra_subpath': dpc.ID['nifti']}),
-            ('meta_subpath', {
-                'label': 'Metadata',
-                'default': True,
-                'extra_subpath': dpc.ID['meta']}),
-            ('prot_subpath', {
-                'label': 'Protocol',
-                'default': True,
-                'extra_subpath': dpc.ID['prot']}),
-            ('info_subpath', {
-                'label': 'Information',
-                'default': True,
-                'extra_subpath': dpc.ID['info']}),
-            ('report_tpl', {
-                'label': 'Report template',
-                'default': True,
-                'template': dpc.TPL['report']}),
-            ('backup_tpl', {
-                'label': 'Backup template',
-                'default': True,
-                'template': dpc.TPL['backup']}),
+            ('import_subpath', {'label': 'DICOM'}),
+            ('niz_subpath', {'label': 'NIfTI Image'}),
+            ('meta_subpath', {'label': 'Metadata'}),
+            ('prot_subpath', {'label': 'Protocol'}),
+            ('info_subpath', {'label': 'Information'}),
+            ('report_template', {'label': 'Report template'}),
+            ('backup_template', {'label': 'Backup template'}),
         ])
         self.options = collections.OrderedDict((
             ('force', {
                 'label': 'Force',
-                'dtype': bool,
-                'default': False}),
+                'dtype': bool}),
             ('verbose', {
                 'label': 'Verbosity',
                 'dtype': int,
-                'default': D_VERB_LVL,
                 'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}),
         ))
 
@@ -406,42 +532,12 @@ class Main(ttk.Frame):
 
         self.style = ttk.Style()
         # print(self.style.theme_names())
-        self.style.theme_use('clam')
+        self.style.theme_use(self.cfg['gui_style_tk'])
         self.pack(fill=tk.BOTH, expand=True)
 
-        self.mnuMain = tk.Menu(self.parent, tearoff=False)
-        self.parent.config(menu=self.mnuMain)
-        self.mnuFile = tk.Menu(self.mnuMain, tearoff=False)
-        self.mnuMain.add_cascade(label='File', menu=self.mnuFile)
-        self.mnuFileInput = tk.Menu(self.mnuFile, tearoff=False)
-        self.mnuFile.add_cascade(label='Input', menu=self.mnuFileInput)
-        self.mnuFileInput.add_command(label='Add...', command=self.actionAdd)
-        self.mnuFileInput.add_command(
-            label='Remove', command=self.actionRemove)
-        self.mnuFileInput.add_command(
-            label='Clear', command=self.actionClear)
-        self.mnuFileInput.add_separator()
-        self.mnuFileInput.add_command(
-            label='Import...', command=self.actionImport)
-        self.mnuFileInput.add_command(
-            label='Export...', command=self.actionExport)
-        self.mnuFileOutput = tk.Menu(self.mnuFile, tearoff=False)
-        self.mnuFile.add_cascade(label='Output', menu=self.mnuFileOutput)
-        self.mnuFileOutput.add_command(
-            label='Path...', command=self.actionPath)
-        self.mnuFile.add_separator()
-        self.mnuFile.add_command(label='Run', command=self.actionRun)
-        self.mnuFile.add_separator()
-        self.mnuFile.add_command(label='Config', command=self.actionConfig)
-        self.mnuFile.add_separator()
-        self.mnuFile.add_command(label='Exit', command=self.actionExit)
-        self.mnuHelp = tk.Menu(self.mnuMain, tearoff=False)
-        self.mnuMain.add_cascade(label='Help', menu=self.mnuHelp)
-        self.mnuHelp.add_command(
-            label='Default settings', command=self.resetDefaults)
-        self.mnuHelp.add_separator()
-        self.mnuHelp.add_command(label='About', command=self.actionAbout)
+        self._make_menu()
 
+        # :: define UI items
         self.frmMain = ttk.Frame(self)
         self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
         self.frmSpacers = []
@@ -456,9 +552,9 @@ class Main(ttk.Frame):
             side=tk.TOP, fill=tk.BOTH, padx=4, pady=4, expand=True)
         self.lblInput = ttk.Label(self.frmInput, text='Input')
         self.lblInput.pack(padx=1, pady=1)
-        self.trvInput = ttk.Treeview(self.frmInput, show='tree', height=4)
-        self.trvInput.bind('<Double-Button>', self.actionAdd)
-        self.trvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
+        self.lsvInput = Listview(self.frmInput, show='tree', height=4)
+        self.lsvInput.bind('<Double-Button-1>', self.actionAdd)
+        self.lsvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
         self.btnImport = ttk.Button(
             self.frmInput, text='Import', compound=tk.LEFT,
             command=self.actionImport)
@@ -492,8 +588,8 @@ class Main(ttk.Frame):
         self.frmPath.pack(fill=tk.X, expand=True)
         self.lblPath = ttk.Label(self.frmPath, text='Path', width=8)
         self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entPath = ttk.Entry(self.frmPath)
-        self.entPath.insert(0, self.cfg['output_dir'])
+        self.entPath = Entry(self.frmPath)
+        self.entPath.insert(0, self.cfg['output_path'])
         self.entPath.bind('<Double-Button>', self.actionPath)
         self.entPath.pack(
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
@@ -502,7 +598,7 @@ class Main(ttk.Frame):
         self.frmSubpath.pack(fill=tk.X, expand=True)
         self.lblSubpath = ttk.Label(self.frmSubpath, text='Sub-Path', width=8)
         self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entSubpath = ttk.Entry(self.frmSubpath)
+        self.entSubpath = Entry(self.frmSubpath)
         self.entSubpath.insert(0, self.cfg['output_subpath'])
         self.entSubpath.pack(
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
@@ -516,35 +612,30 @@ class Main(ttk.Frame):
         self.lblActions.pack(padx=1, pady=1)
         self.wdgModules = {}
         for name, info in self.modules.items():
-            frame = ttk.Frame(self.frmRight)
-            frame.pack(fill=tk.X, padx=1, pady=1)
-            if 'extra_subpath' in info:
-                checkbox = ttk.Checkbutton(frame, text=info['label'])
-                checkbox.pack(
+            frm = ttk.Frame(self.frmRight)
+            frm.pack(fill=tk.X, padx=1, pady=1)
+            if 'subpath' in name:
+                chk = Checkbutton(frm, text=info['label'])
+                chk.pack(
                     side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                if info['default']:
-                    checkbox.state(['selected'])
-                checkbox.config(command=self.activateModules)
-                entry = ttk.Entry(frame, width=8)
-                entry.insert(0, info['extra_subpath'])
+                chk.config(command=self.activateModules)
+                entry = Entry(frm, width=8)
                 entry.pack(side=tk.RIGHT, fill=tk.X, padx=1, pady=1)
-            elif 'template' in info:
-                checkbox = ttk.Checkbutton(frame, text=info['label'])
-                checkbox.pack(fill=tk.X, padx=1, pady=1, expand=True)
-                if info['default']:
-                    checkbox.state(['selected'])
-                checkbox.config(command=self.activateModules)
-                entry = ttk.Entry(frame, width=24)
-                entry.insert(0, info['template'])
+            elif 'template' in name:
+                chk = Checkbutton(frm, text=info['label'])
+                chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                # chk.set_val(info['default'])
+                chk.config(command=self.activateModules)
+                entry = Entry(frm, width=24)
                 entry.pack(fill=tk.X, padx=1, pady=1, expand=True)
             else:
-                checkbox = ttk.Checkbutton(frame, text=info['label'])
-                checkbox.pack(fill=tk.X, padx=1, pady=1, expand=True)
-                if info['default']:
-                    checkbox.state(['selected'])
-                checkbox.config(command=self.activateModules)
+                chk = Checkbutton(frm, text=info['label'])
+                chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                chk.config(command=self.activateModules)
                 entry = None
-            self.wdgModules[name] = (frame, checkbox, entry)
+            self.wdgModules[name] = {
+                'frm': frm, 'chk': chk, 'ent': entry}
+        self.activateModules()
 
         spacer = ttk.Frame(self.frmRight)
         spacer.pack(side=tk.TOP, padx=4, pady=4)
@@ -554,22 +645,20 @@ class Main(ttk.Frame):
         self.wdgOptions = {}
         for name, info in self.options.items():
             if info['dtype'] == bool:
-                checkbox = ttk.Checkbutton(self.frmRight, text=info['label'])
-                checkbox.pack(fill=tk.X, padx=1, pady=1)
-                if info['default']:
-                    checkbox.state(['selected'])
-                self.wdgOptions[name] = (checkbox,)
+                chk = Checkbutton(self.frmRight, text=info['label'])
+                chk.pack(fill=tk.X, padx=1, pady=1)
+                self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frame = ttk.Frame(self.frmRight)
-                frame.pack(fill=tk.X, padx=1, pady=1)
-                label = ttk.Label(frame, text=info['label'])
-                label.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spinbox = Spinbox(frame, values=info['values'], width=3)
-                while not spinbox.get() == str(info['default']):
-                    spinbox.invoke('buttonup')
-                spinbox.pack(
+                frm = ttk.Frame(self.frmRight)
+                frm.pack(fill=tk.X, padx=1, pady=1)
+                lbl = ttk.Label(frm, text=info['label'])
+                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
+                spb = Spinbox(frm, values=info['values'], width=3)
+                spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
-                self.wdgOptions[name] = (frame, label, spinbox)
+                self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
+            elif info['dtype'] == str:
+                pass
 
         # spacer = ttk.Frame(self.frmRight)
         # spacer.pack(side=tk.TOP, padx=4, pady=4)
@@ -594,41 +683,110 @@ class Main(ttk.Frame):
             command=self.actionExit)
         self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
 
-        centered(self)
+        _centered(self.parent, self.parent)
+
+        self._cfg_to_ui()
 
     # --------------------------------
-    def get_config_from_ui(self):
-        """Get the config information from the UI"""
-        cfg = {
-            'input_dirs': [
-                self.trvInput.item(child, 'text')
-                for child in self.trvInput.get_children('')],
-            'output_dir': self.entPath.get(),
+    def _ui_to_cfg(self):
+        """Update the config information from the UI."""
+        cfg = self.cfg
+        cfg.update({
+            'input_paths': self.lsvInput.get_items(),
+            'output_path': self.entPath.get(),
             'output_subpath': self.entSubpath.get(),
-        }
+            'save_on_exit': bool(self.save_on_exit.get()),
+            'gui_style_tk': self.style.theme_use()
+        })
+        for name, items in self.wdgModules.items():
+            cfg[name] = items['ent'].get_val() if items['chk'].get_val() else ''
+        for name, items in self.wdgOptions.items():
+            if 'chk' in items:
+                cfg[name] = items['chk'].get_val()
+            elif 'spb' in items:
+                cfg[name] = dpc.auto_convert(items['spb'].get_val())
         return cfg
 
+    def _cfg_to_ui(self):
+        """Update the config information to the UI."""
+        for target in self.cfg['input_paths']:
+            self.lsvInput.add_item(target, unique=True)
+        self.entPath.set_val(self.cfg['output_path'])
+        self.entSubpath.set_val(self.cfg['output_subpath'])
+        self.save_on_exit.set(self.cfg['save_on_exit'])
+        self.style.theme_use(self.cfg['gui_style_tk'])
+        for name, items in self.wdgModules.items():
+            items['chk'].set_val(True if self.cfg[name] else False)
+            items['ent'].set_val(self.cfg[name])
+        for name, items in self.wdgOptions.items():
+            if 'chk' in items:
+                items['chk'].set_val(self.cfg[name])
+            elif 'spb' in items:
+                items['spb'].set_val(self.cfg[name])
+        self.activateModules()
+
+    def _make_menu(self):
+        self.save_on_exit = tk.BooleanVar(value=self.cfg['save_on_exit'])
+
+        self.mnuMain = tk.Menu(self.parent, tearoff=False)
+        self.parent.config(menu=self.mnuMain)
+        self.mnuFile = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuMain.add_cascade(label='File', menu=self.mnuFile)
+        self.mnuFileInput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFile.add_cascade(label='Input', menu=self.mnuFileInput)
+        self.mnuFileInput.add_command(label='Add...', command=self.actionAdd)
+        self.mnuFileInput.add_command(
+            label='Remove', command=self.actionRemove)
+        self.mnuFileInput.add_command(
+            label='Clear', command=self.actionClear)
+        self.mnuFileInput.add_separator()
+        self.mnuFileInput.add_command(
+            label='Import...', command=self.actionImport)
+        self.mnuFileInput.add_command(
+            label='Export...', command=self.actionExport)
+        self.mnuFileOutput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFile.add_cascade(label='Output', menu=self.mnuFileOutput)
+        self.mnuFileOutput.add_command(
+            label='Path...', command=self.actionPath)
+        self.mnuFile.add_separator()
+        self.mnuFile.add_command(label='Run', command=self.actionRun)
+        self.mnuFile.add_separator()
+        self.mnuFile.add_command(label='Exit', command=self.actionExit)
+        self.mnuSettings = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuMain.add_cascade(label='Settings', menu=self.mnuSettings)
+        self.mnuSettings.add_command(
+            label='Advanced', command=self.actionAdvancedSettings)
+        self.mnuSettings.add_separator()
+        self.mnuSettings.add_command(
+            label='Load Settings', command=self.actionLoadSettings)
+        self.mnuSettings.add_command(
+            label='Save Settings', command=self.actionSaveSettings)
+        self.mnuSettings.add_separator()
+        self.mnuSettings.add_checkbutton(
+            label='Save on Exit', variable=self.save_on_exit)
+        self.mnuSettings.add_command(
+            label='Reset Defaults', command=self.actionResetDefaults)
+        self.mnuHelp = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuMain.add_cascade(label='Help', menu=self.mnuHelp)
+        self.mnuHelp.add_command(label='About', command=self.actionAbout)
+
     def actionRun(self, event=None):
-        """Action on Click Button Run"""
+        """Action on Click Button Run."""
         # TODO: redirect stdout to some log box / use progressbar
-        tot_begin = time.time()
         # extract options
-        force = 'selected' in self.wdgOptions['force'][0].state()
+        force = self.wdgOptions['force']['chk'].get_val()
         msg('Force: {}'.format(force))
-        verbose = int(self.wdgOptions['verbose'][2].get())
+        verbose = int(self.wdgOptions['verbose']['spb'].get_val())
         msg('Verb.: {}'.format(verbose))
-        in_dirpaths = [
-            self.trvInput.item(child, 'text')
-            for child in self.trvInput.get_children('')]
         if self.cfg['use_mp']:
             # parallel
             n_proc = self.cfg['num_processes']
             pool = multiprocessing.Pool(processes=n_proc)
             proc_result_list = []
-        for in_dirpath in in_dirpaths:
+        for in_dirpath in self.lsvInput.get_items():
             dcmpi_cli_kwargs = {
-                name: val[2].get()
-                for name, val in self.wdgModules.items()}
+                name: info['ent'].get_val()
+                for name, info in self.wdgModules.items()}
             dcmpi_cli_kwargs.update({
                 'in_dirpath': in_dirpath,
                 'out_dirpath': self.entPath.get(),
@@ -643,6 +801,7 @@ class Main(ttk.Frame):
                 proc_result_list.append(proc_result)
             else:
                 dcmpi_cli(**dcmpi_cli_kwargs)
+        print(proc_result_list)
         if self.cfg['use_mp']:
             res_list = []
             for proc_result in proc_result_list:
@@ -650,112 +809,127 @@ class Main(ttk.Frame):
         return
 
     def actionImport(self, event=None):
-        """Action on Click Button Import"""
+        """Action on Click Button Import."""
         title = '{} {} List'.format(
             self.btnImport.cget('text'), self.lblInput.cget('text'))
         in_filepath = filedialog.askopenfilename(
-            parent=self, title=title, defaultextension='.json', initialdir='.',
+            parent=self, title=title, defaultextension='.json',
+            initialdir=self.cfg['import_path'],
             filetypes=[('JSON Files', '*.json')])
         if in_filepath:
             try:
                 with open(in_filepath, 'r') as in_file:
                     targets = json.load(in_file)
                 for target in targets:
-                    self.trvInput.insert('', tk.END, text=target)
+                    self.lsvInput.add_item(target, unique=True)
             except ValueError:
                 title = self.btnImport.cget('text') + ' Failed'
                 msg = 'Could not import input list from `{}`'.format(
                     in_filepath)
                 messagebox.showerror(title=title, message=msg)
+            finally:
+                self.cfg['import_path'] = os.path.dirname(in_filepath)
+
 
     def actionExport(self, event=None):
-        """Action on Click Button Export"""
+        """Action on Click Button Export."""
         title = '{} {} List'.format(
             self.btnExport.cget('text'), self.lblInput.cget('text'))
         out_filepath = filedialog.asksaveasfilename(
-            parent=self, title=title, defaultextension='.json', initialdir='.',
+            parent=self, title=title, defaultextension='.json',
+            initialdir=self.cfg['export_path'],
             filetypes=[('JSON Files', '*.json')], confirmoverwrite=True)
         if out_filepath:
-            targets = [
-                self.trvInput.item(child, 'text')
-                for child in self.trvInput.get_children('')]
+            targets = self.lsvInput.get_items()
             if not targets:
                 title = self.btnExport.cget('text')
-                msg = 'Empty {} list.'.format(self.lblInput.cget('text')) + \
-                      'Do you want to proceedporting?'
+                msg = 'Empty {} list.\n'.format(self.lblInput.cget('text')) + \
+                      'Do you want to proceed exporting?'
                 proceed = messagebox.askyesno(title=title, message=msg)
             else:
                 proceed = True
             if proceed:
                 with open(out_filepath, 'w') as out_file:
                     json.dump(targets, out_file, sort_keys=True, indent=4)
+                self.cfg['export_path'] = os.path.dirname(out_filepath)
 
     def actionAdd(self, event=None):
-        """Action on Click Button Add"""
+        """Action on Click Button Add."""
         title = self.btnAdd.cget('text') + ' ' + self.lblInput.cget('text')
         target = filedialog.askdirectory(
-            parent=self, title=title, initialdir=self.cfg['input_dir'],
+            parent=self, title=title, initialdir=self.cfg['add_path'],
             mustexist=True)
-        targets = [
-            self.trvInput.item(child, 'text')
-            for child in self.trvInput.get_children('')]
-        if target and target not in targets:
-            self.trvInput.insert('', tk.END, text=target)
+        if target:
+            self.lsvInput.add_item(target, unique=True)
+            self.cfg['add_path'] = target
         return target
 
     def actionRemove(self, event=None):
-        """Action on Click Button Remove"""
-        items = self.trvInput.get_children('')
-        selected = self.trvInput.selection()
+        """Action on Click Button Remove."""
+        items = self.lsvInput.get_children('')
+        selected = self.lsvInput.selection()
         if selected:
             for item in selected:
-                self.trvInput.delete(item)
+                self.lsvInput.delete(item)
         elif items:
-            self.trvInput.delete(items[-1])
+            self.lsvInput.delete(items[-1])
         else:
             msg('Empty input list!')
 
     def actionClear(self, event=None):
-        """Action on Click Button Clear"""
-        items = self.trvInput.get_children('')
-        for item in items:
-            self.trvInput.delete(item)
+        """Action on Click Button Clear."""
+        self.lsvInput.clear()
 
     def actionPath(self, event=None):
-        """Action on Click Text Output"""
+        """Action on Click Text Output."""
         title = self.lblOutput.cget('text') + ' ' + self.lblPath.cget('text')
         target = filedialog.askdirectory(
-            parent=self, title=title, initialdir=self.cfg['output_dir'],
+            parent=self, title=title, initialdir=self.cfg['output_path'],
             mustexist=True)
         if target:
-            # self.entPath.config(state='enabled')
-            self.entPath.delete(0, tk.END)
-            self.entPath.insert(0, target)
-            # self.entPath.config(state='readonly')
+            self.entPath.set_val(target)
         return target
 
     def activateModules(self, event=None):
-        """Action on Change Checkbox Import"""
-        for items in self.wdgModules:
-            active = 'selected' in items[1].state()
-            if items[2]:
-                items[2]['state'] = 'enabled' if active else 'disabled'
+        """Action on Change Checkbox Import."""
+        for name, items in self.wdgModules.items():
+            active = items['chk'].get_val()
+            if items['ent']:
+                items['ent']['state'] = 'enabled' if active else 'disabled'
 
     def actionExit(self, event=None):
-        save_config(self.get_config_from_ui(), self.cfg_filepath)
+        """Action on Exit."""
         if messagebox.askokcancel('Quit', 'Are you sure you want to quit?'):
+            self.cfg = self._ui_to_cfg()
+            if self.cfg['save_on_exit']:
+                save_config(self.cfg, self.cfg_filepath)
             self.parent.destroy()
 
     def actionAbout(self, event=None):
+        """Action on About."""
         self.winAbout = About(self.parent)
 
-    def actionConfig(self, event=None):
-        self.winConfig = Config(self.parent, self)
-        if self.winConfig.result:
-            self.cfg.update(self.winConfig.result)
+    def actionAdvancedSettings(self, event=None):
+        self.winSettings = Settings(self.parent, self)
+        if self.winSettings.result:
+            self.cfg.update(self.winSettings.result)
+        self._cfg_to_ui()
+        # force resize for redrawing widgets correctly
+        # w, h = self.parent.winfo_width(), self.parent.winfo_height()
+        self.parent.update()
 
-    def resetDefaults(self, event=None):
-        pass
+    def actionLoadSettings(self):
+        self.cfg = load_config(self.cfg_filepath)
+        self._cfg_to_ui()
+
+    def actionSaveSettings(self):
+        self.cfg = self._ui_to_cfg()
+        save_config(self.cfg, self.cfg_filepath)
+
+    def actionResetDefaults(self, event=None):
+        self.cfg = default_config()
+        self._cfg_to_ui()
+
 
 # ======================================================================
 def handle_arg():

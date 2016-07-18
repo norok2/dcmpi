@@ -29,10 +29,10 @@ from setuptools import find_packages
 VERSION_SOURCE_FILEPATH = 'dcmpi_cli/__init__.py'
 README_SOURCE_FILE = 'README.rst'
 
-# get the working directory for the setup script
+# get_val the working directory for the setup script
 CWD = os.path.realpath(os.path.dirname(__file__))
 
-# get the long description from the README file
+# get_val the long description from the README file
 with open(os.path.join(CWD, README_SOURCE_FILE),
           encoding='utf-8') as readme_file:
     LONG_DESCRIPTION_TEXT = readme_file.read()

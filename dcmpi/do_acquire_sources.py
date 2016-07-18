@@ -143,10 +143,16 @@ def do_acquire_sources(
                     allow_report=True,
                     allow_postprocess=True)
             else:
-                is_zipped
+                is_zipped = False
             if is_dicom or is_zipped and zip_method in dpc.UNCOMPRESS_METHODS:
-                if subpath:
-                    dcm_subpath = dpc.fill_from_dicom(subpath, filepath)
+                if subpath or extra_subpath:
+                    full_subpath = os.path.join(subpath, extra_subpath)
+                elif subpath:
+                    full_subpath = subpath
+                elif extra_subpath:
+                    full_subpath = extra_subpath
+                if full_subpath:
+                    dcm_subpath = dpc.fill_from_dicom(full_subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
                     dcm_dirpath = out_dirpath

@@ -68,7 +68,7 @@ from dcmpi import D_VERB_LVL
 ACTIONS = {
     get_info: 'ciao',
 }
-print(ACTIONS)
+# print(ACTIONS)
 #     (get_nifti, ),
 #     (get_meta, ),
 #     (get_prot, ),
@@ -86,8 +86,8 @@ def dcmpi_cli(
         meta_subpath=dpc.ID['meta'],
         prot_subpath=dpc.ID['prot'],
         info_subpath=dpc.ID['info'],
-        report_tpl=dpc.TPL['report'],
-        backup_tpl=dpc.TPL['backup'],
+        report_template=dpc.TPL['report'],
+        backup_template=dpc.TPL['backup'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -110,11 +110,11 @@ def dcmpi_cli(
         None.
     """
     subdirs = (
-        niz_subpath, meta_subpath, prot_subpath, info_subpath, report_tpl,
-        backup_tpl)
+        niz_subpath, meta_subpath, prot_subpath, info_subpath, report_template,
+        backup_template)
     # import
     dcm_dirpaths = do_acquire_sources(
-        in_dirpath, out_dirpath, False, subpath, force, verbose)
+        in_dirpath, out_dirpath, False, subpath, import_subpath, force, verbose)
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
         # sort
@@ -122,22 +122,22 @@ def dcmpi_cli(
             dcm_dirpath, dpc.D_SUMMARY + '.' + dpc.EXT['json'],
             force, verbose)
         # other actions
-        actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
-                   if d.strip()]
-        for action, subdir in actions:
-            i_dirpath = dcm_dirpath if action[0] != 'get_report' else \
-                os.path.join(base_dirpath, info_subpath)
-            o_dirpath = os.path.join(base_dirpath, subdir)
-            if verbose >= VERB_LVL['debug']:
-                print('II:  input dir: {}'.format(i_dirpath))
-                print('II: output dir: {}'.format(o_dirpath))
-            func, params = action
-            func = globals()[func]
-            params = [(vars()[par[2:]] if str(par).startswith('::') else par)
-                      for par in params]
-            if verbose >= VERB_LVL['debug']:
-                print('DBG: {}'.format(params))
-            func(*params, force=force, verbose=verbose)
+        # actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
+        #            if d.strip()]
+        # for action, subdir in actions:
+        #     i_dirpath = dcm_dirpath if action[0] != 'get_report' else \
+        #         os.path.join(base_dirpath, info_subpath)
+        #     o_dirpath = os.path.join(base_dirpath, subdir)
+        #     if verbose >= VERB_LVL['debug']:
+        #         print('II:  input dir: {}'.format(i_dirpath))
+        #         print('II: output dir: {}'.format(o_dirpath))
+        #     func, params = action
+        #     func = globals()[func]
+        #     params = [(vars()[par[2:]] if str(par).startswith('::') else par)
+        #               for par in params]
+        #     if verbose >= VERB_LVL['debug']:
+        #         print('DBG: {}'.format(params))
+        #     func(*params, force=force, verbose=verbose)
 
 
 # ======================================================================
