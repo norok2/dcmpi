@@ -80,11 +80,12 @@ from dcmpi import msg, dbg
 
 
 # ======================================================================
-def do_import_sources(
+def do_acquire_sources(
         in_dirpath,
         out_dirpath,
         clean=False,
-        subpath='{study}/{name}_{date}_{time}_{sys}/dcm',
+        subpath='{study}/{name}_{date}_{time}_{sys}',
+        extra_subpath=dpc.ID['dicom'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -187,7 +188,7 @@ def handle_arg():
     # default output directory
     d_output_dir = '.'
     # default subpath
-    d_subpath = '{study}/{name}_{date}_{time}_{sys}/dcm'
+    d_subpath = '/dcm'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -243,7 +244,7 @@ def main():
     print(__doc__)
     begin_time = time.time()
 
-    do_import_sources(
+    do_acquire_sources(
         args.input, args.output,
         args.clean, args.subpath,
         args.force, args.verbose)

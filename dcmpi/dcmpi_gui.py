@@ -22,12 +22,12 @@ import time  # Time access and conversions
 import datetime  # Basic date and time types
 # import re  # Regular expression operations
 # import operator  # Standard operators as functions
-# import collections  # High-performance container datatypes
+import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and subcommands
 # import itertools  # Functions creating iterators for efficient looping
 # import functools  # Higher-order functions and operations on callable objects
 # import subprocess  # Subprocess management
-# import multiprocessing  # Process-based parallelism
+import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
@@ -37,11 +37,13 @@ try:
     import tkinter.ttk as ttk
     import tkinter.messagebox as messagebox
     import tkinter.filedialog as filedialog
+    import tkinter.simpledialog as simpledialog
 except ImportError:
     import Tkinter as tk
     import ttk
     import tkMessageBox as messagebox
     import tkFileDialog as filedialog
+    import tkSimpleDialog as simpledialog
 
 # Configuration file parser
 # try:
@@ -72,19 +74,12 @@ import appdirs
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-from dcmpi.do_import_sources import do_import_sources
-from dcmpi.do_sorting import sorting
 from dcmpi.dcmpi_cli import dcmpi_cli
-from dcmpi.get_nifti import get_nifti
-from dcmpi.get_info import get_info
-from dcmpi.get_prot import get_prot
-from dcmpi.get_meta import get_meta
-from dcmpi.get_backup import get_backup
-from dcmpi.get_report import get_report
 import dcmpi.common as dpc
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
 from dcmpi import msg, dbg
+from dcmpi import MY_GREETINGS
 
 # ======================================================================
 DIRS = appdirs.AppDirs(INFO['name'], INFO['author'])
@@ -110,7 +105,9 @@ def default_config():
         'input_dir': os.getenv('HOME'),
         'input_dirs': [],
         'output_dir': os.getenv('HOME'),
-        'output_subpath': '{study}/{name}_{date}_{time}_{sys}/dcm',
+        'output_subpath': '{study}/{name}_{date}_{time}_{sys}',
+        'use_mp': True,
+        'num_processes': multiprocessing.cpu_count(),
     }
     return cfg
 
@@ -156,6 +153,30 @@ def save_config(
 
 
 # ======================================================================
+def centered(target, container=None, width=None, height=None):
+    target.update_idletasks()
+    if not container:
+        container = target.parent
+    screen = container.winfo_screenwidth(), \
+             container.winfo_screenheight()
+    if not width:
+        for val in (target.winfo_width(), screen[0] // 3):
+            if val > 1:
+                width = val
+                break
+    if not height:
+        for val in (target.winfo_height(), screen[1] // 3):
+            if val > 1:
+                height = val
+                break
+    left = screen[0] // 2 - width // 2
+    top = screen[1] // 2 - height // 2
+    container.geometry(
+        '{w:d}x{h:d}+{l:d}+{t:d}'.format(
+            l=left, t=top, w=width, h=height))
+
+
+# ======================================================================
 class Spinbox(tk.Spinbox):
     def __init__(self, *args, **kwargs):
         tk.Spinbox.__init__(self, *args, **kwargs)
@@ -168,6 +189,154 @@ class Spinbox(tk.Spinbox):
             self.invoke('buttondown')
         elif event.num == 4 or event.delta == 120:
             self.invoke('buttonup')
+
+
+# ======================================================================
+class About(tk.Toplevel):
+    def __init__(self, parent):
+        self.win = tk.Toplevel.__init__(self, parent)
+        self.transient(parent)
+        self.parent = parent
+        self.title('About {}'.format(INFO['name']))
+        self.resizable(False, False)
+        self.frame = ttk.Frame(self)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+        self.frmMain = ttk.Frame(self.frame)
+        self.frmMain.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
+
+        about_txt = '\n'.join((
+            MY_GREETINGS[1:-1],
+            'DCMPI: DICOM Preprocess Interface',
+            __doc__,
+            '{} - ver. {}\n{} {}\n{}'.format(
+                INFO['name'], INFO['version'],
+                INFO['copyright'], INFO['author'], INFO['notice'])
+        ))
+        print(about_txt)
+        self.lblInfo = ttk.Label(
+            self.frmMain, text=about_txt, anchor=tk.CENTER,
+            background='#333', foreground='#ccc', font='TkFixedFont')
+        self.lblInfo.pack(padx=8, pady=8, ipadx=8, ipady=8)
+
+        self.btnClose = ttk.Button(
+            self.frmMain, text='Close', command=self.destroy)
+        self.btnClose.pack(side=tk.BOTTOM, padx=8, pady=8)
+        self.bind('<Return>', self.destroy)
+        self.bind('<Escape>', self.destroy)
+
+        centered(self.frame, self)
+
+        self.grab_set()
+        self.wait_window(self)
+
+
+# ======================================================================
+class Config(tk.Toplevel):
+    def __init__(self, parent, app):
+        self.settings = collections.OrderedDict((
+            ('use_mp', {
+                'label': 'Use parallel processing',
+                'dtype': bool,
+                'default': app.cfg['use_mp'],}),
+            ('num_processes', {
+                'label': 'Number of parallel processes',
+                'dtype': int,
+                'default': app.cfg['num_processes'],
+                'values': list(range(1, 2 * multiprocessing.cpu_count())),}),
+        ))
+        self.result = None
+
+        self.win = tk.Toplevel.__init__(self, parent)
+        self.transient(parent)
+        self.parent = parent
+        self.app = app
+        self.title('{} Configuration'.format(INFO['name']))
+        self.frame = ttk.Frame(self)
+        self.frame.pack(fill=tk.BOTH, expand=True)
+        self.frmMain = ttk.Frame(self.frame)
+        self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
+
+        self.frmSpacers = []
+
+        self.wdgOptions = {}
+        for name, info in self.settings.items():
+            if info['dtype'] == bool:
+                checkbox = ttk.Checkbutton(self.frmMain, text=info['label'])
+                checkbox.pack(fill=tk.X, padx=1, pady=1)
+                if info['default']:
+                    checkbox.state(['selected'])
+                self.wdgOptions[name] = (checkbox,)
+            elif info['dtype'] == int:
+                frame = ttk.Frame(self.frmMain)
+                frame.pack(fill=tk.X, padx=1, pady=1)
+                label = ttk.Label(frame, text=info['label'])
+                label.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
+                spinbox = Spinbox(frame, values=info['values'], width=3)
+                while not spinbox.get() == str(info['default']):
+                    spinbox.invoke('buttonup')
+                spinbox.pack(
+                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                self.wdgOptions[name] = (frame, label, spinbox)
+
+        self.frmButtons = ttk.Frame(self.frmMain)
+        self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
+        spacer = ttk.Frame(self.frmButtons)
+        spacer.pack(side=tk.LEFT, anchor='e', expand=True)
+        self.frmSpacers.append(spacer)
+        self.btnOK = ttk.Button(
+            self.frmButtons, text='OK', compound=tk.LEFT,
+            command=self.ok)
+        self.btnOK.pack(side=tk.LEFT, padx=4, pady=4)
+        self.btnReset = ttk.Button(
+            self.frmButtons, text='Reset', compound=tk.LEFT,
+            command=self.reset)
+        self.btnReset.pack(side=tk.LEFT, padx=4, pady=4)
+        self.btnCancel = ttk.Button(
+            self.frmButtons, text='Cancel', compound=tk.LEFT,
+            command=self.cancel)
+        self.btnCancel.pack(side=tk.LEFT, padx=4, pady=4)
+        self.bind('<Return>', self.ok)
+        self.bind('<Escape>', self.cancel)
+
+        centered(self.frame, self)
+
+        self.grab_set()
+        self.wait_window(self)
+
+    # --------------------------------
+    def ok(self, event=None):
+        if not self.validate():
+            return
+        self.withdraw()
+        self.update_idletasks()
+        self.apply()
+        self.cancel()
+
+    def cancel(self, event=None):
+        # put focus back to the parent window
+        self.parent.focus_set()
+        self.destroy()
+
+    def reset(self, event=None):
+        for name, vals in self.settings.items():
+            if vals['dtype'] == bool:
+                self.wdgOptions[name][0].state(
+                    ['selected' if self.app.cfg[name] else 'normal'])
+            elif vals['dtype'] == int:
+                self.wdgOptions[name][2].delete(0, tk.END)
+                self.wdgOptions[name][2].insert(0, str(self.app.cfg[name]))
+
+    def validate(self, event=None):
+        return True
+
+    def apply(self, event=None):
+        self.result = {}
+        for name, vals in self.settings.items():
+            if vals['dtype'] == bool:
+                self.result[name] = \
+                    'selected' in self.wdgOptions[name][0].state()
+            elif vals['dtype'] == int:
+                self.result[name] = self.wdgOptions[name][2].get()
 
 
 # ======================================================================
@@ -187,36 +356,95 @@ class Main(ttk.Frame):
             self.cfg_filepath = os.path.join(
                 DIRS.user_config_dir, CFG_FILENAME)
 
-        self.actions = [
-            ('do_import_sources', 'Import Sources', True, None),
-            ('sorting', 'Sort DICOM', True, None),
-            ('get_nifti', 'Get NIfTI images', True, dpc.ID['nifti']),
-            ('get_meta', 'Get metadata', True, dpc.ID['meta']),
-            ('get_prot', 'Get protocol', True, dpc.ID['prot']),
-            ('get_info', 'Get information', True, dpc.ID['info']),
-            ('get_report', 'Create Report', True, dpc.ID['report']),
-            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['backup']),
-        ]
-        self.options = [
-            ('Force', bool, False, None),
-            ('Verbosity', int, D_VERB_LVL,
-             (VERB_LVL['none'], VERB_LVL['debug'])),
-        ]
+        self.modules = collections.OrderedDict([
+            ('import_subpath', {
+                'label': 'DICOM',
+                'default': True,
+                'extra_subpath': dpc.ID['dicom']}),
+            ('niz_subpath', {
+                'label': 'NIfTI Image',
+                'default': True,
+                'extra_subpath': dpc.ID['nifti']}),
+            ('meta_subpath', {
+                'label': 'Metadata',
+                'default': True,
+                'extra_subpath': dpc.ID['meta']}),
+            ('prot_subpath', {
+                'label': 'Protocol',
+                'default': True,
+                'extra_subpath': dpc.ID['prot']}),
+            ('info_subpath', {
+                'label': 'Information',
+                'default': True,
+                'extra_subpath': dpc.ID['info']}),
+            ('report_tpl', {
+                'label': 'Report template',
+                'default': True,
+                'template': dpc.TPL['report']}),
+            ('backup_tpl', {
+                'label': 'Backup template',
+                'default': True,
+                'template': dpc.TPL['backup']}),
+        ])
+        self.options = collections.OrderedDict((
+            ('force', {
+                'label': 'Force',
+                'dtype': bool,
+                'default': False}),
+            ('verbose', {
+                'label': 'Verbosity',
+                'dtype': int,
+                'default': D_VERB_LVL,
+                'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}),
+        ))
 
         # :: initialization of the UI
         ttk.Frame.__init__(self, parent)
         self.parent = parent
         self.parent.title('DCMPI: DICOM Preprocessing Interface')
-        self.parent.protocol('WM_DELETE_WINDOW', self.onClose)
+        self.parent.protocol('WM_DELETE_WINDOW', self.actionExit)
 
         self.style = ttk.Style()
         # print(self.style.theme_names())
-        self.style.theme_use('default')
+        self.style.theme_use('clam')
         self.pack(fill=tk.BOTH, expand=True)
+
+        self.mnuMain = tk.Menu(self.parent, tearoff=False)
+        self.parent.config(menu=self.mnuMain)
+        self.mnuFile = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuMain.add_cascade(label='File', menu=self.mnuFile)
+        self.mnuFileInput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFile.add_cascade(label='Input', menu=self.mnuFileInput)
+        self.mnuFileInput.add_command(label='Add...', command=self.actionAdd)
+        self.mnuFileInput.add_command(
+            label='Remove', command=self.actionRemove)
+        self.mnuFileInput.add_command(
+            label='Clear', command=self.actionClear)
+        self.mnuFileInput.add_separator()
+        self.mnuFileInput.add_command(
+            label='Import...', command=self.actionImport)
+        self.mnuFileInput.add_command(
+            label='Export...', command=self.actionExport)
+        self.mnuFileOutput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFile.add_cascade(label='Output', menu=self.mnuFileOutput)
+        self.mnuFileOutput.add_command(
+            label='Path...', command=self.actionPath)
+        self.mnuFile.add_separator()
+        self.mnuFile.add_command(label='Run', command=self.actionRun)
+        self.mnuFile.add_separator()
+        self.mnuFile.add_command(label='Config', command=self.actionConfig)
+        self.mnuFile.add_separator()
+        self.mnuFile.add_command(label='Exit', command=self.actionExit)
+        self.mnuHelp = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuMain.add_cascade(label='Help', menu=self.mnuHelp)
+        self.mnuHelp.add_command(
+            label='Default settings', command=self.resetDefaults)
+        self.mnuHelp.add_separator()
+        self.mnuHelp.add_command(label='About', command=self.actionAbout)
 
         self.frmMain = ttk.Frame(self)
         self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
-        self.lblSpacers = []
+        self.frmSpacers = []
 
         # left frame
         self.frmLeft = ttk.Frame(self.frmMain)
@@ -229,30 +457,30 @@ class Main(ttk.Frame):
         self.lblInput = ttk.Label(self.frmInput, text='Input')
         self.lblInput.pack(padx=1, pady=1)
         self.trvInput = ttk.Treeview(self.frmInput, show='tree', height=4)
-        self.trvInput.bind('<Double-Button>', self.btnAdd_onClicked)
+        self.trvInput.bind('<Double-Button>', self.actionAdd)
         self.trvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
         self.btnImport = ttk.Button(
             self.frmInput, text='Import', compound=tk.LEFT,
-            command=self.btnImport_onClicked)
+            command=self.actionImport)
         self.btnImport.pack(side=tk.LEFT, padx=4, pady=4)
         self.btnExport = ttk.Button(
             self.frmInput, text='Export', compound=tk.LEFT,
-            command=self.btnExport_onClicked)
+            command=self.actionExport)
         self.btnExport.pack(side=tk.LEFT, padx=4, pady=4)
-        spacer = ttk.Label(self.frmInput)
+        spacer = ttk.Frame(self.frmInput)
         spacer.pack(side=tk.LEFT, anchor='e', expand=True)
-        self.lblSpacers.append(spacer)
+        self.frmSpacers.append(spacer)
         self.btnAdd = ttk.Button(
             self.frmInput, text='Add', compound=tk.LEFT,
-            command=self.btnAdd_onClicked)
+            command=self.actionAdd)
         self.btnAdd.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
         self.btnRemove = ttk.Button(
             self.frmInput, text='Remove', compound=tk.LEFT,
-            command=self.btnRemove_onClicked)
+            command=self.actionRemove)
         self.btnRemove.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
         self.btnClear = ttk.Button(
             self.frmInput, text='Clear', compound=tk.LEFT,
-            command=self.btnClear_onClicked)
+            command=self.actionClear)
         self.btnClear.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
 
         self.frmOutput = ttk.Frame(self.frmLeft)
@@ -266,13 +494,13 @@ class Main(ttk.Frame):
         self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entPath = ttk.Entry(self.frmPath)
         self.entPath.insert(0, self.cfg['output_dir'])
-        self.entPath.bind('<Double-Button>', self.entPath_onClicked)
+        self.entPath.bind('<Double-Button>', self.actionPath)
         self.entPath.pack(
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
 
         self.frmSubpath = ttk.Frame(self.frmOutput)
         self.frmSubpath.pack(fill=tk.X, expand=True)
-        self.lblSubpath = ttk.Label(self.frmSubpath, text='Subpath', width=8)
+        self.lblSubpath = ttk.Label(self.frmSubpath, text='Sub-Path', width=8)
         self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entSubpath = ttk.Entry(self.frmSubpath)
         self.entSubpath.insert(0, self.cfg['output_subpath'])
@@ -283,76 +511,92 @@ class Main(ttk.Frame):
         self.frmRight = ttk.Frame(self.frmMain)
         self.frmRight.pack(side=tk.RIGHT, fill=tk.BOTH, padx=4, pady=4)
 
-        self.lblActions = ttk.Label(self.frmRight, text='Actions')
+        self.lblActions = ttk.Label(
+            self.frmRight, text='Sub-Paths and Templates')
         self.lblActions.pack(padx=1, pady=1)
-        self.chkActions = []
-        for i, (id_name, name, default, subdir) in enumerate(self.actions):
-            checkbox = ttk.Checkbutton(self.frmRight, text=name)
-            checkbox.pack(fill=tk.X, padx=1, pady=1)
-            if default:
-                checkbox.state(['selected'])
-            if id_name == 'do_import_sources':
-                checkbox.config(command=self.chkActionImport_stateChanged)
-            self.chkActions.append(checkbox)
-        self.chkActionImport_stateChanged()
+        self.wdgModules = {}
+        for name, info in self.modules.items():
+            frame = ttk.Frame(self.frmRight)
+            frame.pack(fill=tk.X, padx=1, pady=1)
+            if 'extra_subpath' in info:
+                checkbox = ttk.Checkbutton(frame, text=info['label'])
+                checkbox.pack(
+                    side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+                if info['default']:
+                    checkbox.state(['selected'])
+                checkbox.config(command=self.activateModules)
+                entry = ttk.Entry(frame, width=8)
+                entry.insert(0, info['extra_subpath'])
+                entry.pack(side=tk.RIGHT, fill=tk.X, padx=1, pady=1)
+            elif 'template' in info:
+                checkbox = ttk.Checkbutton(frame, text=info['label'])
+                checkbox.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                if info['default']:
+                    checkbox.state(['selected'])
+                checkbox.config(command=self.activateModules)
+                entry = ttk.Entry(frame, width=24)
+                entry.insert(0, info['template'])
+                entry.pack(fill=tk.X, padx=1, pady=1, expand=True)
+            else:
+                checkbox = ttk.Checkbutton(frame, text=info['label'])
+                checkbox.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                if info['default']:
+                    checkbox.state(['selected'])
+                checkbox.config(command=self.activateModules)
+                entry = None
+            self.wdgModules[name] = (frame, checkbox, entry)
 
+        spacer = ttk.Frame(self.frmRight)
+        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        self.frmSpacers.append(spacer)
         self.lblOptions = ttk.Label(self.frmRight, text='Options')
         self.lblOptions.pack(padx=1, pady=1)
-        self.wdgtOptions = []
-        for i, (name, val_type, default, extra) in enumerate(self.options):
-            if val_type == bool:
-                checkbox = ttk.Checkbutton(self.frmRight, text=name)
+        self.wdgOptions = {}
+        for name, info in self.options.items():
+            if info['dtype'] == bool:
+                checkbox = ttk.Checkbutton(self.frmRight, text=info['label'])
                 checkbox.pack(fill=tk.X, padx=1, pady=1)
-                if default:
+                if info['default']:
                     checkbox.state(['selected'])
-                self.wdgtOptions.append((checkbox,))
-            elif val_type == int:
+                self.wdgOptions[name] = (checkbox,)
+            elif info['dtype'] == int:
                 frame = ttk.Frame(self.frmRight)
                 frame.pack(fill=tk.X, padx=1, pady=1)
-                label = ttk.Label(frame, text=name)
+                label = ttk.Label(frame, text=info['label'])
                 label.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spinbox = Spinbox(frame, from_=extra[0], to=extra[1], width=3)
-                while not spinbox.get() == str(default):
+                spinbox = Spinbox(frame, values=info['values'], width=3)
+                while not spinbox.get() == str(info['default']):
                     spinbox.invoke('buttonup')
                 spinbox.pack(
-                    side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                self.wdgtOptions.append((frame, label, spinbox))
+                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                self.wdgOptions[name] = (frame, label, spinbox)
 
+        # spacer = ttk.Frame(self.frmRight)
+        # spacer.pack(side=tk.TOP, padx=4, pady=4)
+        # self.frmSpacers.append(spacer)
+        # self.pbrRunning = ttk.Progressbar(self.frmRight)
+        # self.pbrRunning.pack(side=tk.TOP, fill=tk.X, expand=True)
+
+        spacer = ttk.Frame(self.frmRight)
+        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        self.frmSpacers.append(spacer)
         self.frmButtons = ttk.Frame(self.frmRight)
         self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
-        spacer = ttk.Label(self.frmButtons)
+        spacer = ttk.Frame(self.frmButtons)
         spacer.pack(side=tk.LEFT, anchor='e', expand=True)
-        self.lblSpacers.append(spacer)
+        self.frmSpacers.append(spacer)
         self.btnRun = ttk.Button(
             self.frmButtons, text='Run', compound=tk.LEFT,
-            command=self.btnRun_onClicked)
+            command=self.actionRun)
         self.btnRun.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnClose = ttk.Button(
-            self.frmButtons, text='Close', compound=tk.LEFT,
-            command=self.onClose)
-        self.btnClose.pack(side=tk.LEFT, padx=4, pady=4)
-        self.centered()
+        self.btnExit = ttk.Button(
+            self.frmButtons, text='Exit', compound=tk.LEFT,
+            command=self.actionExit)
+        self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
 
-    def centered(self, width=None, height=None):
-        self.update_idletasks()
-        screen = self.parent.winfo_screenwidth(), \
-                 self.parent.winfo_screenheight()
-        if not width:
-            for val in (self.winfo_width(), screen[0] // 3):
-                if val > 1:
-                    width = val
-                    break
-        if not height:
-            for val in (self.winfo_height(), screen[1] // 3):
-                if val > 1:
-                    height = val
-                    break
-        left = screen[0] // 2 - width // 2
-        top = screen[1] // 2 - height // 2
-        self.parent.geometry(
-            '{w:d}x{h:d}+{l:d}+{t:d}'.format(
-                l=left, t=top, w=width, h=height))
+        centered(self)
 
+    # --------------------------------
     def get_config_from_ui(self):
         """Get the config information from the UI"""
         cfg = {
@@ -364,80 +608,48 @@ class Main(ttk.Frame):
         }
         return cfg
 
-    def btnRun_onClicked(self, event=None):
+    def actionRun(self, event=None):
         """Action on Click Button Run"""
-        # TODO: redirect stdout to log box
-        # TODO: run as a separate process (eventually in parallel?)
+        # TODO: redirect stdout to some log box / use progressbar
         tot_begin = time.time()
         # extract options
-        force = 'selected' in self.wdgtOptions[0][0].state()
+        force = 'selected' in self.wdgOptions['force'][0].state()
         msg('Force: {}'.format(force))
-        verbose = int(self.wdgtOptions[1][2].get())
+        verbose = int(self.wdgOptions['verbose'][2].get())
         msg('Verb.: {}'.format(verbose))
-        subpath = self.entSubpath.get()
-        msg('Subpath: {}'.format(subpath))
-        if not subpath:
-            subpath = 'DICOM_TEMP'
         in_dirpaths = [
             self.trvInput.item(child, 'text')
             for child in self.trvInput.get_children('')]
+        if self.cfg['use_mp']:
+            # parallel
+            n_proc = self.cfg['num_processes']
+            pool = multiprocessing.Pool(processes=n_proc)
+            proc_result_list = []
         for in_dirpath in in_dirpaths:
-            part_begin = time.time()
-            # extract input filepaths
-            msg('Input: {}'.format(in_dirpath), verbose)
-            # extract output filepath
-            out_dirpath = self.entPath.get()
-            msg('Output: {}'.format(out_dirpath), verbose)
-            # core actions (import and sort)
-            if 'selected' in self.chkActions[0].state():
-                print(in_dirpath, out_dirpath, subpath, force, verbose)
-                dcm_dirpaths = do_import_sources(
-                    in_dirpath, out_dirpath, False, subpath, force, verbose)
+            dcmpi_cli_kwargs = {
+                name: val[2].get()
+                for name, val in self.wdgModules.items()}
+            dcmpi_cli_kwargs.update({
+                'in_dirpath': in_dirpath,
+                'out_dirpath': self.entPath.get(),
+                'subpath': self.entSubpath.get(),
+                'force': force,
+                'verbose': verbose,
+            })
+            print(dcmpi_cli_kwargs)
+            if self.cfg['use_mp']:
+                proc_result = pool.apply_async(
+                    dcmpi_cli, kwds=dcmpi_cli_kwargs)
+                proc_result_list.append(proc_result)
             else:
-                dcm_dirpaths = [in_dirpath]
-            for dcm_dirpath in dcm_dirpaths:
-                base_dirpath = os.path.dirname(dcm_dirpath)
-                if 'selected' in self.chkActions[1].state():
-                    sorting(
-                        dcm_dirpath,
-                        dpc.D_SUMMARY + '.' + dpc.EXT['json'],
-                        force, verbose)
-                # optional actions
-                actions = [
-                    (a, x[3])
-                    for x, c, a in zip(self.actions[2:], self.chkActions[2:],
-                                       dpc.D_ACTIONS)
-                    if 'selecte' in c.state()]
-                msg(actions)
-                for action, subdir in actions:
-                    if action[0] == 'get_report':
-                        i_dirpath = os.path.join(
-                            base_dirpath, self.actions[5][3])
-                    else:
-                        i_dirpath = dcm_dirpath
-                    o_dirpath = os.path.join(base_dirpath, subdir)
-                    if verbose >= VERB_LVL['low']:
-                        print('II:  input dir: {}'.format(i_dirpath))
-                        print('II: output dir: {}'.format(o_dirpath))
-                    func, params = action
-                    func = globals()[func]
-                    params = [
-                        (vars()[par[2:]]
-                         if str(par).startswith('::') else par)
-                        for par in params]
-                    if verbose >= VERB_LVL['low']:
-                        print('DBG: {} {}'.format(func, params))
-                    func(*params, force=force, verbose=verbose)
-            part_end = time.time()
-            if verbose > VERB_LVL['none']:
-                print('TotExecTime:\t{}\n'.format(
-                    datetime.timedelta(0, part_end - part_begin)))
-        tot_end = time.time()
-        if verbose > VERB_LVL['none']:
-            print('TotExecTime:\t{}'.format(
-                datetime.timedelta(0, tot_end - tot_begin)))
+                dcmpi_cli(**dcmpi_cli_kwargs)
+        if self.cfg['use_mp']:
+            res_list = []
+            for proc_result in proc_result_list:
+                res_list.append(proc_result.get())
+        return
 
-    def btnImport_onClicked(self, event=None):
+    def actionImport(self, event=None):
         """Action on Click Button Import"""
         title = '{} {} List'.format(
             self.btnImport.cget('text'), self.lblInput.cget('text'))
@@ -456,7 +668,7 @@ class Main(ttk.Frame):
                     in_filepath)
                 messagebox.showerror(title=title, message=msg)
 
-    def btnExport_onClicked(self, event=None):
+    def actionExport(self, event=None):
         """Action on Click Button Export"""
         title = '{} {} List'.format(
             self.btnExport.cget('text'), self.lblInput.cget('text'))
@@ -478,7 +690,7 @@ class Main(ttk.Frame):
                 with open(out_filepath, 'w') as out_file:
                     json.dump(targets, out_file, sort_keys=True, indent=4)
 
-    def btnAdd_onClicked(self, event=None):
+    def actionAdd(self, event=None):
         """Action on Click Button Add"""
         title = self.btnAdd.cget('text') + ' ' + self.lblInput.cget('text')
         target = filedialog.askdirectory(
@@ -491,19 +703,25 @@ class Main(ttk.Frame):
             self.trvInput.insert('', tk.END, text=target)
         return target
 
-    def btnRemove_onClicked(self, event=None):
+    def actionRemove(self, event=None):
         """Action on Click Button Remove"""
+        items = self.trvInput.get_children('')
         selected = self.trvInput.selection()
-        for item in selected:
-            self.trvInput.delete(item)
+        if selected:
+            for item in selected:
+                self.trvInput.delete(item)
+        elif items:
+            self.trvInput.delete(items[-1])
+        else:
+            msg('Empty input list!')
 
-    def btnClear_onClicked(self, event=None):
+    def actionClear(self, event=None):
         """Action on Click Button Clear"""
         items = self.trvInput.get_children('')
         for item in items:
             self.trvInput.delete(item)
 
-    def entPath_onClicked(self, event=None):
+    def actionPath(self, event=None):
         """Action on Click Text Output"""
         title = self.lblOutput.cget('text') + ' ' + self.lblPath.cget('text')
         target = filedialog.askdirectory(
@@ -516,20 +734,28 @@ class Main(ttk.Frame):
             # self.entPath.config(state='readonly')
         return target
 
-    def chkActionImport_stateChanged(self, event=None):
+    def activateModules(self, event=None):
         """Action on Change Checkbox Import"""
-        is_import = 'selected' in self.chkActions[0].state()
-        self.entSubpath['state'] = 'enabled' if is_import else 'disabled'
-        self.chkActions[1]['state'] = \
-            'enabled' if not is_import else 'disabled'
-        if is_import:
-            self.chkActions[1].state(['selected'])
+        for items in self.wdgModules:
+            active = 'selected' in items[1].state()
+            if items[2]:
+                items[2]['state'] = 'enabled' if active else 'disabled'
 
-    def onClose(self, event=None):
+    def actionExit(self, event=None):
         save_config(self.get_config_from_ui(), self.cfg_filepath)
         if messagebox.askokcancel('Quit', 'Are you sure you want to quit?'):
             self.parent.destroy()
 
+    def actionAbout(self, event=None):
+        self.winAbout = About(self.parent)
+
+    def actionConfig(self, event=None):
+        self.winConfig = Config(self.parent, self)
+        if self.winConfig.result:
+            self.cfg.update(self.winConfig.result)
+
+    def resetDefaults(self, event=None):
+        pass
 
 # ======================================================================
 def handle_arg():
@@ -580,13 +806,6 @@ def main():
     begin_time = time.time()
 
     root = tk.Tk()
-    # win = {'w': 760, 'h': 460}
-    # screen = {
-    #     'w': root.winfo_screenwidth(), 'h': root.winfo_screenheight()}
-    # left = screen['w'] // 2 - win['w'] // 2
-    # top = screen['h'] // 2 - win['h'] // 2
-    # root.geometry(
-    #     '{w:d}x{h:d}+{l:d}+{t:d}'.format(l=left, t=top, **win))
     app = Main(root, args)
     root.mainloop()
 

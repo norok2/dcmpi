@@ -94,19 +94,25 @@ D_SUMMARY = 'summary'
 
 PREFIX_ID = {
     'series': 's',
-    'acq': 'a',}
+    'acq': 'a',
+}
 
 D_NUM_DIGITS = 3
 
 # identifiers used by the pre-processing
 ID = {
     'dicom': 'dcm',
-    'nifti': 'nii',
+    'nifti': 'niz',
     'info': 'info',
     'meta': 'meta',
     'prot': 'prot',
-    'report': 'report',
-    'backup': 'dcm',}
+}
+
+TPL = {
+    'acquire': '{study}/{name}_{date}_{time}_{sys}',
+    'report': '{name}_{date}_{time}_{sys}',
+    'backup': '{name}_{date}_{time}_{sys}',
+}
 
 # DICOM indexes
 DCM_ID = {
@@ -140,11 +146,6 @@ UNCOMPRESS_METHODS = {
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
 )
-
-
-ACTIONS = collections.OrderedDict((
-    ('one', ('a', 'b')),
-))
 
 
 # ======================================================================
@@ -203,7 +204,8 @@ def execute(
         cmd (str|unicode|list[str]): Command to execute.
         get_pipes (bool): Get stdout and stderr streams from the process.
             If True, the program flow is halted until the process is completed.
-            Otherwise, the process is spawn in background, continuing execution.
+            Otherwise, the process is spawn in background, continuing
+            execution.
         dry (bool): Print rather than execute the command (dry run).
         verbose (int): Set level of verbosity.
 

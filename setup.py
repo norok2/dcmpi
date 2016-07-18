@@ -143,7 +143,7 @@ setup(
 
             'dcmpi_monitor_folder=dcmpi_cli.dcmpi_monitor_folder:main',
 
-            'dcmpi__import_sources=dcmpi_cli.do_import_sources:main',
+            'dcmpi__acquire_sources=dcmpi_cli.do_acquire_sources:main',
             'dcmpi__sorting=dcmpi_cli.sorting:main',
             'dcmpi__get_info=dcmpi_cli.get_info:main',
             'dcmpi__get_meta=dcmpi_cli.get_meta:main',

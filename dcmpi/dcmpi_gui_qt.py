@@ -61,7 +61,7 @@ from PySide import QtGui  # PySide: GUI module
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-from dcmpi.do_import_sources import do_import_sources
+from dcmpi.do_acquire_sources import do_acquire_sources
 from dcmpi.do_sorting import sorting
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
@@ -87,7 +87,7 @@ class Main(QtGui.QWidget):
     def __init__(self):
         super(Main, self).__init__()
         self.actions = [
-            ('do_import_sources', 'Import Sources', True, None),
+            ('do_acquire_sources', 'Import Sources', True, None),
             ('do_sorting', 'Sort DICOM', True, None),
             ('get_nifti', 'Get NIfTI images', True, dpc.ID['nifti']),
             ('get_meta', 'Get metadata', True, dpc.ID['meta']),
@@ -197,7 +197,7 @@ class Main(QtGui.QWidget):
             checkbox = QtGui.QCheckBox(label, self)
             if default:
                 checkbox.toggle()
-            if name == 'do_import_sources':
+            if name == 'do_acquire_sources':
                 checkbox.stateChanged.connect(self.chkImport_stateChanged)
             checkbox.setToolTip('Warning: toggling actions is experimental.')
             self.chkActions.append(checkbox)
@@ -303,7 +303,7 @@ class Main(QtGui.QWidget):
             print('Output:\t{}'.format(out_dirpath))
             # core actions (import and sort)
             if self.chkActions[0].isChecked():
-                dcm_dirpaths = do_import_sources(
+                dcm_dirpaths = do_acquire_sources(
                     in_dirpath, out_dirpath, False, subpath, force, verbose)
             else:
                 dcm_dirpaths = [in_dirpath]
