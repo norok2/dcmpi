@@ -192,20 +192,15 @@ def auto_convert(val_str, pre_decor=None, post_decor=None):
 
 
 # ======================================================================
-def execute(
-        cmd,
-        get_pipes=True,
-        dry=False,
-        verbose=D_VERB_LVL):
+def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
     """
     Execute command and retrieve/print output at the end of execution.
 
     Args:
-        cmd (str|unicode|list[str]): Command to execute.
+        cmd (str|unicode): Command to execute.
         get_pipes (bool): Get stdout and stderr streams from the process.
             If True, the program flow is halted until the process is completed.
-            Otherwise, the process is spawn in background, continuing
-            execution.
+            Otherwise, the process is spawn in background, continuing execution.
         dry (bool): Print rather than execute the command (dry run).
         verbose (int): Set level of verbosity.
 
@@ -238,13 +233,13 @@ def execute(
             # handle stdout
             p_stdout = ''
             while proc.poll() is None:
-                stdout_buffer = proc.stdout.read(1)
+                stdout_buffer = proc.stdout.readline().decode('utf8')
                 p_stdout += stdout_buffer
                 if verbose >= VERB_LVL['medium']:
-                    sys.stdout.write(stdout_buffer)
+                    print(stdout_buffer, end='')
                     sys.stdout.flush()
             # handle stderr
-            p_stderr = proc.stderr.read()
+            p_stderr = proc.stderr.read().decode('utf8')
             if verbose >= VERB_LVL['high']:
                 print(p_stderr)
             # finally get the return code
