@@ -433,14 +433,14 @@ class Main(QtGui.QWidget):
 
 # ======================================================================
 def main():
-    begin_time = time.time()
+    begin_time = datetime.datetime.now()
 
     app = QtGui.QApplication(sys.argv)
     main = Main()
     err_code = app.exec_()
 
-    end_time = time.time()
-    print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+    end_time = datetime.datetime.now()
+    print('ExecTime: {}'.format(end_time - begin_time))
     sys.exit(err_code)
 
 
