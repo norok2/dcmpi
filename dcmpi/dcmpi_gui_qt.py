@@ -15,52 +15,19 @@ from __future__ import unicode_literals
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
 import sys  # System-specific parameters and functions
-# import shutil  # High-level file operations
-import platform  # Access to underlying platform’s identifying data
-# import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
-# import re  # Regular expression operations
-# import operator  # Standard operators as functions
-# import collections  # High-performance container datatypes
-# import argparse  # Parser for command-line options, arguments and subcommands
-# import itertools  # Functions creating iterators for efficient looping
-# import functools  # Higher-order functions and operations on callable objects
-# import subprocess  # Subprocess management
-# import multiprocessing  # Process-based parallelism
-# import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import warnings  # Warning control
 
 # :: External Imports
-# import numpy as np  # NumPy (multidimensional numerical arrays library)
-# import scipy as sp  # SciPy (signal and image processing library)
-# import matplotlib as mpl  # Matplotlib (2D/3D plotting library)
-# import sympy as sym  # SymPy (symbolic CAS library)
-# import PIL  # Python Image Library (image manipulation toolkit)
-# import SimpleITK as sitk  # Image ToolKit Wrapper
-# import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
-# import nipy  # NiPy (NeuroImaging in Python)
-# import nipype  # NiPype (NiPy Pipelines and Interfaces)
-# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-# import PySide  # PySide (Python QT bindings)
 
 # :: External Imports Submodules
-# import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
-# import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
-# import scipy.optimize  # SciPy: Optimization Algorithms
-# import scipy.integrate  # SciPy: Integrations facilities
-# import scipy.constants  # SciPy: Mathematal and Physical Constants
-# import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # from PySide import QtGui  # PySide: Core module
 from PySide import QtGui  # PySide: GUI module
 
 # :: Local Imports
-# import mri_tools.modules.base as mrb
-# import mri_tools.modules.utils as mru
-# import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
-# from mri_tools.modules.sequences import mp2rage
 from dcmpi.do_acquire_sources import do_acquire_sources
 from dcmpi.do_sorting import sorting
 from dcmpi.get_nifti import get_nifti
@@ -446,4 +413,5 @@ def main():
 
 # ======================================================================
 if __name__ == '__main__':
+    warnings.warn('This version is deprecated and will be removed soon!')
     main()
