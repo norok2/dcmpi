@@ -58,10 +58,10 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -96,14 +96,11 @@ def get_prot(
     None.
 
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Exporting PROTOCOL information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dpc.dcm_sources(in_dirpath)
-    groups_dict = dpc.group_series(in_dirpath)
+    msg(':: Exporting PROTOCOL information ({})...'.format(method))
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
+    sources_dict = utl.dcm_sources(in_dirpath)
+    groups_dict = utl.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and extract protocol
@@ -113,27 +110,22 @@ def get_prot(
             for group_id, group in sorted(groups_dict.items()):
                 in_filepath = sources_dict[group[0]][0]
                 out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dpc.ID['prot'])
-                out_filepath += ('.' + dpc.EXT['txt']) if type_ext else ''
+                    out_dirpath, group_id + '.' + utl.ID['prot'])
+                out_filepath += ('.' + utl.EXT['txt']) if type_ext else ''
                 try:
                     dcm = pydcm.read_file(in_filepath)
-                    prot_src = dcm[dpc.DCM_ID['hdr_nfo']].value
-                    prot_str = dpc.get_protocol(prot_src)
+                    prot_src = dcm[utl.DCM_ID['hdr_nfo']].value
+                    prot_str = utl.get_protocol(prot_src)
                 except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
+                    msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('Protocol:\t{}'.format(out_subpath))
+                    msg('Protocol: {}'.format(out_filepath[len(out_dirpath):]))
                     with open(out_filepath, 'w') as prot_file:
                         prot_file.write(prot_str)
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
     else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                  "Use 'force' argument to override.")
+        msg('I: Skipping existing output path. Use `force` to override.')
 
 
 # ======================================================================
@@ -174,11 +166,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -194,25 +186,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_prot(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, args.type_ext,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

@@ -73,7 +73,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
 from dcmpi import msg, dbg
@@ -85,7 +85,7 @@ def do_acquire_sources(
         out_dirpath,
         clean=False,
         subpath='{study}/{name}_{date}_{time}_{sys}',
-        extra_subpath=dpc.ID['dicom'],
+        extra_subpath=utl.ID['dicom'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -98,7 +98,7 @@ def do_acquire_sources(
         subpath (str): Extra subpath to append to output dirpath.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
-            For more information on accepted syntax, see `dpc.fill_from_dicom`.
+            For more information on accepted syntax, see `utl.fill_from_dicom`.
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 
@@ -108,7 +108,7 @@ def do_acquire_sources(
 
     See Also
     ========
-    dpc.fill_from_dicom, dpc.find_a_dicom
+    utl.fill_from_dicom, utl.find_a_dicom
 
     """
 
@@ -117,12 +117,11 @@ def do_acquire_sources(
             for name in files:
                 yield os.path.join(root, name)
 
-    if verbose > VERB_LVL['none']:
-        print(':: Importing sources...')
-        print('Input:\t{}'.format(in_dirpath))
-        print('Output:\t{}'.format(out_dirpath))
-        if clean:
-            msg('W: Files will be moved!', fmt='{t.yellow}{t.bold}')
+    msg(':: Importing sources...')
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
+    if clean:
+        msg('W: Files will be moved!', fmt='{t.yellow}{t.bold}')
     if os.path.exists(in_dirpath):
         # :: analyze directory tree
         dcm_dirpaths = set()
@@ -130,13 +129,13 @@ def do_acquire_sources(
             msg('Analyzing `{}`...'.format(filepath),
                 verbose, VERB_LVL['debug'])
             filename = os.path.basename(filepath)
-            is_dicom = dpc.is_dicom(
+            is_dicom = utl.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
             if not is_dicom:
-                is_compressed, compression = dpc.is_compressed_dicom(
+                is_compressed, compression = utl.is_compressed_dicom(
                     filepath,
                     allow_dir=False,
                     allow_report=True,
@@ -144,7 +143,7 @@ def do_acquire_sources(
             else:
                 is_compressed = False
                 compression = None
-            if is_dicom or is_compressed and compression in dpc.COMPRESSIONS:
+            if is_dicom or is_compressed and compression in utl.COMPRESSIONS:
                 dcm_subpath = None
                 if subpath or extra_subpath:
                     full_subpath = os.path.join(subpath, extra_subpath)
@@ -153,7 +152,7 @@ def do_acquire_sources(
                 else:  # if extra_subpath:
                     full_subpath = extra_subpath
                 if full_subpath:
-                    dcm_subpath = dpc.fill_from_dicom(full_subpath, filepath)
+                    dcm_subpath = utl.fill_from_dicom(full_subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
                     dcm_dirpath = out_dirpath
@@ -161,7 +160,7 @@ def do_acquire_sources(
                     os.makedirs(dcm_dirpath)
                 if dcm_dirpath not in dcm_dirpaths:
                     if dcm_subpath:
-                        msg('Subpath:\t{}'.format(dcm_subpath),
+                        msg('Subpath: {}'.format(dcm_subpath),
                             verbose, VERB_LVL['low'])
                     dcm_dirpaths.add(dcm_dirpath)
                 if not os.path.isfile(os.path.join(dcm_dirpath, filename)) \
@@ -171,13 +170,12 @@ def do_acquire_sources(
                     else:
                         shutil.copy(filepath, dcm_dirpath)
                 else:
-                    if verbose > VERB_LVL['low']:
-                        print("II: Output filepath exists. Skipping. " +
-                              "Use 'force' argument to override.")
+                    msg('I: Skipping existing output path. '
+                        'Use `force` to override.')
             else:
                 name = filepath[len(in_dirpath):]
-                if verbose > VERB_LVL['low']:
-                    print('WW: Invalid source found \'{}\''.format(name))
+                msg('W: Invalid source found `{}`'.format(name),
+                    verbose, VERB_LVL['medium'])
     else:
         msg('W: Input path does NOT exists.', verbose, VERB_LVL['low'])
     return dcm_dirpaths
@@ -221,11 +219,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -241,25 +239,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     do_acquire_sources(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.clean, args.subpath,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

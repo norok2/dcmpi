@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 # ======================================================================
 # :: Versioning
-__version__ = '0.0.1.3.dev27+ng7ae48e9.d20160802'
+__version__ = '0.0.1.3.dev29+ngaae811c.d20160819'
 
 # ======================================================================
 # :: Project Details
@@ -33,7 +33,9 @@ You are welcome to redistribute it under its terms and conditions.
 
 # ======================================================================
 # :: supported verbosity levels (level 4 skipped on purpose)
-VERB_LVL = {'none': 0, 'low': 1, 'medium': 2, 'high': 3, 'debug': 5}
+VERB_LVL = {
+    'none': 0, 'low': 1, 'medium': 2, 'high': 3, 'higher': 4, 'highest': 5,
+    'debug': 7}
 D_VERB_LVL = VERB_LVL['low']
 
 # ======================================================================
@@ -44,7 +46,6 @@ MY_GREETINGS = r"""
 | | | | |   | |\/| | |_) | |
 | |_| | |___| |  | |  __/| |
 |____/ \____|_|  |_|_|  |___|
-
 """
 # generated with: figlet 'DCMPI' -f standard
 
@@ -86,31 +87,50 @@ def msg(
         Hello World!
         >>> msg(s, fmt='{t.red}{}')  # if in ANSI Terminal, text is red
         Hello World!
+        >>> msg(s, fmt='yellow')  # if in ANSI Terminal, text is yellow
+        Hello World!
     """
     if verb_lvl >= verb_threshold:
+        # if blessings is not present, no coloring
         try:
             import blessings
-            term = blessings.Terminal()
+        except ImportError:
+            blessings = None
+
+        if blessings:
+            t = blessings.Terminal()
             if not fmt:
-                if verb_threshold == VERB_LVL['medium']:
-                    extra = term.cyan
-                elif verb_threshold == VERB_LVL['high']:
-                    extra = term.yellow
-                elif verb_threshold == VERB_LVL['debug']:
-                    extra = term.magenta
+                if VERB_LVL['none'] < verb_threshold <= VERB_LVL['medium']:
+                    e = t.cyan
+                elif VERB_LVL['medium'] < verb_threshold < VERB_LVL['debug']:
+                    e = t.magenta
+                elif verb_threshold >= VERB_LVL['debug']:
+                    e = t.blue
+                elif text.startswith('I:'):
+                    e = t.green
+                elif text.startswith('W:'):
+                    e = t.yellow
+                elif text.startswith('E:'):
+                    e = t.red
                 else:
-                    extra = term.white
-                text = '{e}{t.bold}{first}{t.normal}{e}{rest}{t.normal}'.format(
-                    t=term, e=extra,
-                    first=text[:text.find(' ')],
-                    rest=text[text.find(' '):])
+                    e = t.white
+                tokens = text.split(None, 1)
+                txt0 = text[:text.find(tokens[0])]
+                txt1 = tokens[0]
+                txt2 = text[text.find(txt1) + len(txt1)] + tokens[1] \
+                    if len(tokens) > 1 else ''
+                txt_kwargs = {
+                    'e1': e + (t.bold if e == t.white else ''),
+                    'e2': e + (t.bold if e != t.white else ''),
+                    'init': txt0, 'first': txt1, 'rest': txt2, 'n': t.normal}
+                text = '{init}{e1}{first}{n}{e2}{rest}{n}'.format(**txt_kwargs)
             else:
+                if 't.' not in fmt:
+                    fmt = '{{t.{}}}'.format(fmt)
                 if '{}' not in fmt:
                     fmt += '{}'
-                text = fmt.format(text, t=term) + term.normal
-        except ImportError:
-            pass
-        finally:
+                text = fmt.format(text, t=t) + t.normal
+        else:
             print(text, *args, **kwargs)
 
 

@@ -71,10 +71,10 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -87,7 +87,7 @@ def get_session(dirpath, summary):
         ('BeginTime',
          lambda t: time.strftime('%H-%M', time.strptime(t, '%H:%M:%S'))),
         ('StationName',
-         lambda t: dpc.STATION[t] if t in dpc.STATION else t),
+         lambda t: utl.STATION[t] if t in utl.STATION else t),
         ('StudyDescription',
          lambda t: t),
     )
@@ -99,7 +99,7 @@ def get_session(dirpath, summary):
         for key, func in fields:
             info.append(func(summary[key]))
 
-        sample_id = dpc.INFO_SEP.join(info[:-1])
+        sample_id = utl.INFO_SEP.join(info[:-1])
         study_id = info[-1]
     finally:
         result = '{} / {}'.format(sample_id, study_id)
@@ -235,12 +235,9 @@ def get_report(
     None.
 
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Creating HTML and PDF get_report...')
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
+    msg(':: Creating HTML and PDF get_report...')
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and extract images
@@ -262,15 +259,13 @@ def get_report(
                             extra = json.load(target_file)
                         elif name.startswith('a'):
                             acquisitions.append((
-                                name[:name.find(dpc.INFO_SEP)],
+                                name[:name.find(utl.INFO_SEP)],
                                 json.load(target_file)))
             except:
-                if verbose > VERB_LVL['none']:
-                    print("WW: Could not process '{}'.".format(target))
+                msg('W: Could not process `{}`.'.format(target))
 
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
 
         # :: create get_report
         tpl_dirpath = os.path.join(
@@ -300,7 +295,7 @@ def get_report(
                     '[ACQ-TIME]': acq['AcquisitionTime'],
                     '[ACQ-PROTOCOL]': acq['ProtocolName'],
                     '[ACQ-SERIES]':
-                        ', '.join([series[:series.find(dpc.INFO_SEP)]
+                        ', '.join([series[:series.find(utl.INFO_SEP)]
                                    for series in acq['_series']]),
                     '[ACQUISITION-PARAMETER-TEMPLATE]': acq_param_html,
                 }
@@ -364,16 +359,14 @@ def get_report(
                 report_html = report_html.replace(tag, val)
             # todo: improve filename (e.g. from upper folder or recalculate)
             html_filename = 'get_report' + '.html'
-            if verbose > VERB_LVL['none']:
-                print('HTML:\t{}'.format(html_filename))
+            msg('HTML: {}'.format(html_filename))
             html_filepath = os.path.join(out_dirpath, html_filename)
             with open(html_filepath, 'w') as html_file:
                 html_file.write(report_html)
 
             if fmt == 'pdf':
                 pdf_filename = os.path.splitext(html_filename)[0] + '.pdf'
-                if verbose > VERB_LVL['none']:
-                    print('Report:\t{}'.format(pdf_filename))
+                msg('Report: {}'.format(pdf_filename))
                 pdf_filepath = os.path.join(out_dirpath, pdf_filename)
                 opts = (
                     ' --page-size {}'.format('A4'),
@@ -385,18 +378,13 @@ def get_report(
                 )
                 cmd = 'wkhtmltopdf {} {} {}'.format(
                     ' '.join(opts), html_filepath, pdf_filepath)
-                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-                if verbose >= VERB_LVL['debug']:
-                    print(p_stdout)
-                    print(p_stderr)
+                ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
 
             else:
-                if verbose > VERB_LVL['none']:
-                    print("WW: Unknown format '{}'.".format(fmt))
+                msg('W: Unknown format `{}`.'.format(fmt))
 
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Acquisition information not found.")
+            msg('W: Acquisition information not found.')
 
 
 # ======================================================================
@@ -439,11 +427,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -459,25 +447,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_report(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, args.format,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

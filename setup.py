@@ -125,6 +125,7 @@ setup(
     setup_requires=['setuptools', 'setuptools_scm'],
 
     extras_require={
+        # 'pymrt': 'pymrt',
         'pyside': 'PySide',
         'blessings': 'blessings',
         'appdirs': 'appdirs',
@@ -138,20 +139,34 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'dcmpi_gui=dcmpi.dcmpi_gui:main',
-            'dcmpi_cli=dcmpi.dcmpi_cli:main',
+            'dcmpi=dcmpi.dcmpi_run:main',
+            'dcmpi_tui=dcmpi.dcmpi_run:main_tui',
+            'dcmpi_cli=dcmpi.dcmpi_run:main_cli',
+
+            'dcmpi_run=dcmpi.dcmpi_run:main',
+            'dcmpi_run_tui=dcmpi.dcmpi_run:main_tui',
+            'dcmpi_run_cli=dcmpi.dcmpi_run:main_cli',
+
+            'dcmpi_explorer=dcmpi.dcmpi_explorer:main',
+            'dcmpi_explorer_tui=dcmpi.dcmpi_explorer:main_tui',
+            'dcmpi_explorer_cli=dcmpi.dcmpi_explorer:main_cli',
 
             'dcmpi_update=dcmpi.dcmpi_update:main',
             'dcmpi_monitor_folder=dcmpi.dcmpi_monitor_folder:main',
 
-            'dcmpi__acquire_sources=dcmpi.do_acquire_sources:main',
-            'dcmpi__sorting=dcmpi.sorting:main',
+            'dcmpi__do_acquire_sources=dcmpi.do_acquire_sources:main',
+            'dcmpi__do_sorting=dcmpi.do_sorting:main',
+            'dcmpi__do_backup=dcmpi.do_backup:main',
             'dcmpi__get_info=dcmpi.get_info:main',
             'dcmpi__get_meta=dcmpi.get_meta:main',
             'dcmpi__get_nifti=dcmpi.get_nifti:main',
             'dcmpi__get_prot=dcmpi.get_prot:main',
-            'dcmpi__report=dcmpi.get_report:main',
-            'dcmpi__backup=dcmpi.get_backup:main',
+            'dcmpi__get_report=dcmpi.get_report:main',
         ],
+        'gui_scripts': [
+            'dcmpi_gui=dcmpi.dcmpi_run:main_gui',
+            'dcmpi_run_gui=dcmpi.dcmpi_run:main_gui',
+            'dcmpi_explorer_gui=dcmpi.dcmpi_explorer:main_gui',
+        ]
     },
 )

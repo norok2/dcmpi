@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Anonymize DICOM files.
+DCMPI: update information on DICOM files.
 """
 
 # ======================================================================
@@ -14,45 +14,18 @@ from __future__ import unicode_literals
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-# import sys  # System-specific parameters and functions
 import shutil  # High-level file operations
-# import platform  # Access to underlying platform’s identifying data
-# import math  # Mathematical functions
-import time  # Time access and conversions
 import datetime  # Basic date and time types
-# import re  # Regular expression operations
-# import operator  # Standard operators as functions
-# import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and sub-commands
-# import itertools  # Functions creating iterators for efficient looping
-# import functools  # Higher-order functions and operations on callable objects
-# import subprocess  # Subprocess management
-# import multiprocessing  # Process-based parallelism
-# import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
-# import numpy as np  # NumPy (multidimensional numerical arrays library)
-# import scipy as sp  # SciPy (signal and image processing library)
-# import matplotlib as mpl  # Matplotlib (2D/3D plotting library)
-# import sympy as sym  # SymPy (symbolic CAS library)
-# import PIL  # Python Image Library (image manipulation toolkit)
-# import SimpleITK as sitk  # Image ToolKit Wrapper
-# import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
-# import nipy  # NiPy (NeuroImaging in Python)
-# import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
-# import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
-# import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
-# import scipy.optimize  # SciPy: Optimization Algorithms
-# import scipy.integrate  # SciPy: Integrations facilities
-# import scipy.constants  # SciPy: Mathematal and Physical Constants
-# import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
 from dcmpi import msg, dbg
@@ -78,7 +51,7 @@ def dcmpi_update(
         None.
 
     See Also:
-        dpc.is_dicom, dpc.is_compressed_dicom
+        utl.is_dicom, utl.is_compressed_dicom
     """
 
     def get_filepaths(path):
@@ -104,13 +77,13 @@ def dcmpi_update(
                 shutil.copy(filepath, backup_filepath)
                 msg('Backup `{}`'.format(backup_filepath),
                     verbose, VERB_LVL['medium'])
-            is_dicom = dpc.is_dicom(
+            is_dicom = utl.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
             if not is_dicom:
-                is_compressed, compression = dpc.is_compressed_dicom(
+                is_compressed, compression = utl.is_compressed_dicom(
                     filepath,
                     allow_dir=False,
                     allow_report=True,
@@ -118,12 +91,12 @@ def dcmpi_update(
             else:
                 is_compressed = False
                 compression = None
-            if is_dicom or is_compressed and compression in dpc.COMPRESSIONS:
-                if is_compressed and compression in dpc.COMPRESSIONS:
+            if is_dicom or is_compressed and compression in utl.COMPRESSIONS:
+                if is_compressed and compression in utl.COMPRESSIONS:
                     dcm_filepath = os.path.splitext(filepath)[0]
-                    cmd = dpc.COMPRESSIONS[compression]['bwd'] + ' {}'.format(
+                    cmd = utl.COMPRESSIONS[compression]['bwd'] + ' {}'.format(
                         filepath)
-                    dpc.execute(cmd)
+                    utl.execute(cmd)
                     msg('Uncompressing: `{}`'.format(dcm_filepath),
                         verbose, VERB_LVL['high'])
                 else:
@@ -140,10 +113,10 @@ def dcmpi_update(
                 except:
                     msg('E: Could not open DICOM: {}.'.format(dcm_filepath))
                 finally:
-                    if is_compressed and compression in dpc.COMPRESSIONS:
-                        cmd = dpc.COMPRESSIONS[compression]['fwd'] + \
+                    if is_compressed and compression in utl.COMPRESSIONS:
+                        cmd = utl.COMPRESSIONS[compression]['fwd'] + \
                               ' {}'.format(dcm_filepath)
-                        dpc.execute(cmd)
+                        utl.execute(cmd)
                         msg('Compressing: `{}`'.format(filepath),
                             verbose, VERB_LVL['high'])
                     if dcm_filepath != filepath and \
@@ -201,23 +174,24 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     dcmpi_update(
         args.dirpath, args.dcm_info, args.backup_prefix, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

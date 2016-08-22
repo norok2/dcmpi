@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Instructions to extract information from DICOM using pydicom.
+DCMPI: Instructions to extract information from DICOM using pydicom.
 """
 
 # ======================================================================
@@ -55,7 +55,7 @@ import functools  # Higher-order functions and operations on callable objects
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 
 # from dcmpi_cli import INFO
 # from dcmpi_cli import VERB_LVL
@@ -99,7 +99,7 @@ SESSION = {
         (0x0010, 0x0020), None, None),
     'PatientBirthDate': (  # reformat
         (0x0010, 0x0030),
-        lambda x, p: time.strftime(p, dpc.get_date(x)), '%Y-%m-%d'),
+        lambda x, p: time.strftime(p, utl.get_date(x)), '%Y-%m-%d'),
     'PatientAge': (  # reformat
         (0x0010, 0x1010), lambda x, p: str(int(str(x)[:-1])) + ' yr', None),
     'PatientSex': (  # reformat
@@ -125,29 +125,29 @@ SESSION = {
         lambda x, p: functools.reduce(lambda a, kv: a.replace(*kv), p, x),
         ((',', ', '),)),
     'StationName': (
-        (0x0008, 0x1010), lambda x, p: p[x] if x in p else x, dpc.STATION),
+        (0x0008, 0x1010), lambda x, p: p[x] if x in p else x, utl.STATION),
     'StationID': (
         (0x0008, 0x1010), None, None),
     'MagneticFieldStrength': (
         (0x0018, 0x0087), lambda x, p: '{}'.format(x), None),
     'NominalMagneticFieldStrength': (
         (0x0018, 0x0087),
-        lambda x, p: '{}'.format(dpc._nominal_B0(x)), None),
+        lambda x, p: '{}'.format(utl._nominal_B0(x)), None),
     'BeginDate': (
         (0x0008, 0x0020),
-        lambda x, p: time.strftime(p, dpc.get_date(x)),
+        lambda x, p: time.strftime(p, utl.get_date(x)),
         '%Y-%m-%d'),
     'BeginTime': (
         (0x0008, 0x0030),
-        lambda x, p: time.strftime(p, dpc.get_time(x)),
+        lambda x, p: time.strftime(p, utl.get_time(x)),
         '%H:%M:%S'),
     'EndDate': (
         (0x0008, 0x0023),
-        lambda x, p: time.strftime(p, dpc.get_date(x)),
+        lambda x, p: time.strftime(p, utl.get_date(x)),
         '%Y-%m-%d'),
     'EndTime': (
         (0x0008, 0x0033),
-        lambda x, p: time.strftime(p, dpc.get_time(x)),
+        lambda x, p: time.strftime(p, utl.get_time(x)),
         '%H:%M:%S'),
     'CoilSystem': (  # multiple replace
         (0x0051, 0x100f), lambda x, p: p[x] if x in p else x, COIL),
@@ -157,22 +157,22 @@ SESSION = {
 # :: Acquisition-specific information to be extracted
 ACQUISITION = {
     'AcquisitionTime': (
-        (0x0051, 0x100a), lambda x, p: dpc.get_duration(x), None),
+        (0x0051, 0x100a), lambda x, p: utl.get_duration(x), None),
     'BeginDate': (
         (0x0008, 0x0022),
-        lambda x, p: time.strftime(p, dpc.get_date(x)),
+        lambda x, p: time.strftime(p, utl.get_date(x)),
         '%Y-%m-%d'),
     'BeginTime': (
         (0x0008, 0x0032),
-        lambda x, p: time.strftime(p, dpc.get_time(x)),
+        lambda x, p: time.strftime(p, utl.get_time(x)),
         '%H:%M:%S'),
     'EndDate': (
         (0x0008, 0x0023),
-        lambda x, p: time.strftime(p, dpc.get_date(x)),
+        lambda x, p: time.strftime(p, utl.get_date(x)),
         '%Y-%m-%d'),
     'EndTime': (
         (0x0008, 0x0033),
-        lambda x, p: time.strftime(p, dpc.get_time(x)),
+        lambda x, p: time.strftime(p, utl.get_time(x)),
         '%H:%M:%S'),
     'TransmitCoil': (
         (0x0018, 0x1251), None, None),
@@ -306,7 +306,8 @@ def get_sequence_info(info, prot):
                 'sRXSPEC.alDwellTime[]',
                 lambda x, p: [int(round(1 / (2 * p[1] * n[1] * 1e-9), -1))
                               for n in x[:p[0]]], (
-                    prot['lContrasts'] if 'lContrasts' in prot else None,
+                    prot['lContrasts']
+                    if 'lContrasts' in prot else None,
                     prot['sKSpace.lBaseResolution']
                     if 'sKSpace.lBaseResolution' in prot else None)),
             # :: Dwell Time

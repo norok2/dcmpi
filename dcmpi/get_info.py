@@ -57,11 +57,11 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 import dcmpi.custom_info as custom_info
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -96,14 +96,11 @@ def get_info(
     None.
 
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Exporting CUSTOM information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources = dpc.dcm_sources(in_dirpath)
-    groups = dpc.group_series(in_dirpath)
+    msg(':: Exporting CUSTOM information ({})...'.format(method))
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
+    sources = utl.dcm_sources(in_dirpath)
+    groups = utl.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists
@@ -113,8 +110,8 @@ def get_info(
         if method == 'pydicom':
             # :: extract session information
             out_filepath = os.path.join(
-                out_dirpath, dpc.D_SUMMARY + '.' + dpc.ID['info'])
-            out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
+                out_dirpath, utl.D_SUMMARY + '.' + utl.ID['info'])
+            out_filepath += ('.' + utl.EXT['json']) if type_ext else ''
             info = {'_measurements': groups}
             # info['_sources'] = sources  # DEBUG
             try:
@@ -133,10 +130,10 @@ def get_info(
 
             except Exception as ex:
                 print(sources)
-                print("EE: failed during get_info (exceptioon: {})".format(ex))
+                msg('E: failed during get_info (exception: {})'.format(ex))
             else:
                 # DICOM's-ready information
-                info.update(dpc.postprocess_info(
+                info.update(utl.postprocess_info(
                     dcm, custom_info.SESSION, lambda x, p: x.value, verbose))
                 # additional information: duration
                 field_id = 'Duration'
@@ -151,21 +148,19 @@ def get_info(
                         datetime.timedelta(0, end_time - begin_time))
                 except:
                     field_val = 'N/A'
-                    if verbose > VERB_LVL['low']:
-                        print("WW: Cannot process '{}'.".format(field_id))
+                    msg('W: Cannot process `{}`.'.format(field_id),
+                        verbose, VERB_LVL['medium'])
                 finally:
                     info[field_id] = field_val
-            if verbose > VERB_LVL['none']:
-                out_subpath = out_filepath[len(out_dirpath):]
-                print('Info:\t{}'.format(out_subpath))
+            msg('Info: {}'.format(out_filepath[len(out_dirpath):]))
             with open(out_filepath, 'w') as info_file:
                 json.dump(info, info_file, sort_keys=True, indent=4)
 
             # :: extract acquisition information
             for group_id, group in sorted(groups.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, group_id + '.' + dpc.ID['info'])
-                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
+                    out_dirpath, group_id + '.' + utl.ID['info'])
+                out_filepath += ('.' + utl.EXT['json']) if type_ext else ''
                 info = {}
                 info['_series'] = group
                 in_filepath = sorted(
@@ -173,19 +168,19 @@ def get_info(
                 try:
                     dcm = pydcm.read_file(in_filepath)
                 except:
-                    print('EE: failed processing \'{}\''.format(in_filepath))
+                    msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
-                    info.update(dpc.postprocess_info(
+                    info.update(utl.postprocess_info(
                         dcm, custom_info.ACQUISITION, lambda x, p: x.value,
                         verbose))
                     # information from protocol
-                    if dpc.DCM_ID['hdr_nfo'] in dcm:
-                        prot_src = dcm[dpc.DCM_ID['hdr_nfo']].value
-                        prot = dpc.parse_protocol(
-                            dpc.get_protocol(prot_src))
+                    if utl.DCM_ID['hdr_nfo'] in dcm:
+                        prot_src = dcm[utl.DCM_ID['hdr_nfo']].value
+                        prot = utl.parse_protocol(
+                            utl.get_protocol(prot_src))
                     else:
                         prot = {}
-                    info.update(dpc.postprocess_info(
+                    info.update(utl.postprocess_info(
                         prot,
                         custom_info.get_sequence_info(info, prot),
                         None, verbose))
@@ -204,21 +199,19 @@ def get_info(
                             datetime.timedelta(0, end_time - begin_time))
                     except:
                         field_val = 'N/A'
-                        if verbose > VERB_LVL['low']:
-                            print("WW: Cannot process '{}'.".format(field_id))
+                        msg('W: Cannot process `{}`.'.format(field_id),
+                            verbose, VERB_LVL['medium'])
                     finally:
                         info[field_id] = field_val
-                if verbose > VERB_LVL['none']:
-                    out_subpath = out_filepath[len(out_dirpath):]
-                    print('Info:\t{}'.format(out_subpath))
+                msg('Info: {}'.format(out_filepath[len(out_dirpath):]))
                 with open(out_filepath, 'w') as info_file:
                     json.dump(info, info_file, sort_keys=True, indent=4)
 
             # :: extract series information
             for src_id, in_filepath_list in sorted(sources.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dpc.ID['info'])
-                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
+                    out_dirpath, src_id + '.' + utl.ID['info'])
+                out_filepath += ('.' + utl.EXT['json']) if type_ext else ''
                 info = {}
                 for acq, series in groups.items():
                     if src_id in series:
@@ -226,23 +219,18 @@ def get_info(
                     try:
                         dcm = pydcm.read_file(in_filepath)
                     except:
-                        print("EE: failed processing '{}'".format(in_filepath))
+                        msg('E: failed processing `{}`'.format(in_filepath))
                     else:
-                        info.update(dpc.postprocess_info(
+                        info.update(utl.postprocess_info(
                             dcm, custom_info.SERIES, lambda x, p: x.value,
                             verbose))
-                if verbose > VERB_LVL['none']:
-                    out_subpath = out_filepath[len(out_dirpath):]
-                    print('Info:\t{}'.format(out_subpath))
+                msg('Info: {}'.format(out_filepath[len(out_dirpath):]))
                 with open(out_filepath, 'w') as info_file:
                     json.dump(info, info_file, sort_keys=True, indent=4)
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
     else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                  "Use 'force' argument to override.")
+        msg('I: Skipping existing output path. Use `force` to override.')
 
 
 # ======================================================================
@@ -274,11 +262,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -294,25 +282,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_info(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, args.type_ext,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose >= D_VERB_LVL:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

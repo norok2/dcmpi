@@ -70,10 +70,10 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -110,27 +110,24 @@ def get_nifti(
     None.
 
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Exporting NIfTI images ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
+    msg(':: Exporting NIfTI images ({})...'.format(method))
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and extract images
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
-        sources_dict = dpc.dcm_sources(in_dirpath)
-        d_ext = '.' + dpc.EXT['niz'] if compressed else dpc.EXT['nii']
+        sources_dict = utl.dcm_sources(in_dirpath)
+        d_ext = '.' + utl.EXT['niz'] if compressed else utl.EXT['nii']
 
         # :: extract nifti
         if method == 'pydicom':
             for src_id in sorted(sources_dict.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
             # TODO: implement to avoid dependencies
-            if verbose > VERB_LVL['low']:
-                print('WW: Pure Python method not implemented.')
+            msg('W: Pure Python method not implemented.',
+                verbose, VERB_LVL['medium'])
 
         if method == 'isis':
             for src_id in sorted(sources_dict.keys()):
@@ -138,14 +135,11 @@ def get_nifti(
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 cmd = 'isisconv -in {} -out {}'.format(
                     in_filepath, out_filepath)
-                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-                if verbose >= VERB_LVL['debug']:
-                    print(p_stdout)
-                    print(p_stderr)
+                ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
                 if merged:
-                    if verbose > VERB_LVL['low']:
-                        print('WW: (isisconv) merging after not implemented.')
-                        # TODO: implement volume merging
+                    # TODO: implement volume merging
+                    msg('W: (isisconv) merging after not implemented.',
+                        verbose, VERB_LVL['medium'])
 
         elif method == 'dcm2nii':
             for src_id in sorted(sources_dict.keys()):
@@ -157,10 +151,7 @@ def get_nifti(
                 opts += ' -g ' + 'y' if compressed else 'n'
                 cmd = 'dcm2nii {} -o {} {}'.format(
                     opts, out_dirpath, in_filepath)
-                p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-                if verbose >= VERB_LVL['debug']:
-                    print(p_stdout)
-                    print(p_stderr)
+                ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
                 term_str = 'GZip...' if compressed else 'Saving '
                 # parse result
                 old_name_list = []
@@ -168,34 +159,30 @@ def get_nifti(
                     if term_str in line:
                         old_name = line[line.find(term_str) + len(term_str):]
                         old_name_list.append(old_name)
-                if verbose >= VERB_LVL['debug']:
-                    print('Parsed names: ')
-                    print('\n'.join(old_name_list))
+                if old_name_list:
+                    msg('Parsed names: ', verbose, VERB_LVL['debug'])
+                    msg(''.join([': {}\n'.format(n) for n in old_name_list]),
+                        verbose, VERB_LVL['debug'])
+                else:
+                    msg('E: Could not locate filename in `dcm2nii`.')
                 if len(old_name_list) == 1:
                     old_filepath = os.path.join(out_dirpath, old_name_list[0])
                     out_filepath = os.path.join(out_dirpath, src_id + d_ext)
-                    if verbose > VERB_LVL['none']:
-                        out_subpath = out_filepath[len(out_dirpath):]
-                        print('NIfTI:\t{}'.format(out_subpath))
+                    msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
                     os.rename(old_filepath, out_filepath)
                 else:
                     for num, old_name in enumerate(old_name_list):
                         old_filepath = os.path.join(out_dirpath, old_name)
                         out_filepath = os.path.join(
                             out_dirpath,
-                            src_id + dpc.INFO_SEP + str(num + 1) + d_ext)
-                        if verbose > VERB_LVL['none']:
-                            out_subpath = out_filepath[len(out_dirpath):]
-                            print('NIfTI:\t{}'.format(out_subpath))
+                            src_id + utl.INFO_SEP + str(num + 1) + d_ext)
+                        msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
                         os.rename(old_filepath, out_filepath)
 
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
     else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                  "Use 'force' argument to override.")
+        msg('I: Skipping existing output path. Use `force` to override.')
 
 
 # ======================================================================
@@ -236,11 +223,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -260,25 +247,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_nifti(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, not args.uncompressed, not args.separated,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

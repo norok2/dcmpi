@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Monitor folder for creation of new DICOM folder.
+DCMPI: Monitor folder for creation of new DICOM folder.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -76,10 +76,10 @@ import blessings  # Wrapper for terminal coloring, styling, and positioning
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -96,7 +96,6 @@ def monitor_folder(
     """
     Monitor changes in a dir and execute a command upon verify some condition.
     """
-    # todo: refactor using blessings
 
     def list_dirs(dirpath):
         return [d for d in os.listdir(dirpath)
@@ -104,34 +103,29 @@ def monitor_folder(
 
     sec_in_min = 60
 
-    term = blessings.Terminal()
-
     loop = True
     count = 0
     old_dirs = list_dirs(dirpath)
-    if verbose > VERB_LVL['none']:
-        print('Watch:\t{}'.format(dirpath))
+    msg('Watch: {}'.format(dirpath))
     while loop:
         new_dirs = list_dirs(dirpath)
         removed_dirs = [d for d in old_dirs if d not in new_dirs]
         added_dirs = [d for d in new_dirs if d not in old_dirs]
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S %Z', time.localtime())
-        randomized = (random.random() * 2 - 1) * delay_variance \
-            if delay_variance else 0
+        randomized = random.random() * delay * delay_variance / 100
         sleep_delay = (delay + randomized) * sec_in_min
-        if verbose > VERB_LVL['none']:
-            if removed_dirs:
-                msg = '{}  --  {}'.format(timestamp, removed_dirs)
-                print(term.red(msg))
-            if added_dirs:
-                msg = '{}  ++  {}'.format(timestamp, added_dirs)
-                print(term.green(msg))
-        if verbose > VERB_LVL['none'] and not removed_dirs and not added_dirs:
-            msg = 'All quiet on the western front'
+        if removed_dirs:
+            msg(': {}  --  {}'.format(timestamp, removed_dirs),
+                fmt='{t.red}{t.bold}')
+        if added_dirs:
+            msg(': {}  ++  {}'.format(timestamp, added_dirs),
+                fmt='{t.green}{t.bold}')
+        if not removed_dirs and not added_dirs:
+            text = 'All quiet on the western front.'
             next_check = time.strftime(
                 '%H:%M:%S', time.localtime(time.time() + sleep_delay))
-            print('{}      {} (next check in ~{} min, at {})'.format(
-                timestamp, msg, int(delay + randomized), next_check))
+            msg(': {}  ..  {}  (next check in ~{} min, at {})'.format(
+                timestamp, text, int(delay + randomized), next_check))
         delta_dirs = added_dirs if on_added else removed_dirs
         for delta in delta_dirs:
             delta_dirpath = os.path.join(dirpath, delta)
@@ -180,13 +174,13 @@ def handle_arg():
         default='.',
         help='set working directory [%(default)s]')
     arg_parser.add_argument(
-        '-l', '--delay', metavar='VAL',
+        '-l', '--delay', metavar='X',
         type=float, default=60.0,
         help='set checking interval in min [%(default)s]')
     arg_parser.add_argument(
-        '-r', '--delay_var', metavar='VAL',
-        type=float, default=5.0,
-        help='set random variance in the delay in min [%(default)s]')
+        '-r', '--delay_var', metavar='DX',
+        type=float, default=5,
+        help='set random variance in the delay as percentage [%(default)s]')
     arg_parser.add_argument(
         '-m', '--max_count', metavar='NUM',
         type=int, default=0,
@@ -200,29 +194,30 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
 
     begin_time = datetime.datetime.now()
 
     monitor_folder(
         args.cmd,
         args.dir, args.delay,
-        lambda x: dpc.find_a_dicom(x)[0],
+        lambda x: utl.find_a_dicom(x)[0],
         True,
         args.max_count, args.delay_var,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Extract and preprocess DICOM files.
+DCMPI: Extract and preprocess DICOM files.
 """
 
 # ======================================================================
@@ -15,21 +15,13 @@ from __future__ import unicode_literals
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
 import sys  # System-specific parameters and functions
-# import shutil  # High-level file operations
 import platform  # Access to underlying platform’s identifying data
-# import math  # Mathematical functions
-import time  # Time access and conversions
 import datetime  # Basic date and time types
-# import re  # Regular expression operations
-# import operator  # Standard operators as functions
 import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and subcommands
-# import itertools  # Functions creating iterators for efficient looping
-# import functools  # Higher-order functions and operations on callable objects
-# import subprocess  # Subprocess management
 import multiprocessing  # Process-based parallelism
-# import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import warnings  # Warning control
 
 # Python interface to Tcl/Tk
 try:
@@ -45,42 +37,19 @@ except ImportError:
     import tkFileDialog as filedialog
     import tkSimpleDialog as simpledialog
 
-# Configuration file parser
-# try:
-#     import configparser
-# except ImportError:
-#     import ConfigParser as configparser
-
 # :: External Imports
-# import numpy as np  # NumPy (multidimensional numerical arrays library)
-# import scipy as sp  # SciPy (signal and image processing library)
-# import matplotlib as mpl  # Matplotlib (2D/3D plotting library)
-# import sympy as sym  # SymPy (symbolic CAS library)
-# import PIL  # Python Image Library (image manipulation toolkit)
-# import SimpleITK as sitk  # Image ToolKit Wrapper
-# import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
-# import nipy  # NiPy (NeuroImaging in Python)
-# import nipype  # NiPype (NiPy Pipelines and Interfaces)
-# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-# import PySide  # PySide (Python QT bindings)
 
 # :: External Imports Submodules
-# import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
-# import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
-# import scipy.optimize  # SciPy: Optimization Algorithms
-# import scipy.integrate  # SciPy: Integrations facilities
-# import scipy.constants  # SciPy: Mathematal and Physical Constants
-# import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-from dcmpi.dcmpi_cli import dcmpi_cli
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
 # ======================================================================
+# :: determine initial configuration
 try:
     import appdirs
 
@@ -94,12 +63,8 @@ except ImportError:
         'usr_cfg': os.path.realpath('.'),
         'sys_cfg': os.path.dirname(__file__),
     }
-    PATHS = collections.namedtuple(
-        'DIRS', ['user_config_dir', 'site_config_dir'])
-    PATHS.user_config_dir = PATHS.site_config_dir = os.path.realpath('.')
 
-# ======================================================================
-CFG_FILENAME = os.path.splitext(os.path.basename(__file__))[0] + '__cfg.json'
+CFG_FILENAME = os.path.splitext(os.path.basename(__file__))[0] + '.cfg.json'
 CFG_DIRPATHS = (
     PATHS['usr_cfg'],
     os.path.realpath('.'),
@@ -125,13 +90,13 @@ def default_config():
         'input_paths': [],
         'output_path': os.path.realpath('.'),
         'output_subpath': '{study}/{name}_{date}_{time}_{sys}',
-        'import_subpath': dpc.ID['dicom'],
-        'niz_subpath': dpc.ID['nifti'],
-        'meta_subpath': dpc.ID['meta'],
-        'prot_subpath': dpc.ID['prot'],
-        'info_subpath': dpc.ID['info'],
-        'report_template': dpc.TPL['report'],
-        'backup_template': dpc.TPL['backup'],
+        'import_subpath': utl.ID['dicom'],
+        'niz_subpath': utl.ID['nifti'],
+        'meta_subpath': utl.ID['meta'],
+        'prot_subpath': utl.ID['prot'],
+        'info_subpath': utl.ID['info'],
+        'report_template': utl.TPL['report'],
+        'backup_template': utl.TPL['backup'],
         'force': False,
         'verbose': D_VERB_LVL,
         'use_mp': True,
@@ -185,6 +150,88 @@ def save_config(
         json.dump(config, cfg_file, sort_keys=True, indent=4)
 
 
+# ======================================================================
+def dcmpi_run(
+        in_dirpath,
+        out_dirpath,
+        subpath=utl.TPL['acquire'],
+        import_subpath=utl.ID['dicom'],
+        niz_subpath=utl.ID['nifti'],
+        meta_subpath=utl.ID['meta'],
+        prot_subpath=utl.ID['prot'],
+        info_subpath=utl.ID['info'],
+        report_template=utl.TPL['report'],
+        backup_template=utl.TPL['backup'],
+        force=False,
+        verbose=D_VERB_LVL):
+    """
+    Standard preprocessing of DICOM files.
+
+    Args:
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
+        subpath ():
+        nii_subpath ():
+        meta_subpath ():
+        prot_subpath ():
+        info_subpath ():
+        report_subpath ():
+        backup_subpath ():
+        force (bool): Force new processing.
+        verbose (int): Set level of verbosity.
+
+    Returns:
+        None.
+    """
+    from dcmpi.do_acquire_sources import do_acquire_sources
+    from dcmpi.do_sorting import sorting
+
+    subdirs = (
+        niz_subpath, meta_subpath, prot_subpath, info_subpath, report_template,
+        backup_template)
+    # import
+    dcm_dirpaths = do_acquire_sources(
+        in_dirpath, out_dirpath, False, subpath, import_subpath, force, verbose)
+    for dcm_dirpath in dcm_dirpaths:
+        base_dirpath = os.path.dirname(dcm_dirpath)
+        # sort
+        sorting(
+            dcm_dirpath, utl.D_SUMMARY + '.' + utl.EXT['json'],
+            force, verbose)
+        msg('Done: {}'.format(dcm_dirpath))
+
+
+# ======================================================================
+def get_curr_screen_geometry():
+    """
+    Workaround to get the size of the current screen in a multi-screen setup.
+
+    Returns:
+        geometry (str): The standard Tk geometry string.
+            [width]x[height]+[left]+[top]
+    """
+    temp = tk.Tk()
+    temp.update()
+    temp.attributes('-fullscreen', True)
+    temp.state('iconic')
+    geometry = temp.winfo_geometry()
+    temp.destroy()
+    return geometry
+
+
+# ======================================================================
+def center(target, parent=None):
+    target.update_idletasks()
+    if parent is None:
+        parent_geom = Geometry(get_curr_screen_geometry())
+    else:
+        parent.update_idletasks()
+        parent_geom = Geometry(parent.winfo_geometry())
+    target_geom = Geometry(target.winfo_geometry()).center(parent_geom)
+    target.geometry(target_geom.as_str())
+
+
+# ======================================================================
 class Geometry():
     def __init__(self, geometry_text):
         """
@@ -233,35 +280,6 @@ class Geometry():
         self.left = parent.width // 2 - self.width // 2 + parent.left
         self.top = parent.height // 2 - self.height // 2 + parent.top
         return self
-
-
-def get_curr_screen_geometry():
-    """
-    Workaround to determine the size of the current screen.
-
-    Returns:
-        geometry (str): The standard Tk geometry string.
-            [width]x[height]+[left]+[top]
-    """
-    temp = tk.Tk()
-    temp.update()
-    temp.attributes('-fullscreen', True)
-    temp.state('iconic')
-    geometry = temp.winfo_geometry()
-    temp.destroy()
-    return geometry
-
-
-# ======================================================================
-def center(target, parent=None):
-    target.update_idletasks()
-    if parent is None:
-        parent_geom = Geometry(get_curr_screen_geometry())
-    else:
-        parent.update_idletasks()
-        parent_geom = Geometry(parent.winfo_geometry())
-    target_geom = Geometry(target.winfo_geometry()).center(parent_geom)
-    target.geometry(target_geom.as_str())
 
 
 # ======================================================================
@@ -329,11 +347,11 @@ class Spinbox(tk.Spinbox):
 
     def get_values(self):
         return [
-            dpc.auto_convert(item)
+            utl.auto_convert(item)
             for item in self.configure('values')[-1].split()]
 
     def get_val(self):
-        return dpc.auto_convert(self.get())
+        return utl.auto_convert(self.get())
 
     def set_val(self, val=''):
         if val in self.get_values():
@@ -550,7 +568,7 @@ class Settings(tk.Toplevel):
 
 
 # ======================================================================
-class Main(ttk.Frame):
+class MainGui(ttk.Frame):
     def __init__(self, parent, args):
         # get_val config data
         cfg = {}
@@ -765,7 +783,7 @@ class Main(ttk.Frame):
             if 'chk' in items:
                 cfg[name] = items['chk'].get_val()
             elif 'spb' in items:
-                cfg[name] = dpc.auto_convert(items['spb'].get_val())
+                cfg[name] = utl.auto_convert(items['spb'].get_val())
         return cfg
 
     def _cfg_to_ui(self):
@@ -845,24 +863,24 @@ class Main(ttk.Frame):
             pool = multiprocessing.Pool(processes=n_proc)
             proc_result_list = []
         for in_dirpath in self.lsvInput.get_items():
-            dcmpi_cli_kwargs = {
+            dcmpi_run_kwargs = {
                 name: info['ent'].get_val()
                 for name, info in self.wdgModules.items()}
-            dcmpi_cli_kwargs.update({
+            dcmpi_run_kwargs.update({
                 'in_dirpath': in_dirpath,
-                'out_dirpath': self.entPath.get(),
+                'out_dirpath': os.path.expanduser(self.entPath.get()),
                 'subpath': self.entSubpath.get(),
                 'force': force,
                 'verbose': verbose,
             })
-            print(dcmpi_cli_kwargs)
+            # print(dcmpi_run_kwargs)
             if self.cfg['use_mp']:
                 proc_result = pool.apply_async(
-                    dcmpi_cli, kwds=dcmpi_cli_kwargs)
+                    dcmpi_run, kwds=dcmpi_run_kwargs)
                 proc_result_list.append(proc_result)
             else:
-                dcmpi_cli(**dcmpi_cli_kwargs)
-        print(proc_result_list)
+                dcmpi_run(**dcmpi_run_kwargs)
+        # print(proc_result_list)
         if self.cfg['use_mp']:
             res_list = []
             for proc_result in proc_result_list:
@@ -992,6 +1010,33 @@ class Main(ttk.Frame):
 
 
 # ======================================================================
+def dcmpi_run_gui(*args, **kwargs):
+    root = tk.Tk()
+    app = MainGui(root, *args, **kwargs)
+    root.mainloop()
+
+
+# ======================================================================
+def dcmpi_run_tui(*args, **kwargs):
+    try:
+        import asciimatics
+    except ImportError:
+        asciimatics = None
+    # check if asciimatics is available
+    if not asciimatics:
+        warnings.warn('Text UI not supported. Using command-line interface...')
+        dcmpi_run_cli(**kwargs)
+    else:
+        pass
+
+
+# ======================================================================
+def dcmpi_run_cli(*args, **kwargs):
+    msg('We-are-doomed...')
+    pass
+
+
+# ======================================================================
 def handle_arg():
     """
     Handle command-line application arguments.
@@ -1016,9 +1061,50 @@ def handle_arg():
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
+        'ui_mode',
+        nargs='?',
+        default='gui',
+        help='set UI mode [%(default)s]')
+    arg_parser.add_argument(
         '-f', '--force',
         action='store_true',
         help='force new processing [%(default)s]')
+    arg_parser.add_argument(
+        '-i', '--in_dirpath', metavar='DIR',
+        default='.',
+        help='set input directory [%(default)s]')
+    arg_parser.add_argument(
+        '-o', '--out_dirpath', metavar='DIR',
+        default='.',
+        help='set output directory [%(default)s]')
+    arg_parser.add_argument(
+        '-s', '--subpath',
+        default=utl.TPL['acquire'],
+        help='Append DICOM-generated subpath to output [%(default)s]')
+    arg_parser.add_argument(
+        '-n', '--nii_subpath',
+        default=utl.ID['nifti'],
+        help='Sub-path for NIfTI extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-m', '--meta_subpath',
+        default=utl.ID['meta'],
+        help='Sub-path for META extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-p', '--prot_subpath',
+        default=utl.ID['prot'],
+        help='Sub-path for PROT extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-t', '--info_subpath',
+        default=utl.ID['info'],
+        help='Sub-path for INFO extraction. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-r', '--report_subpath',
+        default=utl.TPL['report'],
+        help='Template for the report filename. Empty to skip [%(default)s]')
+    arg_parser.add_argument(
+        '-b', '--backup_subpath',
+        default=utl.TPL['backup'],
+        help='Template for the backup filename. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-c', '--config', metavar='FILE',
         default=CFG_FILENAME,
@@ -1027,24 +1113,50 @@ def handle_arg():
 
 
 # ======================================================================
-def main():
+def main_gui():
+    """Entry point for Graphical User Interface (GUI)"""
+    main('gui')
+
+
+# ======================================================================
+def main_tui():
+    """Entry point for Text User Interface (TUI)"""
+    main('tui')
+
+
+# ======================================================================
+def main_cli():
+    """Entry point for Command-Line Interface (CLI)"""
+    main('cli')
+
+
+# ======================================================================
+def main(ui_mode=None):
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
-    root = tk.Tk()
-    app = Main(root, args)
-    root.mainloop()
+    if not ui_mode:
+        ui_mode = args.ui_mode
 
-    end_time = datetime.datetime.now()
-    print('ExecTime: {}'.format(end_time - begin_time))
+    if utl.has_graphics(ui_mode):
+        dcmpi_run_gui(args)
+    elif utl.has_term(ui_mode):
+        dcmpi_run_tui(args)
+    else:
+        dcmpi_run_cli(args)
+
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

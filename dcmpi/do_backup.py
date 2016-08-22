@@ -56,10 +56,10 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 # ======================================================================
 ARCHIVE_EXT = {
@@ -93,77 +93,48 @@ def get_backup(
     Returns:
         None.
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Backing up DICOM folder...')
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
+    msg(':: Backing up DICOM folder...')
+    msg('Input:  {}'.format(in_dirpath))
     if method in ARCHIVE_EXT:
         out_dirpath += '.' + ARCHIVE_EXT[method]
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
+    msg('Output: {}'.format(out_dirpath))
     success = False
     if not os.path.exists(out_dirpath) or force:
         if method == '7z':
-            # :: perform compression
             cmd_token_list = [
-                '7z',
-                'a', '-mx9',
-                out_dirpath,
-                in_dirpath, ]
+                '7z', 'a', '-mx9', out_dirpath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-            if verbose >= VERB_LVL['debug']:
-                print(p_stdout)
-                print(p_stderr)
-            success = True if p_stdout.find('Everything is Ok') > 0 else False
-            if success and verbose >= VERB_LVL['low']:
-                print(':: Backup was successful.')
+            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['7z', 't', out_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-            if verbose >= VERB_LVL['debug']:
-                print(p_stdout)
-                print(p_stderr)
-            success = True if p_stdout.find('Everything is Ok') > 0 else False
-            if success and verbose >= VERB_LVL['low']:
-                print(':: Test was successful.')
+            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
         elif method == 'zip':
-            # :: perform compression
             cmd_token_list = [
-                'zip',
-                'a', '-mx9',
-                out_dirpath,
-                in_dirpath, ]
+                'zip', 'a', '-mx9', out_dirpath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-            if verbose >= VERB_LVL['debug']:
-                print(p_stdout)
-                print(p_stderr)
+            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = len(p_stderr) == 0
-            if success and verbose >= VERB_LVL['low']:
-                print(':: Backup was successful.')
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['7z', 't', out_dirpath]
             cmd = ' '.join(cmd_token_list)
-            p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
-            if verbose >= VERB_LVL['debug']:
-                print(p_stdout)
-                print(p_stderr)
-            success = True if p_stdout.find('Everything is Ok') > 0 else False
-            if success and verbose >= VERB_LVL['low']:
-                print(':: Test was successful.')
+            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
         if success and not keep and os.path.exists(in_dirpath):
-            if verbose > VERB_LVL['none']:
-                print('Remove:\t{}'.format(in_dirpath))
+            msg('Remove: {}'.format(in_dirpath))
             shutil.rmtree(in_dirpath, ignore_errors=True)
     else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. "
-                  "Use 'force' argument to override.")
+        msg('I: Skipping existing output path. Use `force` to override.')
 
 
 # ======================================================================
@@ -195,11 +166,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -215,25 +186,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_backup(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, args.keep,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

@@ -56,10 +56,10 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -96,14 +96,11 @@ def get_meta(
     None.
 
     """
-    if verbose > VERB_LVL['none']:
-        print(':: Exporting METADATA information ({})...'.format(method))
-    if verbose > VERB_LVL['none']:
-        print('Input:\t{}'.format(in_dirpath))
-    if verbose > VERB_LVL['none']:
-        print('Output:\t{}'.format(out_dirpath))
-    sources_dict = dpc.dcm_sources(in_dirpath)
-    # groups_dict = dpc.group_series(in_dirpath)
+    msg(':: Exporting METADATA information ({})...'.format(method))
+    msg('Input:  {}'.format(in_dirpath))
+    msg('Output: {}'.format(out_dirpath))
+    sources_dict = utl.dcm_sources(in_dirpath)
+    # groups_dict = utl.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and copy files there
@@ -114,57 +111,48 @@ def get_meta(
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dpc.ID['meta'])
-                out_filepath += ('.' + dpc.EXT['txt']) if type_ext else ''
-                if verbose > VERB_LVL['none']:
-                    out_subpath = out_filepath[len(out_dirpath):]
-                    print('Metadata:\t{}'.format(out_subpath))
+                    out_dirpath, src_id + '.' + utl.ID['meta'])
+                out_filepath += ('.' + utl.EXT['txt']) if type_ext else ''
+                msg('Metadata: {}'.format(out_filepath[len(out_dirpath):]))
                 opts = ' -np'  # do not include progress bar
                 opts += ' -rdialect withExtProtocols'  # extended prot info
                 opts += ' -chunks'  # information from each chunk
                 # cmd = 'isisdump -in {} {}'.format(in_filepath, opts)
-                # p_stdout, p_stderr = dpc.execute(cmd, verbose=verbose)
+                # ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
                 cmd = 'isisdump -in {} {} > {} &> {}'.format(
                     in_filepath, opts, out_filepath, out_filepath)
-                dpc.execute(cmd, get_pipes=False, verbose=verbose)
+                utl.execute(cmd, get_pipes=False, verbose=verbose)
 
         elif method == 'pydicom':
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + dpc.ID['meta'])
-                out_filepath += ('.' + dpc.EXT['json']) if type_ext else ''
+                    out_dirpath, src_id + '.' + utl.ID['meta'])
+                out_filepath += ('.' + utl.EXT['json']) if type_ext else ''
                 info_dict = {}
                 for in_filepath in in_filepath_list:
                     try:
                         dcm = pydcm.read_file(in_filepath)
                     except:
-                        print("EE: failed processing '{}'".format(in_filepath))
+                        msg('E: failed processing `{}`'.format(in_filepath))
                     else:
-                        dcm_dict = dpc.dcm_dump(dcm)
-                        info_dict = dpc.dcm_merge_info(info_dict, dcm_dict)
-                if verbose > VERB_LVL['none']:
-                    out_subpath = out_filepath[len(out_dirpath):]
-                    print('Meta:\t{}'.format(out_subpath))
+                        dcm_dict = utl.dcm_dump(dcm)
+                        info_dict = utl.dcm_merge_info(info_dict, dcm_dict)
+                msg('Meta: {}'.format(out_filepath[len(out_dirpath):]))
                 with open(out_filepath, 'w') as info_file:
                     json.dump(info_dict, info_file, sort_keys=True, indent=4)
 
         elif method == 'dcm_dump':
             # TODO: implement meaningful super-robust string method.
-            if verbose > VERB_LVL['none']:
-                print('WW: Method \'{}\' not implemented yet.')
+            msg('W: Method `{}` not implemented yet.')
 
         elif method == 'strings':
             # TODO: implement meaningful super-robust string method.
-            if verbose > VERB_LVL['none']:
-                print('WW: Method \'{}\' not implemented yet.')
+            msg('W: Method `{}` not implemented yet.')
 
         else:
-            if verbose > VERB_LVL['none']:
-                print("WW: Unknown method '{}'.".format(method))
+            msg('W: Unknown method `{}`.'.format(method))
     else:
-        if verbose > VERB_LVL['none']:
-            print("II: Output path exists. Skipping. " +
-                  "Use 'force' argument to override.")
+        msg('I: Skipping existing output path. Use `force` to override.')
 
 
 # ======================================================================
@@ -205,11 +193,11 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default=d_input_dir,
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default=d_output_dir,
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
@@ -225,25 +213,26 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     get_meta(
-        args.input, args.output,
+        args.in_dirpath, args.out_dirpath,
         args.method, args.type_ext,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================
