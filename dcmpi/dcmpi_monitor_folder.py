@@ -48,7 +48,7 @@ import subprocess  # Subprocess management
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 # import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
-import blessings  # Wrapper for terminal coloring, styling, and positioning
+import blessed  # Wrapper for terminal coloring, styling, and positioning
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)

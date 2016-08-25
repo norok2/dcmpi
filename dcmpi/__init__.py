@@ -68,7 +68,7 @@ def msg(
         text (str|unicode): Message to display.
         verb_lvl (int): Current level of verbosity.
         verb_threshold (int): Threshold level of verbosity.
-        fmt (str|unicode): Format of the message (if `blessings` supported).
+        fmt (str|unicode): Format of the message (if `blessed` supported).
             If None, a standard formatting is used.
         *args (tuple): Positional arguments to be passed to `print`.
         **kwargs (dict): Keyword arguments to be passed to `print`.
@@ -91,16 +91,16 @@ def msg(
         Hello World!
     """
     if verb_lvl >= verb_threshold:
-        # if blessings is not present, no coloring
+        # if blessed is not present, no coloring
         try:
-            import blessings
+            import blessed
         except ImportError:
-            blessings = None
+            blessed = None
 
-        if blessings:
-            t = blessings.Terminal()
+        if blessed:
+            t = blessed.Terminal()
             if not fmt:
-                if VERB_LVL['none'] < verb_threshold <= VERB_LVL['medium']:
+                if VERB_LVL['low'] < verb_threshold <= VERB_LVL['medium']:
                     e = t.cyan
                 elif VERB_LVL['medium'] < verb_threshold < VERB_LVL['debug']:
                     e = t.magenta
@@ -130,17 +130,18 @@ def msg(
                 if '{}' not in fmt:
                     fmt += '{}'
                 text = fmt.format(text, t=t) + t.normal
-        else:
-            print(text, *args, **kwargs)
+        print(text, *args, **kwargs)
 
 
 # ======================================================================
-def dbg(name):
+def dbg(name, fmt=None):
     """
     Print content of a variable for debug purposes.
 
     Args:
         name: The name to be inspected.
+        fmt (str|unicode): Format of the message (if `blessed` supported).
+            If None, a standard formatting is used.
 
     Returns:
         None.
@@ -157,10 +158,9 @@ def dbg(name):
         dbg(my_dict['a']): 1
         <BLANKLINE>
     """
-    import json
     import inspect
+
     outer_frame = inspect.getouterframes(inspect.currentframe())[1]
     name_str = outer_frame[4][0][:-1]
-    print(name_str, end=': ')
-    print(json.dumps(name, sort_keys=True, indent=4))
-    print()
+    msg(name_str, fmt=fmt, end=': ')
+    msg(repr(name), fmt='')

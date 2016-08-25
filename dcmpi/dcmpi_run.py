@@ -859,8 +859,7 @@ class MainGui(ttk.Frame):
         msg('Verb.: {}'.format(verbose))
         if self.cfg['use_mp']:
             # parallel
-            n_proc = self.cfg['num_processes']
-            pool = multiprocessing.Pool(processes=n_proc)
+            pool = multiprocessing.Pool(processes=self.cfg['num_processes'])
             proc_result_list = []
         for in_dirpath in self.lsvInput.get_items():
             dcmpi_run_kwargs = {

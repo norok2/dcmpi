@@ -127,7 +127,7 @@ setup(
     extras_require={
         # 'pymrt': 'pymrt',
         'pyside': 'PySide',
-        'blessings': 'blessings',
+        'blessed': 'blessed',
         'appdirs': 'appdirs',
     },
 
