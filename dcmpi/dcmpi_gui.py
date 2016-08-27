@@ -190,8 +190,8 @@ def _centered(target, container=None):
     target.update_idletasks()
     if container is None:
         parent = {
-            'w': target.winfo_screenwidth(),
-            'h': target.winfo_screenheight()}
+            'w': target.winfo_screenwidth(), 'h': target.winfo_screenheight(),
+            'l': 0, 't': 0}
     else:
         container.update_idletasks()
         parent = {
@@ -201,6 +201,7 @@ def _centered(target, container=None):
     item['l'] = parent['w'] // 2 - item['w'] // 2 + parent['l']
     item['t'] = parent['h'] // 2 - item['h'] // 2 + parent['t']
     target.geometry('{w:d}x{h:d}+{l:d}+{t:d}'.format(**item))
+    print(item, parent)
 
 
 # ======================================================================
@@ -366,18 +367,19 @@ class About(tk.Toplevel):
 # ======================================================================
 class Settings(tk.Toplevel):
     def __init__(self, parent, app):
-        self.settings = collections.OrderedDict((
-            ('use_mp', {'label': 'Use parallel processing', 'dtype': bool,}),
-            ('num_processes', {
-                'label': 'Number of parallel processes',
-                'dtype': int,
-                'values': list(range(1, 2 * multiprocessing.cpu_count())),}),
-            ('gui_style_tk', {
-                'label': 'GUI Style (Tk)',
-                'dtype': tuple,
-                'values': app.style.theme_names()
-            })
-        ))
+        self.settings = collections.OrderedDict()
+        self.settings['use_mp'] = {
+            'label': 'Use parallel processing',
+            'dtype': bool}
+        self.settings['num_processes'] = {
+            'label': 'Number of parallel processes',
+            'dtype': int,
+            'values': list(range(1, 2 * multiprocessing.cpu_count()))}
+        self.settings['gui_style_tk'] = {
+            'label': 'GUI Style (Tk)',
+            'dtype': tuple,
+            'values': app.style.theme_names()}
+
         for name, info in self.settings.items():
             self.settings[name]['default'] = app.cfg[name]
         self.result = None
@@ -505,24 +507,24 @@ class Main(ttk.Frame):
             self.cfg_filepath = os.path.join(
                 PATHS['usr_cfg'], CFG_FILENAME)
 
-        self.modules = collections.OrderedDict([
-            ('import_subpath', {'label': 'DICOM'}),
-            ('niz_subpath', {'label': 'NIfTI Image'}),
-            ('meta_subpath', {'label': 'Metadata'}),
-            ('prot_subpath', {'label': 'Protocol'}),
-            ('info_subpath', {'label': 'Information'}),
-            ('report_template', {'label': 'Report template'}),
-            ('backup_template', {'label': 'Backup template'}),
-        ])
-        self.options = collections.OrderedDict((
-            ('force', {
-                'label': 'Force',
-                'dtype': bool}),
-            ('verbose', {
-                'label': 'Verbosity',
-                'dtype': int,
-                'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}),
-        ))
+        self.modules = collections.OrderedDict()
+        self.modules['import_subpath'] = {'label': 'DICOM'}
+        self.modules['niz_subpath'] = {'label': 'NIfTI Image'}
+        self.modules['niz_subpath'] = {'label': 'NIfTI Image'}
+        self.modules['meta_subpath'] = {'label': 'Metadata'}
+        self.modules['prot_subpath'] = {'label': 'Protocol'}
+        self.modules['info_subpath'] = {'label': 'Information'}
+        self.modules['report_template'] = {'label': 'Report template'}
+        self.modules['backup_template'] = {'label': 'Backup template'}
+
+        self.options = collections.OrderedDict()
+        self.options['force'] = {
+            'label': 'Force',
+            'dtype': bool}
+        self.options['force'] = {
+            'label': 'Verbosity',
+            'dtype': int,
+            'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}
 
         # :: initialization of the UI
         ttk.Frame.__init__(self, parent)
@@ -683,7 +685,7 @@ class Main(ttk.Frame):
             command=self.actionExit)
         self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
 
-        _centered(self.parent, self.parent)
+        _centered(self.parent)
 
         self._cfg_to_ui()
 
@@ -699,7 +701,8 @@ class Main(ttk.Frame):
             'gui_style_tk': self.style.theme_use()
         })
         for name, items in self.wdgModules.items():
-            cfg[name] = items['ent'].get_val() if items['chk'].get_val() else ''
+            cfg[name] = items['ent'].get_val() if items[
+                'chk'].get_val() else ''
         for name, items in self.wdgOptions.items():
             if 'chk' in items:
                 cfg[name] = items['chk'].get_val()
@@ -829,7 +832,6 @@ class Main(ttk.Frame):
                 messagebox.showerror(title=title, message=msg)
             finally:
                 self.cfg['import_path'] = os.path.dirname(in_filepath)
-
 
     def actionExport(self, event=None):
         """Action on Click Button Export."""

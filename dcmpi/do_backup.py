@@ -66,7 +66,7 @@ ARCHIVE_EXT = {
     '7z': '7z',
     'zip': 'zip',
     'txz': 'tar.xz',
-    'gxz': 'tar.gz',}
+    'gxz': 'tar.gz'}
 
 
 # ======================================================================
@@ -81,9 +81,9 @@ def get_backup(
     Safely get_backup DICOM files and test the produced archive.
 
     Args:
-        in_dirpath (str): Path to input directory.
-        out_dirpath (str): Path to output directory.
-        method (str): The Compression method.
+        in_dirpath (str|unicode): Path to input directory.
+        out_dirpath (str|unicode): Path to output directory.
+        method (str|unicode): The Compression method.
             Accepted values:
              - '7z': Use 7z compression format.
         keep (bool): Do NOT remove DICOM sources afterward.

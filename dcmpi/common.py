@@ -205,7 +205,7 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
         verbose (int): Set level of verbosity.
 
     Returns:
-        ret_code (str): if get_pipes, the return code of the command.
+        ret_code (str|unicode): if get_pipes, the return code of the command.
         p_stdout (str|unicode|None): if get_pipes, the stdout of the process.
         p_stderr (str|unicode|None): if get_pipes, the stderr of the process.
     """
@@ -310,15 +310,15 @@ def string_between(
     Isolate the string contained between two tokens
 
     Args:
-        text (str): String to parse
-        begin_str (str): Token at the beginning
-        end_str (str): Token at the ending
+        text (str|unicode): String to parse
+        begin_str (str|unicode): Token at the beginning
+        end_str (str|unicode): Token at the ending
         incl_begin (bool): Include 'begin_string' in the result
         incl_end (bool): Include 'end_str' in the result.
         greedy (bool): Output the largest possible string.
 
     Returns:
-        text (str): The string contained between the specified tokens (if any)
+        text (str|unicode): The string contained between the specified tokens (if any)
 
     Examples:
         >>> string_between('roses are red violets are blue', 'ses', 'lets')
@@ -361,7 +361,7 @@ def is_dicom(
     Check if the filepath is a valid DICOM file.
 
     Args:
-        filepath (str): The path to the file.
+        filepath (str|unicode): The path to the file.
         allow_dir (bool): accept DICOM directories as valid
         allow_report (bool): accept DICOM reports as valid
         allow_postprocess (bool): accept DICOM post-process data as valid
@@ -401,11 +401,11 @@ def is_compressed_dicom(
     Check if the compressed filepath contains a valid DICOM file.
 
     Args:
-        filepath (str): The path to the file.
+        filepath (str|unicode): The path to the file.
         allow_dir (bool): accept DICOM directories as valid
         allow_report (bool): accept DICOM reports as valid
         allow_postprocess (bool): accept DICOM post-process data as valid
-        tmp_path (str): The path for temporary extraction.
+        tmp_path (str|unicode): The path for temporary extraction.
         known_methods:
 
     Returns:
@@ -569,7 +569,7 @@ def get_date(text):
     Extract the date from 'Date' DICOM strings.
 
     Args:
-        text (str): The input string.
+        text (str|unicode): The input string.
 
     Returns:
         tm_struct (struct_time): The date information.
@@ -584,7 +584,7 @@ def get_time(text):
     Extract the time from 'Time' DICOM strings.
 
     Args:
-        text (str): The input string.
+        text (str|unicode): The input string.
 
     Returns:
         tm_struct (time.struct_time): The date information.
@@ -710,7 +710,7 @@ def dcm_sources(dirpath):
     Create sources dictionary from files in dirpath.
 
     Args:
-        dirpath (str): The path to the directory
+        dirpath (str|unicode): The path to the directory
 
     Returns:
         (dict):

@@ -92,13 +92,14 @@ def do_acquire_sources(
     Get all DICOM within an input directory.
 
     Args:
-        in_dirpath (str): Path to input directory.
-        out_dirpath (str): Path to output directory.
+        in_dirpath (str|unicode): Path to input directory.
+        out_dirpath (str|unicode): Path to output directory.
         clean (bool): Move DICOM sources instead of copying.
-        subpath (str): Extra subpath to append to output dirpath.
+        subpath (str|unicode): Extra subpath to append to output dirpath.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
             For more information on accepted syntax, see `dpc.fill_from_dicom`.
+        extra_subpath (str|unicode):
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 
@@ -106,10 +107,9 @@ def do_acquire_sources(
         dcm_dirpaths : str set
         Paths to directories containing DICOM files separated by session.
 
-    See Also
-    ========
-    dpc.fill_from_dicom, dpc.find_a_dicom
-
+    See Also:
+        dpc.fill_from_dicom,
+        dpc.find_a_dicom
     """
 
     # TODO: add the possibility of updating sources (e.g. anonymize, fix, etc.)

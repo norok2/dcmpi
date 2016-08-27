@@ -46,11 +46,11 @@ def fix_version(
     Fix version in source code.
 
     Args:
-        version (str): version to be used for fixing the source code
-        source_filepath (str): Path to file where __version__ is located
+        version (str|unicode): version to be used for fixing the source code
+        source_filepath (str|unicode): Path to file where __version__ is located
 
     Returns:
-        version (str): the actual version text used
+        version (str|unicode): the actual version text used
     """
     if version is None:
         import setuptools_scm

@@ -413,7 +413,7 @@ def identify_sequence(info, prot):
         prot (dict): information extracted from the acquisition protocol
 
     Returns:
-        seq_id (str): sequence identifier
+        seq_id (str|unicode): sequence identifier
     """
     sequences_dict = {
         'phoenix_zip_report':

@@ -94,8 +94,8 @@ def dcmpi_cli(
     Standard preprocessing of DICOM files.
 
     Args:
-        in_dirpath (str): Path to input directory.
-        out_dirpath (str): Path to output directory.
+        in_dirpath (str|unicode): Path to input directory.
+        out_dirpath (str|unicode): Path to output directory.
         subpath ():
         nii_subpath ():
         meta_subpath ():
