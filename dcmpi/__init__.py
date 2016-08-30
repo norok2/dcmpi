@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 # ======================================================================
 # :: Versioning
-__version__ = '0.0.1.3.dev15+ng0b85f22.d20160712'
+__version__ = '0.0.1.3.dev27+ng7ae48e9.d20160802'
 
 # ======================================================================
 # :: Project Details
@@ -92,12 +92,12 @@ def msg(
             import blessings
             term = blessings.Terminal()
             if not fmt:
-                if verb_lvl == VERB_LVL['medium']:
+                if verb_threshold == VERB_LVL['medium']:
                     extra = term.cyan
-                elif verb_lvl == VERB_LVL['high']:
+                elif verb_threshold == VERB_LVL['high']:
                     extra = term.yellow
-                elif verb_lvl == VERB_LVL['debug']:
-                    extra = term.magenta + term.bold
+                elif verb_threshold == VERB_LVL['debug']:
+                    extra = term.magenta
                 else:
                     extra = term.white
                 text = '{e}{t.bold}{first}{t.normal}{e}{rest}{t.normal}'.format(

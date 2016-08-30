@@ -26,7 +26,7 @@ from setuptools import find_packages
 
 # ======================================================================
 # project specific variables
-VERSION_SOURCE_FILEPATH = 'dcmpi_cli/__init__.py'
+VERSION_SOURCE_FILEPATH = 'dcmpi/__init__.py'
 README_SOURCE_FILE = 'README.rst'
 
 # get_val the working directory for the setup script
@@ -72,14 +72,14 @@ def fix_version(
 # ======================================================================
 # :: call the setup tool
 setup(
-    name='dcmpi_cli',
+    name='dcmpi',
 
     description='DICOM Preprocessing Interface.',
     long_description=LONG_DESCRIPTION_TEXT,
 
     version=fix_version(),
 
-    url='https://bitbucket.org/norok2/dcmpi_cli',
+    url='https://bitbucket.org/norok2/dcmpi',
 
     author='Riccardo Metere',
     author_email='rick@metere.it',
@@ -131,26 +131,27 @@ setup(
     },
 
     package_data={
-        'dcmpi_cli': ['report_templates/*.html', ],
+        'dcmpi': ['report_templates/*.html', ],
     },
 
     # data_files=[('my_data', ['data/data_file'])],
 
     entry_points={
         'console_scripts': [
-            'dcmpi_gui=dcmpi_cli.dcmpi_gui:main',
-            'dcmpi_cli=dcmpi_cli.dcmpi_cli:main',
+            'dcmpi_gui=dcmpi.dcmpi_gui:main',
+            'dcmpi_cli=dcmpi.dcmpi_cli:main',
 
-            'dcmpi_monitor_folder=dcmpi_cli.dcmpi_monitor_folder:main',
+            'dcmpi_update=dcmpi.dcmpi_update:main',
+            'dcmpi_monitor_folder=dcmpi.dcmpi_monitor_folder:main',
 
-            'dcmpi__acquire_sources=dcmpi_cli.do_acquire_sources:main',
-            'dcmpi__sorting=dcmpi_cli.sorting:main',
-            'dcmpi__get_info=dcmpi_cli.get_info:main',
-            'dcmpi__get_meta=dcmpi_cli.get_meta:main',
-            'dcmpi__get_nifti=dcmpi_cli.get_nifti:main',
-            'dcmpi__get_prot=dcmpi_cli.get_prot:main',
-            'dcmpi__report=dcmpi_cli.get_report:main',
-            'dcmpi__backup=dcmpi_cli.get_backup:main',
+            'dcmpi__acquire_sources=dcmpi.do_acquire_sources:main',
+            'dcmpi__sorting=dcmpi.sorting:main',
+            'dcmpi__get_info=dcmpi.get_info:main',
+            'dcmpi__get_meta=dcmpi.get_meta:main',
+            'dcmpi__get_nifti=dcmpi.get_nifti:main',
+            'dcmpi__get_prot=dcmpi.get_prot:main',
+            'dcmpi__report=dcmpi.get_report:main',
+            'dcmpi__backup=dcmpi.get_backup:main',
         ],
     },
 )

@@ -185,23 +185,83 @@ def save_config(
         json.dump(config, cfg_file, sort_keys=True, indent=4)
 
 
+class Geometry():
+    def __init__(self, geometry_text):
+        """
+        Generate a geometry object from the standard Tk geometry string.
+
+        Args:
+            geometry_text (str): The standard Tk geometry string.
+                [width]x[height]+[left]+[top]
+
+        Returns:
+            None.
+        """
+        tokens1 = geometry_text.split('+')
+        tokens2 = tokens1[0].split('x')
+        self.width = int(tokens2[0])
+        self.height = int(tokens2[1])
+        self.left = int(tokens1[1])
+        self.top = int(tokens1[2])
+
+    def __repr__(self):
+        return self.as_str()
+
+    def as_dict(self):
+        return {
+            'w': self.width,
+            'h': self.height,
+            'l': self.left,
+            't': self.top}
+
+    def as_tuple(self):
+        return self.width, self.height, self.left, self.top
+
+    def as_str(self):
+        return '{w:d}x{h:d}+{l:d}+{t:d}'.format(**self.as_dict())
+
+    def center(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width // 2 - self.width // 2 + parent.left
+        self.top = parent.height // 2 - self.height // 2 + parent.top
+        return self
+
+
+def get_curr_screen_geometry():
+    """
+    Workaround to determine the size of the current screen.
+
+    Returns:
+        geometry (str): The standard Tk geometry string.
+            [width]x[height]+[left]+[top]
+    """
+    temp = tk.Tk()
+    temp.update()
+    temp.attributes('-fullscreen', True)
+    temp.state('iconic')
+    geometry = temp.winfo_geometry()
+    temp.destroy()
+    return geometry
+
+
 # ======================================================================
-def _centered(target, container=None):
+def center(target, parent=None):
     target.update_idletasks()
-    if container is None:
-        parent = {
-            'w': target.winfo_screenwidth(), 'h': target.winfo_screenheight(),
-            'l': 0, 't': 0}
+    if parent is None:
+        parent_geom = Geometry(get_curr_screen_geometry())
     else:
-        container.update_idletasks()
-        parent = {
-            'w': container.winfo_width(), 'h': container.winfo_height(),
-            't': container.winfo_y(), 'l': container.winfo_x()}
-    item = {'w': target.winfo_width(), 'h': target.winfo_height()}
-    item['l'] = parent['w'] // 2 - item['w'] // 2 + parent['l']
-    item['t'] = parent['h'] // 2 - item['h'] // 2 + parent['t']
-    target.geometry('{w:d}x{h:d}+{l:d}+{t:d}'.format(**item))
-    print(item, parent)
+        parent.update_idletasks()
+        parent_geom = Geometry(parent.winfo_geometry())
+    target_geom = Geometry(target.winfo_geometry()).center(parent_geom)
+    target.geometry(target_geom.as_str())
 
 
 # ======================================================================
@@ -358,7 +418,7 @@ class About(tk.Toplevel):
         self.bind('<Return>', self.destroy)
         self.bind('<Escape>', self.destroy)
 
-        _centered(self, self.parent)
+        center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -367,19 +427,18 @@ class About(tk.Toplevel):
 # ======================================================================
 class Settings(tk.Toplevel):
     def __init__(self, parent, app):
-        self.settings = collections.OrderedDict()
-        self.settings['use_mp'] = {
-            'label': 'Use parallel processing',
-            'dtype': bool}
-        self.settings['num_processes'] = {
-            'label': 'Number of parallel processes',
-            'dtype': int,
-            'values': list(range(1, 2 * multiprocessing.cpu_count()))}
-        self.settings['gui_style_tk'] = {
-            'label': 'GUI Style (Tk)',
-            'dtype': tuple,
-            'values': app.style.theme_names()}
-
+        self.settings = collections.OrderedDict((
+            ('use_mp', {'label': 'Use parallel processing', 'dtype': bool,}),
+            ('num_processes', {
+                'label': 'Number of parallel processes',
+                'dtype': int,
+                'values': list(range(1, 2 * multiprocessing.cpu_count())),}),
+            ('gui_style_tk', {
+                'label': 'GUI Style (Tk)',
+                'dtype': tuple,
+                'values': app.style.theme_names()
+            })
+        ))
         for name, info in self.settings.items():
             self.settings[name]['default'] = app.cfg[name]
         self.result = None
@@ -444,7 +503,7 @@ class Settings(tk.Toplevel):
         self.bind('<Return>', self.ok)
         self.bind('<Escape>', self.cancel)
 
-        _centered(self, self.parent)
+        center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -507,24 +566,24 @@ class Main(ttk.Frame):
             self.cfg_filepath = os.path.join(
                 PATHS['usr_cfg'], CFG_FILENAME)
 
-        self.modules = collections.OrderedDict()
-        self.modules['import_subpath'] = {'label': 'DICOM'}
-        self.modules['niz_subpath'] = {'label': 'NIfTI Image'}
-        self.modules['niz_subpath'] = {'label': 'NIfTI Image'}
-        self.modules['meta_subpath'] = {'label': 'Metadata'}
-        self.modules['prot_subpath'] = {'label': 'Protocol'}
-        self.modules['info_subpath'] = {'label': 'Information'}
-        self.modules['report_template'] = {'label': 'Report template'}
-        self.modules['backup_template'] = {'label': 'Backup template'}
-
-        self.options = collections.OrderedDict()
-        self.options['force'] = {
-            'label': 'Force',
-            'dtype': bool}
-        self.options['force'] = {
-            'label': 'Verbosity',
-            'dtype': int,
-            'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}
+        self.modules = collections.OrderedDict([
+            ('import_subpath', {'label': 'DICOM'}),
+            ('niz_subpath', {'label': 'NIfTI Image'}),
+            ('meta_subpath', {'label': 'Metadata'}),
+            ('prot_subpath', {'label': 'Protocol'}),
+            ('info_subpath', {'label': 'Information'}),
+            ('report_template', {'label': 'Report template'}),
+            ('backup_template', {'label': 'Backup template'}),
+        ])
+        self.options = collections.OrderedDict((
+            ('force', {
+                'label': 'Force',
+                'dtype': bool}),
+            ('verbose', {
+                'label': 'Verbosity',
+                'dtype': int,
+                'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}),
+        ))
 
         # :: initialization of the UI
         ttk.Frame.__init__(self, parent)
@@ -685,7 +744,7 @@ class Main(ttk.Frame):
             command=self.actionExit)
         self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
 
-        _centered(self.parent)
+        center(self.parent)
 
         self._cfg_to_ui()
 
@@ -701,8 +760,7 @@ class Main(ttk.Frame):
             'gui_style_tk': self.style.theme_use()
         })
         for name, items in self.wdgModules.items():
-            cfg[name] = items['ent'].get_val() if items[
-                'chk'].get_val() else ''
+            cfg[name] = items['ent'].get_val() if items['chk'].get_val() else ''
         for name, items in self.wdgOptions.items():
             if 'chk' in items:
                 cfg[name] = items['chk'].get_val()
@@ -979,14 +1037,14 @@ def main():
         print()
         print('II:', 'Parsed Arguments:', args)
     print(__doc__)
-    begin_time = time.time()
+    begin_time = datetime.datetime.now()
 
     root = tk.Tk()
     app = Main(root, args)
     root.mainloop()
 
-    end_time = time.time()
-    print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+    end_time = datetime.datetime.now()
+    print('ExecTime: {}'.format(end_time - begin_time))
 
 
 # ======================================================================

@@ -112,7 +112,6 @@ def do_acquire_sources(
         dpc.find_a_dicom
     """
 
-    # TODO: add the possibility of updating sources (e.g. anonymize, fix, etc.)
     def get_filepaths(dirpath):
         for root, dirs, files in os.walk(in_dirpath):  # no need to sort
             for name in files:
@@ -128,8 +127,8 @@ def do_acquire_sources(
         # :: analyze directory tree
         dcm_dirpaths = set()
         for filepath in get_filepaths(in_dirpath):
-            msg('Analyzing `{}`...'.format(filepath), verbose,
-                VERB_LVL['debug'], fmt='{t.cyan}')
+            msg('Analyzing `{}`...'.format(filepath),
+                verbose, VERB_LVL['debug'])
             filename = os.path.basename(filepath)
             is_dicom = dpc.is_dicom(
                 filepath,
@@ -137,19 +136,21 @@ def do_acquire_sources(
                 allow_report=True,
                 allow_postprocess=True)
             if not is_dicom:
-                is_zipped, zip_method = dpc.is_compressed_dicom(
+                is_compressed, compression = dpc.is_compressed_dicom(
                     filepath,
                     allow_dir=False,
                     allow_report=True,
                     allow_postprocess=True)
             else:
-                is_zipped = False
-            if is_dicom or is_zipped and zip_method in dpc.UNCOMPRESS_METHODS:
+                is_compressed = False
+                compression = None
+            if is_dicom or is_compressed and compression in dpc.COMPRESSIONS:
+                dcm_subpath = None
                 if subpath or extra_subpath:
                     full_subpath = os.path.join(subpath, extra_subpath)
                 elif subpath:
                     full_subpath = subpath
-                elif extra_subpath:
+                else:  # if extra_subpath:
                     full_subpath = extra_subpath
                 if full_subpath:
                     dcm_subpath = dpc.fill_from_dicom(full_subpath, filepath)
@@ -159,8 +160,9 @@ def do_acquire_sources(
                 if not os.path.exists(dcm_dirpath):
                     os.makedirs(dcm_dirpath)
                 if dcm_dirpath not in dcm_dirpaths:
-                    if verbose > VERB_LVL['none']:
-                        print('Subpath:\t{}'.format(dcm_subpath))
+                    if dcm_subpath:
+                        msg('Subpath:\t{}'.format(dcm_subpath),
+                            verbose, VERB_LVL['low'])
                     dcm_dirpaths.add(dcm_dirpath)
                 if not os.path.isfile(os.path.join(dcm_dirpath, filename)) \
                         or force:
@@ -248,16 +250,16 @@ def main():
         print()
         print('II:', 'Parsed Arguments:', args)
     print(__doc__)
-    begin_time = time.time()
+    begin_time = datetime.datetime.now()
 
     do_acquire_sources(
         args.input, args.output,
         args.clean, args.subpath,
         args.force, args.verbose)
 
-    end_time = time.time()
+    end_time = datetime.datetime.now()
     if args.verbose > VERB_LVL['low']:
-        print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+        print('ExecTime: {}'.format(end_time - begin_time))
 
 
 # ======================================================================

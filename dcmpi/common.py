@@ -137,11 +137,20 @@ STATION = {
     'TODO': '3T_Skyra',
 }
 
-UNCOMPRESS_METHODS = {
-    'gz': 'gunzip',
-    'xz': 'unxz',
-    'lzma': 'unlzma',
-    'bz2': 'bzip2 -d',}
+COMPRESSIONS = {
+    'gz': {
+        'fwd': 'gzip',
+        'bwd': 'gunzip'},
+    'xz': {
+        'fwd': 'xz',
+        'bwd': 'unxz'},
+    'lzma': {
+        'fwd': 'lzma',
+        'bwd': 'unlzma'},
+    'bz2': {
+        'fwd': 'bzip',
+        'bwd': 'bzip2 -d'}
+}
 
 DICOM_BINARY = (
     (0x7fe0, 0x0010),  # PixelData
@@ -383,7 +392,7 @@ def is_dicom(
         is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
             raise StopIteration
-    except StopIteration:
+    except (StopIteration, pydcm.errors.InvalidDicomError):
         return False
     else:
         return True
@@ -396,7 +405,7 @@ def is_compressed_dicom(
         allow_report=False,
         allow_postprocess=False,
         tmp_path='/tmp',
-        known_methods=UNCOMPRESS_METHODS):
+        compressions=COMPRESSIONS):
     """
     Check if the compressed filepath contains a valid DICOM file.
 
@@ -407,6 +416,8 @@ def is_compressed_dicom(
         allow_postprocess (bool): accept DICOM post-process data as valid
         tmp_path (str|unicode): The path for temporary extraction.
         known_methods:
+        tmp_path (str): The path for temporary extraction.
+        compressions:
 
     Returns:
 
@@ -416,19 +427,19 @@ def is_compressed_dicom(
     temp_filepath = os.path.join(tmp_path, filename)
     test_filepath = os.path.splitext(temp_filepath)[0]
     shutil.copy(filepath, temp_filepath)
-    result = False
-    for compression, cmd in known_methods.items():
-        cmd += ' {}'.format(temp_filepath)
-        execute(cmd)
+    is_compressed = False
+    compression = None
+    for compression, cmd in compressions.items():
+        cmd['bwd'] += ' {}'.format(temp_filepath)
+        execute(cmd['bwd'])
         if os.path.isfile(test_filepath):
-            result = is_dicom(
+            is_compressed = is_dicom(
                 test_filepath, allow_dir, allow_report, allow_postprocess)
             os.remove(test_filepath)
             break
     if os.path.isfile(temp_filepath):
-        compression = None
         os.remove(temp_filepath)
-    return result, compression
+    return is_compressed, compression
 
 
 # ======================================================================
@@ -440,7 +451,7 @@ def find_a_dicom(
     """
     Find a DICOM file (recursively) in the directory. Assume same experiment.
     """
-    dcm_filename, compression = '', ''
+    dcm_filename, compression = '', None
     for root, dirs, files in sorted(os.walk(dirpath)):
         for name in files:
             filename = os.path.join(root, name)
@@ -529,9 +540,9 @@ def fill_from_dicom(
     filename = os.path.basename(filepath)
     temp_filepath = os.path.join(tmp_path, filename)
     shutil.copy(filepath, temp_filepath)
-    if compression and compression in UNCOMPRESS_METHODS:
+    if compression and compression in COMPRESSIONS:
         dcm_filepath = os.path.splitext(temp_filepath)[0]
-        cmd = UNCOMPRESS_METHODS[compression] + ' {}'.format(temp_filepath)
+        cmd = COMPRESSIONS[compression]['bwd'] + ' {}'.format(temp_filepath)
         execute(cmd)
     else:
         dcm_filepath = temp_filepath
@@ -584,7 +595,7 @@ def get_time(text):
     Extract the time from 'Time' DICOM strings.
 
     Args:
-        text (str|unicode): The input string.
+        text (str): The input string.
 
     Returns:
         tm_struct (time.struct_time): The date information.
@@ -877,7 +888,7 @@ def postprocess_info(
         else:
             field_val = 'N/A'
             if verbose > VERB_LVL['low']:
-                print('WW: \'\' field not found.'.format(src_id))
+                print('W: `{}` field not found.'.format(src_id))
         info[pp_id] = field_val
     return info
 

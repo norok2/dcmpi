@@ -340,15 +340,15 @@ def main():
         print()
         print('II:', 'Parsed Arguments:', args)
     print(__doc__)
-    begin_time = time.time()
+    begin_time = datetime.datetime.now()
 
     dcm_analyze_dir(
         args.dir, args.match, args.action,
         args.force, args.verbose)
 
-    end_time = time.time()
+    end_time = datetime.datetime.now()
     if args.verbose > VERB_LVL['low']:
-        print('ExecTime: ', datetime.timedelta(0, end_time - begin_time))
+        print('ExecTime: {}'.format(end_time - begin_time))
 
 
 # ======================================================================
