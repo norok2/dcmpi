@@ -53,16 +53,16 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # :: Local Imports
 from dcmpi.do_acquire_sources import do_acquire_sources
 from dcmpi.do_sorting import sorting
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
 from dcmpi.do_backup import get_backup
-from dcmpi.do_report import get_report
+from dcmpi.get_report import get_report
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 ACTIONS = {
@@ -77,17 +77,17 @@ ACTIONS = {
 # )
 
 # ======================================================================
-def dcmpi_cli(
+def process(
         in_dirpath,
         out_dirpath,
-        subpath=dpc.TPL['acquire'],
-        import_subpath=dpc.ID['dicom'],
-        niz_subpath=dpc.ID['nifti'],
-        meta_subpath=dpc.ID['meta'],
-        prot_subpath=dpc.ID['prot'],
-        info_subpath=dpc.ID['info'],
-        report_template=dpc.TPL['report'],
-        backup_template=dpc.TPL['backup'],
+        subpath=utl.TPL['acquire'],
+        import_subpath=utl.ID['dicom'],
+        niz_subpath=utl.ID['nifti'],
+        meta_subpath=utl.ID['meta'],
+        prot_subpath=utl.ID['prot'],
+        info_subpath=utl.ID['info'],
+        report_template=utl.TPL['report'],
+        backup_template=utl.TPL['backup'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -119,18 +119,18 @@ def dcmpi_cli(
         base_dirpath = os.path.dirname(dcm_dirpath)
         # sort
         sorting(
-            dcm_dirpath, dpc.D_SUMMARY + '.' + dpc.EXT['json'],
+            dcm_dirpath, utl.D_SUMMARY + '.' + utl.EXT['json'],
             force, verbose)
         # other actions
-        # actions = [(a, d) for a, d in zip(dpc.D_ACTIONS, subdirs)
+        # actions = [(a, d) for a, d in zip(utl.D_ACTIONS, subdirs)
         #            if d.strip()]
         # for action, subdir in actions:
         #     i_dirpath = dcm_dirpath if action[0] != 'get_report' else \
         #         os.path.join(base_dirpath, info_subpath)
         #     o_dirpath = os.path.join(base_dirpath, subdir)
         #     if verbose >= VERB_LVL['debug']:
-        #         print('II:  input dir: {}'.format(i_dirpath))
-        #         print('II: output dir: {}'.format(o_dirpath))
+        #         print('I:  input dir: {}'.format(i_dirpath))
+        #         print('I: output dir: {}'.format(o_dirpath))
         #     func, params = action
         #     func = globals()[func]
         #     params = [(vars()[par[2:]] if str(par).startswith('::') else par)
@@ -169,66 +169,67 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-i', '--input', metavar='DIR',
+        '-i', '--in_dirpath', metavar='DIR',
         default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
-        '-o', '--output', metavar='DIR',
+        '-o', '--out_dirpath', metavar='DIR',
         default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-s', '--subpath',
-        default=dpc.TPL['acquire'],
+        default=utl.TPL['acquire'],
         help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
         '-n', '--nii_subpath',
-        default=dpc.ID['nifti'],
+        default=utl.ID['nifti'],
         help='Sub-path for NIfTI extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-m', '--meta_subpath',
-        default=dpc.ID['meta'],
+        default=utl.ID['meta'],
         help='Sub-path for META extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-p', '--prot_subpath',
-        default=dpc.ID['prot'],
+        default=utl.ID['prot'],
         help='Sub-path for PROT extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-t', '--info_subpath',
-        default=dpc.ID['info'],
+        default=utl.ID['info'],
         help='Sub-path for INFO extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-r', '--report_subpath',
-        default=dpc.TPL['report'],
+        default=utl.TPL['report'],
         help='Template for the report filename. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-b', '--backup_subpath',
-        default=dpc.TPL['backup'],
+        default=utl.TPL['backup'],
         help='Template for the backup filename. Empty to skip [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     dcmpi_cli(
-        args.input, args.output, args.subpath,
+        args.in_dirpath, args.out_dirpath, args.subpath,
         args.nii_subpath, args.meta_subpath, args.prot_subpath, args.info_subpath,
         args.report_subpath, args.backup_subpath,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

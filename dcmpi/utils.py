@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Common library of DCMPI.
+DCMPI: generic and miscellaneous utilities.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -71,9 +71,9 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# from dcmpi_cli import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+# from dcmpi import INFO
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 # ======================================================================
 # :: General-purposes constants
@@ -171,6 +171,20 @@ def _nominal_B0(val):
 
 
 # ======================================================================
+def has_graphics(ui_mode):
+    result = True
+    result *= ui_mode.lower() == 'gui'
+    return result
+
+
+# ======================================================================
+def has_term(ui_mode):
+    result = sys.stdin.isatty()
+    result *= ui_mode.lower() == 'tui'
+    return result
+
+
+# ======================================================================
 def has_decorator(text, pre_decor='"', post_decor='"'):
     """
     Determine if a string is delimited by some characters (decorators).
@@ -226,10 +240,9 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
         pass
 
     if dry:
-        print('$$ {}'.format(' '.join(cmd)))
+        msg('$$ {}'.format(' '.join(cmd)))
     else:
-        if verbose >= VERB_LVL['medium']:
-            print('>> {}'.format(' '.join(cmd)))
+        msg('>> {}'.format(' '.join(cmd)), verbose, VERB_LVL['higher'])
 
         proc = subprocess.Popen(
             cmd,
@@ -244,7 +257,7 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
             while proc.poll() is None:
                 stdout_buffer = proc.stdout.readline().decode('utf8')
                 p_stdout += stdout_buffer
-                if verbose >= VERB_LVL['medium']:
+                if verbose >= VERB_LVL['highest']:
                     print(stdout_buffer, end='')
                     sys.stdout.flush()
             # handle stderr
@@ -474,7 +487,7 @@ def find_a_dicom(
         if dcm_filename:
             break
     if not dcm_filename:
-        print("EE: A DICOM file was not found in '{}'.".format(dirpath))
+        print('E: A DICOM file was not found in `{}`.'.format(dirpath))
     return dcm_filename, compression
 
 
@@ -549,7 +562,7 @@ def fill_from_dicom(
     try:
         dcm = pydcm.read_file(dcm_filepath)
     except:
-        print('EE: Could not open DICOM file: {}.'.format(dcm_filepath))
+        print('E: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
     else:
         if extra_fields:
@@ -673,8 +686,8 @@ def group_series(
             try:
                 dcm = pydcm.read_file(src_dcm)
             except:
-                if verbose > VERB_LVL['low']:
-                    print('WW: failed processing \'{}\''.format(src_dcm))
+                msg('W: failed processing `{}`'.format(src_dcm),
+                    verbose, VERB_LVL['medium'])
             else:
                 is_acquisition = DCM_ID['TA'] in dcm \
                                  and 'AcquisitionDate' in dcm \
@@ -708,8 +721,7 @@ def group_series(
                     groups[group_id].append(src_id)
         # :: save grouping to file
         if summary_filepath:
-            if verbose > VERB_LVL['none']:
-                print('Brief:\t{}'.format(summary_filepath))
+            msg('Brief: {}'.format(summary_filepath))
             with open(summary_filepath, 'w') as summary_file:
                 json.dump(groups, summary_file, sort_keys=True, indent=4)
     return groups
@@ -883,12 +895,11 @@ def postprocess_info(
                 if fmt:
                     field_val = fmt(field_val, fmt_params)
             except:
-                if verbose > VERB_LVL['low']:
-                    print('WW: Unable to post-process \'{}\'.'.format(src_id))
+                msg('W: Unable to post-process `{}`.'.format(src_id),
+                    verbose, VERB_LVL['medium'])
         else:
             field_val = 'N/A'
-            if verbose > VERB_LVL['low']:
-                print('W: `{}` field not found.'.format(src_id))
+            msg('W: `{}` field not found.'.format(src_id))
         info[pp_id] = field_val
     return info
 

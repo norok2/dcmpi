@@ -76,7 +76,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL
 from dcmpi import msg, dbg
@@ -85,7 +85,7 @@ from dcmpi import msg, dbg
 # ======================================================================
 def sorting(
         dirpath,
-        summary=dpc.D_SUMMARY + '.' + dpc.EXT['json'],
+        summary=utl.D_SUMMARY + '.' + utl.EXT['json'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -121,9 +121,9 @@ def sorting(
             msg('W: failed processing `{}`'.format(in_filepath),
                 verbose, VERB_LVL['debug'])
         else:
-            src_id = dpc.INFO_SEP.join(
-                (dpc.PREFIX_ID['series'] + '{:0{size}d}'.format(
-                    dcm.SeriesNumber, size=dpc.D_NUM_DIGITS),
+            src_id = utl.INFO_SEP.join(
+                (utl.PREFIX_ID['series'] + '{:0{size}d}'.format(
+                    dcm.SeriesNumber, size=utl.D_NUM_DIGITS),
                  dcm.SeriesDescription))
             if src_id not in input_list_dict:
                 input_list_dict[src_id] = []
@@ -145,7 +145,7 @@ def sorting(
                 os.makedirs(os.path.dirname(summary))
         else:
             summary = os.path.join(dirpath, summary)
-        summary = dpc.group_series(dirpath, summary, force, verbose)
+        summary = utl.group_series(dirpath, summary, force, verbose)
     return summary
 
 
@@ -179,7 +179,7 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-s', '--summary',
-        default=dpc.D_SUMMARY + '.' + dpc.EXT['json'],
+        default=utl.D_SUMMARY + '.' + utl.EXT['json'],
         help='set expt. summary filepath (empty to skip) [%(default)s]')
     arg_parser.add_argument(
         '-d', '--dirpath', metavar='DIR',
@@ -190,22 +190,23 @@ def handle_arg():
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     sorting(args.dirpath, args.summary, args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

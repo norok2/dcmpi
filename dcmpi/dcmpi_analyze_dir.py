@@ -73,10 +73,10 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 
 # ======================================================================
@@ -151,7 +151,7 @@ def send_mail_dcm(
         ('StudyTime',
          lambda t: time.strftime('%H-%M', time.strptime(t, '%H%M%S.%f'))),
         ('StationName',
-         lambda t: dpc.STATION[t] if t in dpc.STATION else t),
+         lambda t: utl.STATION[t] if t in utl.STATION else t),
         ('StudyDescription',
          lambda t: t),
     )
@@ -171,14 +171,14 @@ def send_mail_dcm(
         for key, func in session_fields:
             if key in dcm:
                 session_info.append(func(getattr(dcm, key)))
-        sample_id = dpc.INFO_SEP.join(session_info[:-1])
+        sample_id = utl.INFO_SEP.join(session_info[:-1])
         study_id = session_info[-1]
         session = '{} / {}'.format(study_id, sample_id)
         # get dirpath
         dirpath = os.sep.join(dcm_filepath.split(os.sep)[:-2])
     except Exception as ex:
         print(ex)
-        print("EE: Could not get information from '{}'.".format(dcm_filepath))
+        msg('E: Could not get information from `{}`.'.format(dcm_filepath))
     else:
         cmd = 'sendmail -t <<{}'.format(
             get_email_txt(
@@ -188,13 +188,11 @@ def send_mail_dcm(
                 dirpath=dirpath))
         if email is None or email.strip().lower() == recipient.strip().lower():
             subprocess.call(cmd, shell=True)
-            if verbose >= VERB_LVL['low']:
-                print('II: Email sent to: <{}>.'.format(recipient))
+            msg('I: Email sent to: <{}>.'.format(recipient))
         else:
             print(email)
-            if verbose >= VERB_LVL['low']:
-                print('WW: Email was NOT sent to: <{}>.'.format(recipient))
-                print('(you asked only for recipient <{}>).'.format(email))
+            msg('W: Email was NOT sent to: <{}>.'.format(recipient))
+            msg(' : (you asked only for recipient <{}>).'.format(email))
 
 
 # ======================================================================
@@ -225,7 +223,7 @@ def dcm_analyze_dir(
     Returns:
         None.
     """
-    dcm_filepath = dpc.find_a_dicom(dirpath)[0]
+    dcm_filepath = utl.find_a_dicom(dirpath)[0]
     try:
         dcm = pydcm.read_file(dcm_filepath)
         # check matching
@@ -236,8 +234,7 @@ def dcm_analyze_dir(
             matched = True
             for key, val in conditions.items():
                 name = getattr(dcm, key) if key in dcm else ''
-                if verbose > VERB_LVL['low']:
-                    print("Match '{}':'{}' (read:'{}')".format(key, val, name))
+                msg('Match `{}`:`{}` (read:`{}`)'.format(key, val, name))
                 if not re.match(val, name):
                     matched = False
                     break
@@ -252,7 +249,7 @@ def dcm_analyze_dir(
             raise ValueError('Unknown concatenation method.')
     except Exception as ex:
         print(ex)
-        print("EE: Could not get information from '{}'.".format(dcm_filepath))
+        msg('E: Could not get information from `{}`.'.format(dcm_filepath))
     else:
         # perform action
         if matched:
@@ -270,11 +267,9 @@ def dcm_analyze_dir(
                       '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
                 subprocess.call(cmd, shell=True)
             else:
-                if verbose > VERB_LVL['none']:
-                    print("WW: Action '{}' not valid.".format(action))
+                msg('W: Action `{}` not valid.'.format(action))
         else:
-            if verbose >= VERB_LVL['low']:
-                print("II: Match '{}' was not successful.".format(match))
+            msg('I: Match `{}` was not successful.'.format(match))
 
 
 # ======================================================================
@@ -282,15 +277,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default dir
-    d_dir = '.'
-    # default match
-    d_match = '{"_concat":"and","OperatorsName":"metere@cbs.mpg.de"}'
-    # default action
-    d_action = 'email+preprocess'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -307,7 +293,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -315,40 +301,41 @@ def handle_arg():
         action='store_true',
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
-        '-d', '--dir', metavar='DIR',
-        default=d_dir,
+        '-d', '--dirpath', metavar='DIR',
+        default='.',
         help='set working directory [%(default)s]')
     arg_parser.add_argument(
         '-m', '--match', metavar='STR',
-        default=d_match,
+        default='{"_concat":"and","OperatorsName":"metere@cbs.mpg.de"}',
         help='set a match in the DICOM information [%(default)s]')
     arg_parser.add_argument(
         '-a', '--action', metavar='STR',
-        default=d_action,
+        default='email+preprocess',
         help='set action to perform [%(default)s]')
     return arg_parser
 
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
     # :: print debug info
-    if args.verbose == VERB_LVL['debug']:
+    if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
-        print()
-        print('II:', 'Parsed Arguments:', args)
-    print(__doc__)
+        msg('\nARGS: ' + str(vars(args)), args.verbose, VERB_LVL['debug'])
+    msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
     dcm_analyze_dir(
-        args.dir, args.match, args.action,
+        args.dirpath, args.match, args.action,
         args.force, args.verbose)
 
-    end_time = datetime.datetime.now()
-    if args.verbose > VERB_LVL['low']:
-        print('ExecTime: {}'.format(end_time - begin_time))
+    exec_time = datetime.datetime.now() - begin_time
+    msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
 
 
 # ======================================================================

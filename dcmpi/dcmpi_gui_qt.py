@@ -15,52 +15,19 @@ from __future__ import unicode_literals
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
 import sys  # System-specific parameters and functions
-# import shutil  # High-level file operations
-import platform  # Access to underlying platform’s identifying data
-# import math  # Mathematical functions
 import time  # Time access and conversions
 import datetime  # Basic date and time types
-# import re  # Regular expression operations
-# import operator  # Standard operators as functions
-# import collections  # High-performance container datatypes
-# import argparse  # Parser for command-line options, arguments and subcommands
-# import itertools  # Functions creating iterators for efficient looping
-# import functools  # Higher-order functions and operations on callable objects
-# import subprocess  # Subprocess management
-# import multiprocessing  # Process-based parallelism
-# import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import warnings  # Warning control
 
 # :: External Imports
-# import numpy as np  # NumPy (multidimensional numerical arrays library)
-# import scipy as sp  # SciPy (signal and image processing library)
-# import matplotlib as mpl  # Matplotlib (2D/3D plotting library)
-# import sympy as sym  # SymPy (symbolic CAS library)
-# import PIL  # Python Image Library (image manipulation toolkit)
-# import SimpleITK as sitk  # Image ToolKit Wrapper
-# import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
-# import nipy  # NiPy (NeuroImaging in Python)
-# import nipype  # NiPype (NiPy Pipelines and Interfaces)
-# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-# import PySide  # PySide (Python QT bindings)
 
 # :: External Imports Submodules
-# import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
-# import mayavi.mlab as mlab  # Mayavi's mlab: MATLAB-like syntax
-# import scipy.optimize  # SciPy: Optimization Algorithms
-# import scipy.integrate  # SciPy: Integrations facilities
-# import scipy.constants  # SciPy: Mathematal and Physical Constants
-# import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # from PySide import QtGui  # PySide: Core module
 from PySide import QtGui  # PySide: GUI module
 
 # :: Local Imports
-# import mri_tools.modules.base as mrb
-# import mri_tools.modules.utils as mru
-# import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
-# from mri_tools.modules.sequences import mp2rage
 from dcmpi.do_acquire_sources import do_acquire_sources
 from dcmpi.do_sorting import sorting
 from dcmpi.get_nifti import get_nifti
@@ -69,10 +36,10 @@ from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
 from dcmpi.backup import backup
 from dcmpi.report import report
-import dcmpi.common as dpc
+import dcmpi.utils as utl
 # from dcmpi_cli import INFO
-from dcmpi import VERB_LVL
-from dcmpi import D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import msg, dbg
 
 # ======================================================================
 D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
@@ -89,12 +56,12 @@ class Main(QtGui.QWidget):
         self.actions = [
             ('do_acquire_sources', 'Import Sources', True, None),
             ('do_sorting', 'Sort DICOM', True, None),
-            ('get_nifti', 'Get NIfTI images', True, dpc.ID['nifti']),
-            ('get_meta', 'Get metadata', True, dpc.ID['meta']),
-            ('get_prot', 'Get protocol', True, dpc.ID['prot']),
-            ('get_info', 'Get information', True, dpc.ID['info']),
-            ('get_report', 'Create Report', True, dpc.ID['get_report']),
-            ('get_backup', 'Backup DICOM Sources', True, dpc.ID['get_backup']),
+            ('get_nifti', 'Get NIfTI images', True, utl.ID['nifti']),
+            ('get_meta', 'Get metadata', True, utl.ID['meta']),
+            ('get_prot', 'Get protocol', True, utl.ID['prot']),
+            ('get_info', 'Get information', True, utl.ID['info']),
+            ('get_report', 'Create Report', True, utl.ID['get_report']),
+            ('get_backup', 'Backup DICOM Sources', True, utl.ID['get_backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -162,7 +129,7 @@ class Main(QtGui.QWidget):
         self.lneOutput.setReadOnly(True)
         self.lneOutput.mousePressEvent = self.lneOutput_onClicked
 
-        subpath_help = dpc.fill_from_dicom.__doc__
+        subpath_help = utl.fill_from_dicom.__doc__
         subpath_help = subpath_help[
                        subpath_help.find('format_str : str\n') +
                        len('format_str : str\n'):
@@ -287,9 +254,9 @@ class Main(QtGui.QWidget):
         tot_begin = time.time()
         # extract options
         force = self.wdgtOptions[0][0].isChecked()
-        print('Force:\t{}'.format(force))
+        print('Force: {}'.format(force))
         verbose = self.wdgtOptions[1][0].value()
-        print('Verbosity:\t{}'.format(verbose))
+        print('Verb.: {}'.format(verbose))
         subpath = self.lneSubpath.text()
         if not subpath:
             subpath = 'DICOM_TEMP'
@@ -297,10 +264,10 @@ class Main(QtGui.QWidget):
             part_begin = time.time()
             # extract input filepaths
             in_dirpath = self.lstInput.item(i).data(0)
-            print('Input:\t{}'.format(in_dirpath))
+            print('Input:  {}'.format(in_dirpath))
             # extract output filepath
             out_dirpath = self.lneOutput.text()
-            print('Output:\t{}'.format(out_dirpath))
+            print('Output: {}'.format(out_dirpath))
             # core actions (import and sort)
             if self.chkActions[0].isChecked():
                 dcm_dirpaths = do_acquire_sources(
@@ -312,14 +279,14 @@ class Main(QtGui.QWidget):
                 if self.chkActions[1].isChecked():
                     sorting(
                         dcm_dirpath,
-                        dpc.D_SUMMARY + '.' + dpc.EXT['json'],
+                        utl.D_SUMMARY + '.' + utl.EXT['json'],
                         force, verbose)
                 # optional actions
                 actions = [
                     (a, x[3])
                     for x, c, a in zip(
                         self.actions[2:], self.chkActions[2:],
-                        dpc.D_ACTIONS)
+                        utl.D_ACTIONS)
                     if c.isChecked()]
                 for action, subdir in actions:
                     if action[0] == 'get_report':
@@ -329,8 +296,8 @@ class Main(QtGui.QWidget):
                         i_dirpath = dcm_dirpath
                     o_dirpath = os.path.join(base_dirpath, subdir)
                     if verbose >= VERB_LVL['debug']:
-                        print('II:  input dir: {}'.format(i_dirpath))
-                        print('II: output dir: {}'.format(o_dirpath))
+                        print('I:  input dir: {}'.format(i_dirpath))
+                        print('I: output dir: {}'.format(o_dirpath))
                     func, params = action
                     func = globals()[func]
                     params = [
@@ -342,11 +309,11 @@ class Main(QtGui.QWidget):
                     func(*params, force=force, verbose=verbose)
             part_end = time.time()
             if verbose > VERB_LVL['none']:
-                print('TotExecTime:\t{}\n'.format(
+                print('TotExecTime: {}\n'.format(
                     datetime.timedelta(0, part_end - part_begin)))
         tot_end = time.time()
         if verbose > VERB_LVL['none']:
-            print('TotExecTime:\t{}'.format(
+            print('TotExecTime: {}'.format(
                 datetime.timedelta(0, tot_end - tot_begin)))
 
     def btnImport_onClicked(self, event=None):
@@ -433,17 +400,21 @@ class Main(QtGui.QWidget):
 
 # ======================================================================
 def main():
+    """
+    Main entry point for the script.
+    """
     begin_time = datetime.datetime.now()
 
     app = QtGui.QApplication(sys.argv)
     main = Main()
     err_code = app.exec_()
 
-    end_time = datetime.datetime.now()
+    exec_time = datetime.datetime.now() - begin_time
     print('ExecTime: {}'.format(end_time - begin_time))
     sys.exit(err_code)
 
 
 # ======================================================================
 if __name__ == '__main__':
+    warnings.warn('This version is deprecated and will be removed soon!')
     main()
