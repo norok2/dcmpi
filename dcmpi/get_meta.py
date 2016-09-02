@@ -40,7 +40,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom as dcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -58,7 +58,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 
@@ -131,7 +131,7 @@ def get_meta(
                 info_dict = {}
                 for in_filepath in in_filepath_list:
                     try:
-                        dcm = pydcm.read_file(in_filepath)
+                        dcm = dcm.read_file(in_filepath)
                     except:
                         msg('E: failed processing `{}`'.format(in_filepath))
                     else:

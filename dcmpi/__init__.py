@@ -37,6 +37,8 @@ VERB_LVL = {
     'none': 0, 'low': 1, 'medium': 2, 'high': 3, 'higher': 4, 'highest': 5,
     'debug': 7}
 D_VERB_LVL = VERB_LVL['low']
+VERB_LVL_NAMES = [
+    k for k, v in sorted(tuple(VERB_LVL.items()), key=lambda x: x[1])]
 
 # ======================================================================
 # Greetings
@@ -83,12 +85,12 @@ def msg(
         >>> msg(s, VERB_LVL['medium'], VERB_LVL['low'])
         Hello World!
         >>> msg(s, VERB_LVL['low'], VERB_LVL['medium'])  # no output
-        >>> msg(s, fmt='{t.green}')  # if in ANSI Terminal, text is green
+        >>> msg(s, fmt='{t.green}')  # if ANSI Terminal, green text
         Hello World!
-        >>> msg(s, fmt='{t.red}{}')  # if in ANSI Terminal, text is red
-        Hello World!
-        >>> msg(s, fmt='yellow')  # if in ANSI Terminal, text is yellow
-        Hello World!
+        >>> msg('   :  a b c', fmt='{t.red}{}')  # if ANSI Terminal, red text
+           :  a b c
+        >>> msg(' : a b c', fmt='cyan')  # if ANSI Terminal, cyan text
+         : a b c
     """
     if verb_lvl >= verb_threshold:
         # if blessed is not present, no coloring
@@ -114,16 +116,18 @@ def msg(
                     e = t.red
                 else:
                     e = t.white
-                tokens = text.split(None, 1)
-                txt0 = text[:text.find(tokens[0])]
-                txt1 = tokens[0]
-                txt2 = text[text.find(txt1) + len(txt1)] + tokens[1] \
-                    if len(tokens) > 1 else ''
+                # first non-whitespace word
+                txt1 = text.split(None, 1)[0]
+                # initial whitespaces
+                n = text.find(txt1)
+                txt0 = text[:n]
+                # rest
+                txt2 = text[n + len(txt1):]
                 txt_kwargs = {
                     'e1': e + (t.bold if e == t.white else ''),
                     'e2': e + (t.bold if e != t.white else ''),
-                    'init': txt0, 'first': txt1, 'rest': txt2, 'n': t.normal}
-                text = '{init}{e1}{first}{n}{e2}{rest}{n}'.format(**txt_kwargs)
+                    't0': txt0, 't1': txt1, 't2': txt2, 'n': t.normal}
+                text = '{t0}{e1}{t1}{n}{e2}{t2}{n}'.format(**txt_kwargs)
             else:
                 if 't.' not in fmt:
                     fmt = '{{t.{}}}'.format(fmt)

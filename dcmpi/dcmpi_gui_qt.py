@@ -38,14 +38,14 @@ from dcmpi.backup import backup
 from dcmpi.report import report
 import dcmpi.utils as utl
 # from dcmpi_cli import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 # ======================================================================
 D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'
-D_OUTPUT_DIR = os.path.join(os.getenv('HOME'), 'isar3/data/siemens')
-# D_INPUT_DIR = '/scr/isar1/TEMP/SOURCE_DICOM'
-# D_OUTPUT_DIR = '/scr/isar1/TEMP/OUTPUT_DICOM'
+D_OUTPUT_DIR = os.path.join(os.getenv('HOME'), 'hd3/data/siemens')
+# D_INPUT_DIR = os.path.join(os.getenv('HOME'), 'hd1/TEMP/SOURCE_DICOM')
+# D_OUTPUT_DIR = 'os.path.join(os.getenv('HOME'), 'hd1/TEMP/OUTPUT_DICOM')
 D_SUBPATH = '{study}/{name}_{date}_{time}_{sys}/dcm'
 
 

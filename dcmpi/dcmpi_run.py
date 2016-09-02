@@ -44,7 +44,7 @@ except ImportError:
 # :: Local Imports
 import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
@@ -53,7 +53,7 @@ from dcmpi import MY_GREETINGS
 try:
     import appdirs
 
-    _app_dirs = appdirs.AppDirs(INFO['name'], INFO['author'])
+    _app_dirs = appdirs.AppDirs(INFO['name'].lower(), INFO['author'])
     PATHS = {
         'usr_cfg': _app_dirs.user_config_dir,
         'sys_cfg': _app_dirs.site_config_dir,
@@ -227,13 +227,13 @@ def center(target, parent=None):
     else:
         parent.update_idletasks()
         parent_geom = Geometry(parent.winfo_geometry())
-    target_geom = Geometry(target.winfo_geometry()).center(parent_geom)
+    target_geom = Geometry(target.winfo_geometry()).set_center(parent_geom)
     target.geometry(target_geom.as_str())
 
 
 # ======================================================================
 class Geometry():
-    def __init__(self, geometry_text):
+    def __init__(self, geometry_text=None):
         """
         Generate a geometry object from the standard Tk geometry string.
 
@@ -244,12 +244,15 @@ class Geometry():
         Returns:
             None.
         """
-        tokens1 = geometry_text.split('+')
-        tokens2 = tokens1[0].split('x')
-        self.width = int(tokens2[0])
-        self.height = int(tokens2[1])
-        self.left = int(tokens1[1])
-        self.top = int(tokens1[2])
+        try:
+            tokens1 = geometry_text.split('+')
+            tokens2 = tokens1[0].split('x')
+            self.width = int(tokens2[0])
+            self.height = int(tokens2[1])
+            self.left = int(tokens1[1])
+            self.top = int(tokens1[2])
+        except:
+            self.width, self.height, self.left, self.top = 0, 0, 0, 0
 
     def __repr__(self):
         return self.as_str()
@@ -267,7 +270,7 @@ class Geometry():
     def as_str(self):
         return '{w:d}x{h:d}+{l:d}+{t:d}'.format(**self.as_dict())
 
-    def center(self, parent):
+    def set_to_center(self, parent):
         """
         Update the geometry to be centered with respect to a container.
 
@@ -278,6 +281,132 @@ class Geometry():
             geometry (Geometry): The updated geometry.
         """
         self.left = parent.width // 2 - self.width // 2 + parent.left
+        self.top = parent.height // 2 - self.height // 2 + parent.top
+        return self
+
+    def set_to_origin(self):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = 0
+        self.top = 0
+        return self
+
+    def set_to_top_left(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.left
+        self.top = parent.top
+        return self
+
+    def set_to_top(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width // 2 - self.width // 2 + parent.left
+        self.top = parent.top
+        return self
+
+    def set_to_top_right(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width - self.width + parent.left
+        self.top = parent.top
+        return self
+
+    def set_to_right(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width - self.width + parent.left
+        self.top = parent.height // 2 - self.height // 2 + parent.top
+        return self
+
+    def set_to_bottom_right(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width - self.width + parent.left
+        self.top = parent.height - self.height + parent.top
+        return self
+
+    def set_to_bottom(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.width // 2 - self.width // 2 + parent.left
+        self.top = parent.height - self.height + parent.top
+        return self
+
+    def set_to_bottom_left(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.left
+        self.top = parent.height - self.height + parent.top
+        return self
+
+    def set_to_left(self, parent):
+        """
+        Update the geometry to be centered with respect to a container.
+
+        Args:
+            parent (Geometry): The geometry of the container.
+
+        Returns:
+            geometry (Geometry): The updated geometry.
+        """
+        self.left = parent.left
         self.top = parent.height // 2 - self.height // 2 + parent.top
         return self
 
@@ -325,7 +454,17 @@ class Checkbutton(ttk.Checkbutton):
 # ======================================================================
 class Spinbox(tk.Spinbox):
     def __init__(self, *args, **kwargs):
+        if 'start' in kwargs:
+            kwargs['from_'] = kwargs.pop('start')
+        if 'stop' in kwargs:
+            kwargs['to'] = kwargs.pop('stop')
+        if 'step' in kwargs:
+            kwargs['increment'] = kwargs.pop('step')
         tk.Spinbox.__init__(self, *args, **kwargs)
+        self.values = kwargs['values'] if 'values' in kwargs else None
+        self.start = kwargs['from_'] if 'from_' in kwargs else None
+        self.stop = kwargs['to'] if 'to' in kwargs else None
+        self.step = kwargs['increment'] if 'increment' in kwargs else None
         self.bind('<MouseWheel>', self.mouseWheel)
         self.bind('<Button-4>', self.mouseWheel)
         self.bind('<Button-5>', self.mouseWheel)
@@ -345,16 +484,18 @@ class Spinbox(tk.Spinbox):
         elif scroll_down:
             self.invoke('buttondown')
 
-    def get_values(self):
-        return [
-            utl.auto_convert(item)
-            for item in self.configure('values')[-1].split()]
+    def is_valid(self, val=''):
+        if self.values:
+            result = self.get_val() in self.values
+        else:
+            result = self.start <= self.get_val() <= self.stop
+        return result
 
     def get_val(self):
         return utl.auto_convert(self.get())
 
     def set_val(self, val=''):
-        if val in self.get_values():
+        if self.is_valid(val):
             state = self['state']
             self['state'] = 'normal'
             self.delete(0, tk.END)
@@ -417,7 +558,7 @@ class About(tk.Toplevel):
         self.frmMain.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
 
         about_txt = '\n'.join((
-            MY_GREETINGS[1:-1],
+            MY_GREETINGS[1:],
             'DCMPI: DICOM Preprocess Interface',
             __doc__,
             '{} - ver. {}\n{} {}\n{}'.format(
@@ -450,12 +591,13 @@ class Settings(tk.Toplevel):
             ('num_processes', {
                 'label': 'Number of parallel processes',
                 'dtype': int,
-                'values': list(range(1, 2 * multiprocessing.cpu_count())),}),
+                'values': {'start': 1, 'stop': 2 * multiprocessing.cpu_count()},
+            }),
             ('gui_style_tk', {
                 'label': 'GUI Style (Tk)',
                 'dtype': tuple,
                 'values': app.style.theme_names()
-            })
+            }),
         ))
         for name, info in self.settings.items():
             self.settings[name]['default'] = app.cfg[name]
@@ -485,7 +627,7 @@ class Settings(tk.Toplevel):
                 frm.pack(fill=tk.X, padx=1, pady=1)
                 lbl = ttk.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                spb = Spinbox(frm, values=info['values'])
+                spb = Spinbox(frm, **info['values'])
                 spb.set_val(info['default'])
                 spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
@@ -596,11 +738,13 @@ class MainGui(ttk.Frame):
         self.options = collections.OrderedDict((
             ('force', {
                 'label': 'Force',
-                'dtype': bool}),
+                'dtype': bool
+            }),
             ('verbose', {
                 'label': 'Verbosity',
                 'dtype': int,
-                'values': list(range(VERB_LVL['none'], VERB_LVL['debug']))}),
+                'values': {'values': VERB_LVL_NAMES},
+            }),
         ))
 
         # :: initialization of the UI
@@ -732,7 +876,7 @@ class MainGui(ttk.Frame):
                 frm.pack(fill=tk.X, padx=1, pady=1)
                 lbl = ttk.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spb = Spinbox(frm, values=info['values'], width=3)
+                spb = Spinbox(frm, **info['values'])
                 spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
@@ -855,7 +999,7 @@ class MainGui(ttk.Frame):
         # extract options
         force = self.wdgOptions['force']['chk'].get_val()
         msg('Force: {}'.format(force))
-        verbose = int(self.wdgOptions['verbose']['spb'].get_val())
+        verbose = VERB_LVL[self.wdgOptions['verbose']['spb'].get_val()]
         msg('Verb.: {}'.format(verbose))
         if self.cfg['use_mp']:
             # parallel
