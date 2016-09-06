@@ -60,7 +60,7 @@ import shlex  # Simple lexical analysis
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -72,7 +72,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: Local Imports
 # from dcmpi import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 # ======================================================================
@@ -249,7 +249,7 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=False, close_fds=True)
+            shell=False, close_fds=True, universal_newlines=True)
 
         if get_pipes:
             # handle stdout
@@ -392,7 +392,7 @@ def is_dicom(
         (bool) True if the file is a valid DICOM, false otherwise.
     """
     try:
-        dcm = pydcm.read_file(filepath)
+        dcm = dicom.read_file(filepath)
         # check if it is a DICOM dir.
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
@@ -405,7 +405,7 @@ def is_dicom(
         is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
             raise StopIteration
-    except (StopIteration, pydcm.errors.InvalidDicomError):
+    except (StopIteration, dcm.errors.InvalidDicomError):
         return False
     else:
         return True
@@ -560,7 +560,7 @@ def fill_from_dicom(
     else:
         dcm_filepath = temp_filepath
     try:
-        dcm = pydcm.read_file(dcm_filepath)
+        dcm = dicom.read_file(dcm_filepath)
     except:
         print('E: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
@@ -684,7 +684,7 @@ def group_series(
         for src_id, sources in sorted(sources_dict.items()):
             src_dcm = sources[0]
             try:
-                dcm = pydcm.read_file(src_dcm)
+                dcm = dicom.read_file(src_dcm)
             except:
                 msg('W: failed processing `{}`'.format(src_dcm),
                     verbose, VERB_LVL['medium'])

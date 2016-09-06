@@ -60,7 +60,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -78,7 +78,7 @@ import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 
@@ -113,7 +113,7 @@ def sorting(
     for in_filename in sorted(os.listdir(dirpath)):
         in_filepath = os.path.join(dirpath, in_filename)
         try:
-            dcm = pydcm.read_file(in_filepath)
+            dcm = dicom.read_file(in_filepath)
         except IOError:
             msg('W: unable to process `{}`'.format(in_filepath),
                 verbose, VERB_LVL['debug'])

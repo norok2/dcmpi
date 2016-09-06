@@ -20,14 +20,14 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: External Imports
-import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 
 # :: Local Imports
 import dcmpi.utils as utl
 from dcmpi import INFO
-from dcmpi import VERB_LVL, D_VERB_LVL
+from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 
@@ -102,7 +102,7 @@ def dcmpi_update(
                 else:
                     dcm_filepath = filepath
                 try:
-                    dcm = pydcm.read_file(dcm_filepath)
+                    dcm = dicom.read_file(dcm_filepath)
                     for key, val in dcm_info.items():
                         if key in dcm:
                             setattr(dcm, key, str(val))

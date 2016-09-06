@@ -39,7 +39,7 @@ import functools  # Higher-order functions and operations on callable objects
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-# import dicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+# import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -248,7 +248,7 @@ def get_sequence_info(info, prot):
             #        'FieldOfViewSlice::mm': (
             #            'sSliceArray.asSlice[].dThickness',
             #            lambda x, p: [n[1] for n in x], None),
-            # :: Positioning (center and rotation angles)
+            # :: Positioning (set_center and rotation angles)
             # todo: fix for correct interpretation in terms of angles
             'CenterPositionSagittal::mm': (
                 'sSliceArray.asSlice[].sPosition.dSag',
