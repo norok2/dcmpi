@@ -42,7 +42,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as dcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -109,7 +109,7 @@ def get_prot(
                     out_dirpath, group_id + '.' + utl.ID['prot'])
                 out_filepath += ('.' + utl.EXT['txt']) if type_ext else ''
                 try:
-                    dcm = dcm.read_file(in_filepath)
+                    dcm = dicom.read_file(in_filepath)
                     prot_src = dcm[utl.DCM_ID['hdr_nfo']].value
                     prot_str = utl.get_protocol(prot_src)
                 except:

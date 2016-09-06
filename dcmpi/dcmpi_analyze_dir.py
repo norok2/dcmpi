@@ -57,7 +57,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as dcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -135,7 +135,7 @@ def get_email_txt(
 # ======================================================================
 def send_mail_dcm(
         dcm_filepath,
-        email=None,
+        email_addrs=None,
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -156,7 +156,7 @@ def send_mail_dcm(
          lambda t: t),
     )
     try:
-        dcm = dcm.read_file(dcm_filepath)
+        dcm = dicom.read_file(dcm_filepath)
         # get recipient
         recipient = ''
         for key in recipient_fields:
@@ -186,13 +186,14 @@ def send_mail_dcm(
                 email_to=recipient,
                 session=session,
                 dirpath=dirpath))
-        if email is None or email.strip().lower() == recipient.strip().lower():
+        if email_addrs is None or email_addrs.strip().lower() == \
+                recipient.strip().lower():
             subprocess.call(cmd, shell=True)
             msg('I: Email sent to: <{}>.'.format(recipient))
         else:
-            print(email)
+            print(email_addrs)
             msg('W: Email was NOT sent to: <{}>.'.format(recipient))
-            msg(' : (you asked only for recipient <{}>).'.format(email))
+            msg(' : (you asked only for recipient <{}>).'.format(email_addrs))
 
 
 # ======================================================================
@@ -225,7 +226,7 @@ def dcm_analyze_dir(
     """
     dcm_filepath = utl.find_a_dicom(dirpath)[0]
     try:
-        dcm = dcm.read_file(dcm_filepath)
+        dcm = dicom.read_file(dcm_filepath)
         # check matching
         conditions = json.loads(match)
         concat = conditions.pop('_concat').lower() \

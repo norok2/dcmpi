@@ -60,7 +60,7 @@ import shlex  # Simple lexical analysis
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as dcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -249,7 +249,7 @@ def execute(cmd, get_pipes=True, dry=False, verbose=D_VERB_LVL):
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=False, close_fds=True)
+            shell=False, close_fds=True, universal_newlines=True)
 
         if get_pipes:
             # handle stdout
@@ -392,7 +392,7 @@ def is_dicom(
         (bool) True if the file is a valid DICOM, false otherwise.
     """
     try:
-        dcm = dcm.read_file(filepath)
+        dcm = dicom.read_file(filepath)
         # check if it is a DICOM dir.
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
@@ -558,7 +558,7 @@ def fill_from_dicom(
     else:
         dcm_filepath = temp_filepath
     try:
-        dcm = dcm.read_file(dcm_filepath)
+        dcm = dicom.read_file(dcm_filepath)
     except:
         print('E: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
@@ -682,7 +682,7 @@ def group_series(
         for src_id, sources in sorted(sources_dict.items()):
             src_dcm = sources[0]
             try:
-                dcm = dcm.read_file(src_dcm)
+                dcm = dicom.read_file(src_dcm)
             except:
                 msg('W: failed processing `{}`'.format(src_dcm),
                     verbose, VERB_LVL['medium'])

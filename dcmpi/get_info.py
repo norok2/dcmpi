@@ -41,7 +41,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom as dcm  # PyDicom (Read, modify and write DICOM files.)
+import dicom  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -120,7 +120,7 @@ def get_info(
                 while read_next_dicom:
                     # get last dicom
                     in_filepath = sorted(sources.items())[idx][1][-1]
-                    dcm = dcm.read_file(in_filepath)
+                    dcm = dicom.read_file(in_filepath)
                     stop = 'PixelData' in dcm and \
                            'ImageType' in dcm and 'ORIGINAL' in dcm.ImageType
                     if stop:
@@ -166,7 +166,7 @@ def get_info(
                 in_filepath = sorted(
                     sources[groups[group_id][0]])[-1]
                 try:
-                    dcm = dcm.read_file(in_filepath)
+                    dcm = dicom.read_file(in_filepath)
                 except:
                     msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
@@ -217,7 +217,7 @@ def get_info(
                     if src_id in series:
                         info['_acquisition'] = acq
                     try:
-                        dcm = dcm.read_file(in_filepath)
+                        dcm = dicom.read_file(in_filepath)
                     except:
                         msg('E: failed processing `{}`'.format(in_filepath))
                     else:
