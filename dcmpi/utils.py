@@ -463,6 +463,7 @@ def is_dicom(
     Returns:
         (bool) True if the file is a valid DICOM, false otherwise.
     """
+    import dicom.errors
     try:
         dcm = dicom.read_file(filepath)
         # check if it is a DICOM dir.
@@ -477,7 +478,7 @@ def is_dicom(
         is_postprocess = True if 'MagneticFieldStrength' not in dcm else False
         if is_postprocess and not allow_postprocess:
             raise StopIteration
-    except (StopIteration, dcm.errors.InvalidDicomError):
+    except (StopIteration, dicom.errors.InvalidDicomError):
         return False
     else:
         return True
