@@ -227,7 +227,7 @@ def center(target, parent=None):
     else:
         parent.update_idletasks()
         parent_geom = Geometry(parent.winfo_geometry())
-    target_geom = Geometry(target.winfo_geometry()).set_center(parent_geom)
+    target_geom = Geometry(target.winfo_geometry()).set_to_center(parent_geom)
     target.geometry(target_geom.as_str())
 
 
