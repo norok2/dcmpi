@@ -1006,23 +1006,23 @@ class MainGui(ttk.Frame):
             pool = multiprocessing.Pool(processes=self.cfg['num_processes'])
             proc_result_list = []
         for in_dirpath in self.lsvInput.get_items():
-            dcmpi_run_kwargs = {
+            kws = {
                 name: info['ent'].get_val()
                 for name, info in self.wdgModules.items()}
-            dcmpi_run_kwargs.update({
+            kws.update({
                 'in_dirpath': in_dirpath,
                 'out_dirpath': os.path.expanduser(self.entPath.get()),
                 'subpath': self.entSubpath.get(),
                 'force': force,
                 'verbose': verbose,
             })
-            # print(dcmpi_run_kwargs)
+            # print(kws)
             if self.cfg['use_mp']:
                 proc_result = pool.apply_async(
-                    dcmpi_run, kwds=dcmpi_run_kwargs)
+                    dcmpi_run, kwds=kws)
                 proc_result_list.append(proc_result)
             else:
-                dcmpi_run(**dcmpi_run_kwargs)
+                dcmpi_run(**kws)
         # print(proc_result_list)
         if self.cfg['use_mp']:
             res_list = []
