@@ -7,8 +7,8 @@ files containing MRI acquisitions. It is specifically targeted at the output
 of the Siemens scanners, although it should be easily adaptable to other
 vendors and eventually even different acquisition modalities.
 
-It features a Qt-based GUI to manage the extraction locations, tasks and
-the most used options. This is also mirrored by a CLI of the same software.
+It features a Graphical User-Interface to manage the most used export options.
+This is also mirrored by a CLI of the same software.
 
 Additionally, several other command-line tools are provided, which offer a
 much finer control over the single tasks.
@@ -38,8 +38,8 @@ Notes
 -----
 This work is based on reverse engineering of the DICOM files and as such should
 not be used as a reliable source of information.
-Some of the most interesting features are only partially supported.
-Please get in contact if you would like suggest feature requests.
+Some of the features are only partially supported.
+Please get in contact if you would like to suggest additional features.
 
 WARNING
 -------
