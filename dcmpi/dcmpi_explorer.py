@@ -74,7 +74,10 @@ def dcmpi_explorer_gui(*args, **kwargs):
         # app = Main(root, args)
         root.mainloop()
     except:
-        dcmpi_explorer_cli(**kwargs)
+        warnings.warn(
+            'Failed to use Graphical UI (GUI).'
+            ' Fallback to Text UI (TUI)...')
+        dcmpi_explorer_tui(**kwargs)
 
 
 # ======================================================================
@@ -85,7 +88,11 @@ def dcmpi_explorer_tui(*args, **kwargs):
         asciimatics = None
     # check if asciimatics is available
     if not asciimatics:
-        warnings.warn('Text UI not supported. Using command-line interface...')
+        warnings.warn(
+            'Package not found: `asciimatics`.')
+        warnings.warn(
+            'Failed to use Text UI (TUI).'
+            ' Fallback to command-line interface (CLI)...')
         dcmpi_explorer_cli(**kwargs)
     else:
         pass
@@ -124,7 +131,7 @@ def handle_arg():
     arg_parser.add_argument(
         'ui_mode',
         nargs='?',
-        default='cli',
+        default='tui',
         help='set UI mode [%(default)s]')
     arg_parser.add_argument(
         '-f', '--force',
@@ -135,30 +142,6 @@ def handle_arg():
         default=CFG_FILENAME,
         help='set configuration file name/path [%(default)s]')
     return arg_parser
-
-
-# ======================================================================
-def main_gui():
-    """
-    Entry point for Graphical User Interface (GUI).
-    """
-    main('gui')
-
-
-# ======================================================================
-def main_tui():
-    """
-    Entry point for Text User Interface (TUI).
-    """
-    main('tui')
-
-
-# ======================================================================
-def main_cli():
-    """
-    Entry point for Command-Line Interface (CLI).
-    """
-    main('cli')
 
 
 # ======================================================================
@@ -192,5 +175,4 @@ def main(ui_mode=None):
 
 # ======================================================================
 if __name__ == '__main__':
-    msg(__doc__.strip())
     main()

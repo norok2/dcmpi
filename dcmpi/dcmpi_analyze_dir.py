@@ -259,13 +259,13 @@ def dcm_analyze_dir(
             elif action.lower() == 'dcmpi_cli':
                 io_dirs = (dirpath, '/SCR/TEMP')
                 cmd = os.path.dirname(__file__) + \
-                      '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
+                      '/dcmpi_run_cli.py -i {} -o {}'.format(*io_dirs)
                 subprocess.call(cmd, shell=True)
             elif action.lower() == 'email+preprocess':
                 send_mail_dcm(dcm_filepath, None, force, verbose)
                 io_dirs = (dirpath, '/SCR/TEMP')
                 cmd = os.path.dirname(__file__) + \
-                      '/dcmpi_cli.py -i {} -o {}'.format(*io_dirs)
+                      '/dcmpi_run_cli.py -i {} -o {}'.format(*io_dirs)
                 subprocess.call(cmd, shell=True)
             else:
                 msg('W: Action `{}` not valid.'.format(action))

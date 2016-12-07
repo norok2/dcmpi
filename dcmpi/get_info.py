@@ -134,7 +134,8 @@ def get_info(
             else:
                 # DICOM's-ready information
                 info.update(utl.postprocess_info(
-                    dcm, custom_info.SESSION, lambda x, p: x.value, verbose))
+                    dcm, custom_info.SESSION,
+                    lambda x, p: str(x.value), verbose))
                 # additional information: duration
                 field_id = 'Duration'
                 try:
@@ -171,8 +172,8 @@ def get_info(
                     msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
                     info.update(utl.postprocess_info(
-                        dcm, custom_info.ACQUISITION, lambda x, p: x.value,
-                        verbose))
+                        dcm, custom_info.ACQUISITION,
+                        lambda x, p: str(x.value), verbose))
                     # information from protocol
                     if utl.DCM_ID['hdr_nfo'] in dcm:
                         prot_src = dcm[utl.DCM_ID['hdr_nfo']].value
@@ -181,8 +182,7 @@ def get_info(
                     else:
                         prot = {}
                     info.update(utl.postprocess_info(
-                        prot,
-                        custom_info.get_sequence_info(info, prot),
+                        prot, custom_info.get_sequence_info(info, prot),
                         None, verbose))
                     # additional information: duration
                     field_id = 'Duration'
