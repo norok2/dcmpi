@@ -46,6 +46,9 @@ from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
+from dcmpi import (
+    get_nifti, get_meta, get_prot, get_info, get_report, do_backup)
+
 # ======================================================================
 # :: determine initial configuration
 try:
@@ -69,6 +72,15 @@ CFG_DIRPATHS = (
     os.getenv('HOME'),
     os.path.dirname(__file__),
     PATHS['sys_cfg'])
+
+ACTIONS = collections.OrderedDict((
+    ('niz', (get_nifti, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['nifti']))),
+    ('meta', (get_meta, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['meta']))),
+    ('prot', (get_prot, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['prot']))),
+    ('info', (get_info, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['info']))),
+    # (get_report, utl.ID['info'], utl.ID['report']),
+    # (do_backup, utl.ID['dicom'], utl.ID['backup']),
+))
 
 
 # ======================================================================
@@ -153,7 +165,8 @@ def dcmpi_run(
         in_dirpath,
         out_dirpath,
         subpath=utl.TPL['acquire'],
-        import_subpath=utl.ID['dicom'],
+        dcm_subpath=utl.ID['dicom'],
+        actions=ACTIONS,
         niz_subpath=utl.ID['nifti'],
         meta_subpath=utl.ID['meta'],
         prot_subpath=utl.ID['prot'],
@@ -189,13 +202,16 @@ def dcmpi_run(
         backup_template)
     # import
     dcm_dirpaths = do_acquire_sources(
-        in_dirpath, out_dirpath, False, subpath, import_subpath, force, verbose)
+        in_dirpath, out_dirpath, False, subpath, dcm_subpath, force, verbose)
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
         # sort
         sorting(
             dcm_dirpath, utl.D_SUMMARY + '.' + utl.EXT['json'],
             force, verbose)
+        for action, (func, func_kws) in actions.items():
+            func(in_dirpath=in_dirpath, out_dirpath=out_dirpath)
+
         msg('Done: {}'.format(dcm_dirpath))
 
 

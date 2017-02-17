@@ -179,6 +179,10 @@ def get_nifti(
                         msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
                         os.rename(old_filepath, out_filepath)
 
+        elif method == 'dicom2nifti':
+            # todo: implement
+            msg('W: method `{}` not supported yet.'.format(method))
+
         else:
             msg('W: Unknown method `{}`.'.format(method))
     else:

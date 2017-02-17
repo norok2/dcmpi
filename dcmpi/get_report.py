@@ -206,8 +206,9 @@ def get_param(acq):
 def get_report(
         in_dirpath,
         out_dirpath,
+        basename='{name}_{date}_{time}_{sys}',
         method='info',
-        fmt='pdf',
+        file_format='pdf',
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -222,7 +223,7 @@ def get_report(
     method : str (optional)
         | Extraction method. Accepted values:
         * pydicom: Use PyDICOM Python module.
-    fmt : str (optional)
+    file_format : str (optional)
         | Output format. HTML will always be present. Accepted values:
         * pydicom: Use PyDICOM Python module.
     force : boolean (optional)
@@ -274,7 +275,7 @@ def get_report(
             # :: always create HTML get_report
             # import templates
             template = {
-                'get_report': 'report_template.html',
+                'report': 'report_template.html',
                 'acq': 'acquisition_template.html',
                 'acq_param': 'acquisition_parameter_template.html',
             }
@@ -303,7 +304,7 @@ def get_report(
                 for tag, val in tags.items():
                     tmp_acq_html = tmp_acq_html.replace(tag, val)
                 acq_html += tmp_acq_html
-            report_html = template['get_report']
+            report_html = template['report']
             tags = {
                 '[TIMESTAMP]': time.strftime('%c UTC', time.gmtime()),
                 '[SESSION-INFO]': get_session(in_dirpath, summary),
@@ -358,14 +359,16 @@ def get_report(
                     val = ''
                 report_html = report_html.replace(tag, val)
             # todo: improve filename (e.g. from upper folder or recalculate)
-            html_filename = 'get_report' + '.html'
+
+            basename = basename.format_map(locals()) if basename else 'report'
+            html_filename = basename + '.html'
             msg('HTML: {}'.format(html_filename))
             html_filepath = os.path.join(out_dirpath, html_filename)
             with open(html_filepath, 'w') as html_file:
                 html_file.write(report_html)
 
-            if fmt == 'pdf':
-                pdf_filename = os.path.splitext(html_filename)[0] + '.pdf'
+            if file_format == 'pdf':
+                pdf_filename = basename + '.pdf'
                 msg('Report: {}'.format(pdf_filename))
                 pdf_filepath = os.path.join(out_dirpath, pdf_filename)
                 opts = (
@@ -381,7 +384,7 @@ def get_report(
                 ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
 
             else:
-                msg('W: Unknown format `{}`.'.format(fmt))
+                msg('W: Unknown format `{}`.'.format(file_format))
 
         else:
             msg('W: Acquisition information not found.')
@@ -428,19 +431,23 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-i', '--in_dirpath', metavar='DIR',
-        default=d_input_dir,
+        default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
         '-o', '--out_dirpath', metavar='DIR',
-        default=d_output_dir,
+        default='.',
+        help='set output directory [%(default)s]')
+    arg_parser.add_argument(
+        '-b', '--basename', metavar='NAME',
+        default='{name}_{date}_{time}_{sys}',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-m', '--method', metavar='METHOD',
-        default=d_method,
+        default='info',
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
-        '-a', '--format', metavar='METHOD',
-        default=d_format,
+        '-a', '--file_format', metavar='METHOD',
+        default='pdf',
         help='set output format [%(default)s]')
     return arg_parser
 
@@ -462,7 +469,8 @@ def main():
 
     get_report(
         args.in_dirpath, args.out_dirpath,
-        args.method, args.format,
+        args.basename,
+        args.method, args.file_format,
         args.force, args.verbose)
 
     exec_time = datetime.datetime.now() - begin_time

@@ -123,7 +123,7 @@ DCM_ID = {
 
 # DICOM series with nominal absolute time of acquisition differing more than
 #   GRACE_PERIOD are considered as originating from different acquisitions.
-GRACE_PERIOD = 2.0  # s
+GRACE_PERIOD = 8.0  # s
 
 PROT_BEGIN = '<XProtocol>'
 PROT_END = '### ASCCONV END ###" \n    }\n  }\n}\n'
@@ -585,7 +585,7 @@ def fill_from_dicom(
         * time : Study Time. Format : anything accepted by 'strftime'.
         * name : Patient Name. Format : 'mpicbs' to guess ID (only subjects).
         * sys : StationName. Format : 'mpicbs' to guess local names.
-    dcm_filepath : str
+    filepath : str
         DICOM file where to get information from.
     compression : str or None (optional)
         Determine the (de)compression method used to access the data.
