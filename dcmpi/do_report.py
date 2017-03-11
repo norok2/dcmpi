@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Create a get_report of the acquisitions from imaged data.
+Create a do_report of the acquisitions from imaged data.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -166,7 +166,7 @@ def get_param(acq):
         'SequenceCode', 'SequenceVariant', 'SequenceFileName', 'SequenceName')
     report['Sequence'] = json.dumps([acq[key] for key in seq_params])
     # field of view
-    report['FieldOfView[ROxPExSL]::mm'] = json.dumps(zip(
+    report['FieldOfView[ROxPExSL]::mm'] = json.dumps((
         acq['FieldOfViewReadOut::mm'], acq['FieldOfViewPhase::mm'],
         acq['FieldOfViewSlice::mm']))
     # matrix size
@@ -203,11 +203,11 @@ def get_param(acq):
 
 
 # ======================================================================
-def get_report(
+def do_report(
         in_dirpath,
         out_dirpath,
         basename='{name}_{date}_{time}_{sys}',
-        method='info',
+        method='pydicom',
         file_format='pdf',
         force=False,
         verbose=D_VERB_LVL):
@@ -236,23 +236,35 @@ def get_report(
     None.
 
     """
-    msg(':: Creating HTML and PDF get_report...')
+    msg(':: Creating HTML and PDF do_report...')
     msg('Input:  {}'.format(in_dirpath))
     msg('Output: {}'.format(out_dirpath))
+
+    dcm_filename, compression = utl.find_a_dicom(in_dirpath)
+    out_basename = utl.fill_from_dicom(basename, dcm_filename)
+    html_basename = out_basename + '.html'
+    msg('HTML: {}'.format(html_basename))
+    out_filepath = os.path.join(out_dirpath, html_basename)
+
     # proceed only if output is not likely to be there
-    if not os.path.exists(out_dirpath) or force:
+    if not os.path.exists(out_filepath) or force:
         # :: create output directory if not exists and extract images
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
 
+        # :: create temporary info data
+        from get_info import get_info
+        info_dirpath = os.path.join(os.path.dirname(in_dirpath), utl.ID['info'])
+        get_info(in_dirpath, info_dirpath, method, force=force, verbose=verbose)
+
         # :: import information
         summary, extra = {}, {}
         acquisitions = []
-        if method == 'info':
+        if method == 'pydicom':
             target = None
             try:
-                for name in sorted(os.listdir(in_dirpath)):
-                    target = os.path.join(in_dirpath, name)
+                for name in sorted(os.listdir(info_dirpath)):
+                    target = os.path.join(info_dirpath, name)
                     with open(target, 'r') as target_file:
                         if name.startswith('summary.info'):
                             summary = json.load(target_file)
@@ -268,11 +280,11 @@ def get_report(
         else:
             msg('W: Unknown method `{}`.'.format(method))
 
-        # :: create get_report
+        # :: create do_report
         tpl_dirpath = os.path.join(
             os.path.dirname(__file__), 'report_templates')
         if summary and acquisitions and os.path.isdir(tpl_dirpath):
-            # :: always create HTML get_report
+            # :: always create HTML do_report
             # import templates
             template = {
                 'report': 'report_template.html',
@@ -307,7 +319,7 @@ def get_report(
             report_html = template['report']
             tags = {
                 '[TIMESTAMP]': time.strftime('%c UTC', time.gmtime()),
-                '[SESSION-INFO]': get_session(in_dirpath, summary),
+                '[SESSION-INFO]': get_session(info_dirpath, summary),
                 '[CUSTOM-PIL]':
                     extra['pil'] if 'pil' in extra else \
                         html_input('text', '{"maxlength": 4}'),
@@ -360,15 +372,11 @@ def get_report(
                 report_html = report_html.replace(tag, val)
             # todo: improve filename (e.g. from upper folder or recalculate)
 
-            basename = basename.format_map(locals()) if basename else 'report'
-            html_filename = basename + '.html'
-            msg('HTML: {}'.format(html_filename))
-            html_filepath = os.path.join(out_dirpath, html_filename)
-            with open(html_filepath, 'w') as html_file:
+            with open(out_filepath, 'w') as html_file:
                 html_file.write(report_html)
 
             if file_format == 'pdf':
-                pdf_filename = basename + '.pdf'
+                pdf_filename = out_basename + '.pdf'
                 msg('Report: {}'.format(pdf_filename))
                 pdf_filepath = os.path.join(out_dirpath, pdf_filename)
                 opts = (
@@ -380,7 +388,7 @@ def get_report(
                     # ' --no-pdf-compression',  # n/a in Ubuntu 14.04
                 )
                 cmd = 'wkhtmltopdf {} {} {}'.format(
-                    ' '.join(opts), html_filepath, pdf_filepath)
+                    ' '.join(opts), out_filepath, pdf_filepath)
                 ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
 
             else:
@@ -467,7 +475,7 @@ def main():
     msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
-    get_report(
+    do_report(
         args.in_dirpath, args.out_dirpath,
         args.basename,
         args.method, args.file_format,

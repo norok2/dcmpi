@@ -78,7 +78,7 @@ def default_config():
         'output_path': os.path.realpath('.'),
         'output_subpath': '{study}/{name}_{date}_{time}_{sys}',
         'import_subpath': utl.ID['dicom'],
-        'niz_subpath': utl.ID['nifti'],
+        'niz_subpath': utl.ID['niz'],
         'meta_subpath': utl.ID['meta'],
         'prot_subpath': utl.ID['prot'],
         'info_subpath': utl.ID['info'],
@@ -143,7 +143,7 @@ def dcmpi_run(
         out_dirpath,
         subpath=utl.TPL['acquire'],
         import_subpath=utl.ID['dicom'],
-        niz_subpath=utl.ID['nifti'],
+        niz_subpath=utl.ID['niz'],
         meta_subpath=utl.ID['meta'],
         prot_subpath=utl.ID['prot'],
         info_subpath=utl.ID['info'],
@@ -158,7 +158,7 @@ def dcmpi_run(
         in_dirpath (str): Path to input directory.
         out_dirpath (str): Path to output directory.
         subpath ():
-        nii_subpath ():
+        niz_subpath ():
         meta_subpath ():
         prot_subpath ():
         info_subpath ():

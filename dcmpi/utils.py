@@ -102,7 +102,7 @@ D_NUM_DIGITS = 3
 # identifiers used by the pre-processing
 ID = {
     'dicom': 'dcm',
-    'nifti': 'niz',
+    'niz': 'niz',
     'info': 'info',
     'meta': 'meta',
     'prot': 'prot',
@@ -470,7 +470,7 @@ def is_dicom(
         is_dir = True if 'DirectoryRecordSequence' in dcm else False
         if is_dir and not allow_dir:
             raise StopIteration
-        # check if it is a DICOM get_report
+        # check if it is a DICOM do_report
         is_report = True if 'PixelData' not in dcm else False
         if is_report and not allow_report:
             raise StopIteration

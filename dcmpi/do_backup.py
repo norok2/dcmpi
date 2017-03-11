@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Safely get_backup DICOM files for later use. This is part of DCMPI.
+Safely do_backup DICOM files for later use. This is part of DCMPI.
 
 Warning: misuse of this program may lead to loss of data.
 """
@@ -70,19 +70,20 @@ ARCHIVE_EXT = {
 
 
 # ======================================================================
-def get_backup(
+def do_backup(
         in_dirpath,
-        out_dirpath='dcm',
+        out_dirpath=None,
+        basename='{name}_{date}_{time}_{sys}',
         method='7z',
         keep=False,
         force=False,
         verbose=D_VERB_LVL):
     """
-    Safely get_backup DICOM files and test the produced archive.
+    Safely do_backup DICOM files and test the produced archive.
 
     Args:
         in_dirpath (str|unicode): Path to input directory.
-        out_dirpath (str|unicode): Path to output directory.
+        out_filepath (str|unicode): Path to output directory.
         method (str|unicode): The Compression method.
             Accepted values:
              - '7z': Use 7z compression format.
@@ -93,39 +94,48 @@ def get_backup(
     Returns:
         None.
     """
+    def _success(ret_code, p_stdout, p_stderr):
+        # and p_stdout.find('Everything is Ok') > 0
+        return not ret_code
+
     msg(':: Backing up DICOM folder...')
     msg('Input:  {}'.format(in_dirpath))
+    dcm_filename, compression = utl.find_a_dicom(in_dirpath)
+    out_basename = utl.fill_from_dicom(basename, dcm_filename)
+    if not out_dirpath:
+        out_dirpath = os.path.dirname(in_dirpath)
+    out_filepath = os.path.join(out_dirpath, out_basename)
     if method in ARCHIVE_EXT:
-        out_dirpath += '.' + ARCHIVE_EXT[method]
-    msg('Output: {}'.format(out_dirpath))
+        out_filepath += '.' + ARCHIVE_EXT[method]
+    msg('Output: {}'.format(out_filepath))
     success = False
-    if not os.path.exists(out_dirpath) or force:
+    if not os.path.exists(out_filepath) or force:
         if method == '7z':
             cmd_token_list = [
-                '7z', 'a', '-mx9', out_dirpath, in_dirpath]
+                '7z', 'a', '-mx9', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
-            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
-            cmd_token_list = ['7z', 't', out_dirpath]
+            cmd_token_list = ['7z', 't', out_filepath]
             cmd = ' '.join(cmd_token_list)
-            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
 
         elif method == 'zip':
             cmd_token_list = [
-                'zip', 'a', '-mx9', out_dirpath, in_dirpath]
+                'zip', 'a', '-mx9', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
-            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = len(p_stderr) == 0
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
-            cmd_token_list = ['7z', 't', out_dirpath]
+            cmd_token_list = ['7z', 't', out_filepath]
             cmd = ' '.join(cmd_token_list)
-            ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = ret_val and p_stdout.find('Everything is Ok') > 0
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
 
         else:
@@ -180,7 +190,7 @@ def handle_arg():
     arg_parser.add_argument(
         '-k', '--keep',
         action='store_true',
-        help='Keep DICOM sources after get_backup (and test). [%(default)s]')
+        help='Keep DICOM sources after do_backup (and test). [%(default)s]')
     return arg_parser
 
 
@@ -199,7 +209,7 @@ def main():
     msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
-    get_backup(
+    do_backup(
         args.in_dirpath, args.out_dirpath,
         args.method, args.keep,
         args.force, args.verbose)

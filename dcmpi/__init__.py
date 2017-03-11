@@ -66,10 +66,10 @@ def msg(
     Display a feedback message to the standard output.
 
     Args:
-        text (str|unicode): Message to display.
+        text (str|Any): Message to display or object with `__repr__`.
         verb_lvl (int): Current level of verbosity.
         verb_threshold (int): Threshold level of verbosity.
-        fmt (str|unicode): Format of the message (if `blessed` supported).
+        fmt (str): Format of the message (if `blessed` supported).
             If None, a standard formatting is used.
         *args (tuple): Positional arguments to be passed to `print`.
         **kwargs (dict): Keyword arguments to be passed to `print`.
@@ -91,48 +91,57 @@ def msg(
         >>> msg(' : a b c', fmt='cyan')  # if ANSI Terminal, cyan text
          : a b c
     """
-    if verb_lvl >= verb_threshold:
+    if verb_lvl >= verb_threshold and text:
         # if blessed is not present, no coloring
         try:
             import blessed
         except ImportError:
-            blessed = None
+            try:
+                import blessings as blessed
+            except ImportError:
+                blessed = None
 
         if blessed:
-            t = blessed.Terminal()
-            if not fmt:
-                if VERB_LVL['low'] < verb_threshold <= VERB_LVL['medium']:
-                    e = t.cyan
-                elif VERB_LVL['medium'] < verb_threshold < VERB_LVL['debug']:
-                    e = t.magenta
-                elif verb_threshold >= VERB_LVL['debug']:
-                    e = t.blue
-                elif text.startswith('I:'):
-                    e = t.green
-                elif text.startswith('W:'):
-                    e = t.yellow
-                elif text.startswith('E:'):
-                    e = t.red
-                else:
-                    e = t.white
-                # first non-whitespace word
-                txt1 = text.split(None, 1)[0]
-                # initial whitespaces
-                n = text.find(txt1)
-                txt0 = text[:n]
-                # rest
-                txt2 = text[n + len(txt1):]
-                txt_kwargs = {
-                    'e1': e + (t.bold if e == t.white else ''),
-                    'e2': e + (t.bold if e != t.white else ''),
-                    't0': txt0, 't1': txt1, 't2': txt2, 'n': t.normal}
-                text = '{t0}{e1}{t1}{n}{e2}{t2}{n}'.format(**txt_kwargs)
+            text = str(text)
+            try:
+                t = blessed.Terminal()
+            except ValueError:
+                pass
             else:
-                if 't.' not in fmt:
-                    fmt = '{{t.{}}}'.format(fmt)
-                if '{}' not in fmt:
-                    fmt += '{}'
-                text = fmt.format(text, t=t) + t.normal
+                if not fmt:
+                    if VERB_LVL['low'] < verb_threshold <= VERB_LVL['medium']:
+                        e = t.cyan
+                    elif VERB_LVL['medium'] < verb_threshold < \
+                            VERB_LVL['debug']:
+                        e = t.magenta
+                    elif verb_threshold >= VERB_LVL['debug']:
+                        e = t.blue
+                    elif text.startswith('I:'):
+                        e = t.green
+                    elif text.startswith('W:'):
+                        e = t.yellow
+                    elif text.startswith('E:'):
+                        e = t.red
+                    else:
+                        e = t.white
+                    # first non-whitespace word
+                    txt1 = text.split(None, 1)[0]
+                    # initial whitespaces
+                    n = text.find(txt1)
+                    txt0 = text[:n]
+                    # rest
+                    txt2 = text[n + len(txt1):]
+                    txt_kws = dict(
+                        e1=e + (t.bold if e == t.white else ''),
+                        e2=e + (t.bold if e != t.white else ''),
+                        t0=txt0, t1=txt1, t2=txt2, n=t.normal)
+                    text = '{t0}{e1}{t1}{n}{e2}{t2}{n}'.format_map(txt_kws)
+                else:
+                    if 't.' not in fmt:
+                        fmt = '{{t.{}}}'.format(fmt)
+                    if '{}' not in fmt:
+                        fmt += '{}'
+                    text = fmt.format(text, t=t) + t.normal
         print(text, *args, **kwargs)
 
 

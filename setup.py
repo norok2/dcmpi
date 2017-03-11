@@ -180,7 +180,7 @@ setup(
             'dcmpi__get_meta=dcmpi.get_meta:main',
             'dcmpi__get_nifti=dcmpi.get_nifti:main',
             'dcmpi__get_prot=dcmpi.get_prot:main',
-            'dcmpi__get_report=dcmpi.get_report:main',
+            'dcmpi__get_report=dcmpi.do_report:main',
         ],
         'gui_scripts': [
             'dcmpi_gui=dcmpi.dcmpi_run:main_gui',

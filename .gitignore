@@ -104,4 +104,10 @@ docs/_build/
 target/
 
 
+# binary images
+*.png
+*.ico
+*.gif
+*.xbm
 
+_version.py

@@ -47,7 +47,7 @@ from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
 from dcmpi import (
-    get_nifti, get_meta, get_prot, get_info, get_report, do_backup)
+    get_nifti, get_meta, get_prot, get_info, do_report, do_backup)
 
 # ======================================================================
 # :: determine initial configuration
@@ -74,13 +74,20 @@ CFG_DIRPATHS = (
     PATHS['sys_cfg'])
 
 ACTIONS = collections.OrderedDict((
-    ('niz', (get_nifti, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['nifti']))),
-    ('meta', (get_meta, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['meta']))),
-    ('prot', (get_prot, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['prot']))),
-    ('info', (get_info, dict(in_dirpath=utl.ID['dicom'], out_dirpath=utl.ID['info']))),
-    # (get_report, utl.ID['info'], utl.ID['report']),
-    # (do_backup, utl.ID['dicom'], utl.ID['backup']),
-))
+    ('niz', (get_nifti.get_nifti,
+             dict(in_dirpath='{dcm_dirpath}', out_dirpath='{dirpath[niz]}'))),
+    ('meta', (get_meta.get_meta,
+              dict(in_dirpath='{dcm_dirpath}', out_dirpath='{dirpath[meta]}'))),
+    ('prot', (get_prot.get_prot,
+              dict(in_dirpath='{dcm_dirpath}', out_dirpath='{dirpath[prot]}'))),
+    ('info', (get_info.get_info,
+              dict(in_dirpath='{dcm_dirpath}', out_dirpath='{dirpath[info]}'))),
+    ('report', (do_report.do_report,
+                dict(in_dirpath='{dcm_dirpath}', out_dirpath='{base_dirpath}',
+                     basename='{report_template}'))),
+    ('backup', (do_backup.do_backup,
+                dict(in_dirpath='{dcm_dirpath}', out_dirpath='{base_dirpath}',
+                     basename='{backup_template}'))),))
 
 
 # ======================================================================
@@ -100,15 +107,15 @@ def default_config():
         'input_paths': [],
         'output_path': os.path.realpath('.'),
         'output_subpath': '{study}/{name}_{date}_{time}_{sys}',
-        'import_subpath': utl.ID['dicom'],
-        'niz_subpath': utl.ID['nifti'],
+        'dcm_subpath': utl.ID['dicom'],
+        'niz_subpath': utl.ID['niz'],
         'meta_subpath': utl.ID['meta'],
         'prot_subpath': utl.ID['prot'],
         'info_subpath': utl.ID['info'],
         'report_template': utl.TPL['report'],
         'backup_template': utl.TPL['backup'],
         'force': False,
-        'verbose': D_VERB_LVL,
+        'verbose': VERB_LVL_NAMES[D_VERB_LVL],
         'use_mp': True,
         'num_processes': multiprocessing.cpu_count(),
         'gui_style_tk': 'default',
@@ -166,13 +173,13 @@ def dcmpi_run(
         out_dirpath,
         subpath=utl.TPL['acquire'],
         dcm_subpath=utl.ID['dicom'],
-        actions=ACTIONS,
-        niz_subpath=utl.ID['nifti'],
+        niz_subpath=utl.ID['niz'],
         meta_subpath=utl.ID['meta'],
         prot_subpath=utl.ID['prot'],
         info_subpath=utl.ID['info'],
         report_template=utl.TPL['report'],
         backup_template=utl.TPL['backup'],
+        actions=ACTIONS,
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -181,13 +188,15 @@ def dcmpi_run(
     Args:
         in_dirpath (str): Path to input directory.
         out_dirpath (str): Path to output directory.
-        subpath ():
-        nii_subpath ():
-        meta_subpath ():
-        prot_subpath ():
-        info_subpath ():
-        report_subpath ():
-        backup_subpath ():
+        subpath (str):
+        dcm_subpath (str):
+        niz_subpath (str):
+        meta_subpath (str):
+        prot_subpath (str):
+        info_subpath (str):
+        report_template (str):
+        backup_template (str):
+        actions (dict):
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 
@@ -197,9 +206,6 @@ def dcmpi_run(
     from dcmpi.do_acquire_sources import do_acquire_sources
     from dcmpi.do_sorting import sorting
 
-    subdirs = (
-        niz_subpath, meta_subpath, prot_subpath, info_subpath, report_template,
-        backup_template)
     # import
     dcm_dirpaths = do_acquire_sources(
         in_dirpath, out_dirpath, False, subpath, dcm_subpath, force, verbose)
@@ -209,8 +215,20 @@ def dcmpi_run(
         sorting(
             dcm_dirpath, utl.D_SUMMARY + '.' + utl.EXT['json'],
             force, verbose)
+        # run other actions
+        dirpath = {
+            'niz': niz_subpath,
+            'meta': meta_subpath,
+            'prot': prot_subpath,
+            'info': info_subpath, }
+        dirpath = {
+            k: os.path.join(base_dirpath, v) for k, v in dirpath.items() if v}
         for action, (func, func_kws) in actions.items():
-            func(in_dirpath=in_dirpath, out_dirpath=out_dirpath)
+            kws = func_kws.copy()
+            for key, val in kws.items():
+                if isinstance(val, str):
+                    kws[key] = val.format_map(locals())
+            func(**kws)
 
         msg('Done: {}'.format(dcm_dirpath))
 
@@ -231,6 +249,41 @@ def get_curr_screen_geometry():
     geometry = temp.winfo_geometry()
     temp.destroy()
     return geometry
+
+
+# ======================================================================
+def set_icon(
+        root,
+        basename,
+        dirpath=os.path.abspath(os.path.dirname(__file__))):
+    basepath = os.path.join(dirpath, basename) if dirpath else basename
+
+    # first try modern file formats
+    for file_ext in ['png', 'gif']:
+        if not basepath.endswith('.' + file_ext):
+            filepath = basepath + '.' + file_ext
+        else:
+            filepath = basepath
+        try:
+            icon = tk.PhotoImage(file=filepath)
+            root.tk.call('wm', 'iconphoto', root._w, icon)
+        except tk.TclError:
+            msg('E: Could not use `{}` as icon.'.format(filepath))
+        else:
+            return
+
+    # fall back to ico/xbm format
+    tk_sys = root.tk.call('tk', 'windowingsystem')
+    if tk_sys.startswith('win'):
+        filepath = basename + '.ico'
+    else:  # if tk_sys == 'x11':
+        filepath = '@' + basename + '.xbm'
+    try:
+        root.iconbitmap(filepath)
+    except tk.TclError:
+        msg('E: Could not use `{}` as icon.'.format(filepath))
+    else:
+        return
 
 
 # ======================================================================
@@ -741,7 +794,7 @@ class MainGui(ttk.Frame):
                 PATHS['usr_cfg'], CFG_FILENAME)
 
         self.modules = collections.OrderedDict([
-            ('import_subpath', {'label': 'DICOM'}),
+            ('dcm_subpath', {'label': 'DICOM (required)'}),
             ('niz_subpath', {'label': 'NIfTI Image'}),
             ('meta_subpath', {'label': 'Metadata'}),
             ('prot_subpath', {'label': 'Protocol'}),
@@ -847,7 +900,7 @@ class MainGui(ttk.Frame):
         self.lblActions = ttk.Label(
             self.frmRight, text='Sub-Paths and Templates')
         self.lblActions.pack(padx=1, pady=1)
-        self.wdgModules = {}
+        self.wdgModules = collections.OrderedDict()
         for name, info in self.modules.items():
             frm = ttk.Frame(self.frmRight)
             frm.pack(fill=tk.X, padx=1, pady=1)
@@ -872,6 +925,7 @@ class MainGui(ttk.Frame):
                 entry = None
             self.wdgModules[name] = {
                 'frm': frm, 'chk': chk, 'ent': entry}
+        # self.wdgModules['dcm_subpath']['chk']['state'] = 'readonly'
         self.activateModules()
 
         spacer = ttk.Frame(self.frmRight)
@@ -897,11 +951,11 @@ class MainGui(ttk.Frame):
             elif info['dtype'] == str:
                 pass
 
-        # spacer = ttk.Frame(self.frmRight)
-        # spacer.pack(side=tk.TOP, padx=4, pady=4)
-        # self.frmSpacers.append(spacer)
-        # self.pbrRunning = ttk.Progressbar(self.frmRight)
-        # self.pbrRunning.pack(side=tk.TOP, fill=tk.X, expand=True)
+        spacer = ttk.Frame(self.frmRight)
+        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        self.frmSpacers.append(spacer)
+        self.pbrRunning = ttk.Progressbar(self.frmRight)
+        self.pbrRunning.pack(side=tk.TOP, fill=tk.X, expand=True)
 
         spacer = ttk.Frame(self.frmRight)
         spacer.pack(side=tk.TOP, padx=4, pady=4)
@@ -1009,6 +1063,13 @@ class MainGui(ttk.Frame):
 
     def actionRun(self, event=None):
         """Action on Click Button Run."""
+
+        def _name_to_tag(text):
+            for ending in ('_subpath', '_template'):
+                if text.endswith(ending):
+                    text = text[:-len(ending)]
+            return text
+
         # TODO: redirect stdout to some log box / use progressbar
         # extract options
         force = self.wdgOptions['force']['chk'].get_val()
@@ -1018,30 +1079,31 @@ class MainGui(ttk.Frame):
         if self.cfg['use_mp']:
             # parallel
             pool = multiprocessing.Pool(processes=self.cfg['num_processes'])
-            proc_result_list = []
-        for in_dirpath in self.lsvInput.get_items():
+            proc_results = []
+        in_dirpaths = self.lsvInput.get_items()
+        for in_dirpath in in_dirpaths:
             kws = {
                 name: info['ent'].get_val()
                 for name, info in self.wdgModules.items()}
+            triggered = collections.OrderedDict(
+                [(_name_to_tag(name), ACTIONS[_name_to_tag(name)])
+                 for name, info in self.wdgModules.items()
+                 if info['chk'].get_val() and _name_to_tag(name) in ACTIONS])
             kws.update({
                 'in_dirpath': in_dirpath,
                 'out_dirpath': os.path.expanduser(self.entPath.get()),
                 'subpath': self.entSubpath.get(),
+                'actions': triggered,
                 'force': force,
                 'verbose': verbose,
             })
-            # print(kws)
             if self.cfg['use_mp']:
-                proc_result = pool.apply_async(
-                    dcmpi_run, kwds=kws)
-                proc_result_list.append(proc_result)
+                proc_results.append(pool.apply_async(dcmpi_run, kwds=kws))
             else:
                 dcmpi_run(**kws)
-        # print(proc_result_list)
+        # print(proc_results)
         if self.cfg['use_mp']:
-            res_list = []
-            for proc_result in proc_result_list:
-                res_list.append(proc_result.get())
+            res_list = [proc_result.get() for proc_result in proc_results]
         return
 
     def actionImport(self, event=None):
@@ -1094,6 +1156,12 @@ class MainGui(ttk.Frame):
         target = filedialog.askdirectory(
             parent=self, title=title, initialdir=self.cfg['add_path'],
             mustexist=True)
+        # : adding multiple files
+        # if target:
+        #     for subdir in os.listdir(target):
+        #         tmp = os.path.join(target, subdir)
+        #         self.lsvInput.add_item(tmp, unique=True)
+        #     self.cfg['add_path'] = target
         if target:
             self.lsvInput.add_item(target, unique=True)
             self.cfg['add_path'] = target
@@ -1170,6 +1238,7 @@ class MainGui(ttk.Frame):
 def dcmpi_run_gui(*args, **kwargs):
     root = tk.Tk()
     app = MainGui(root, *args, **kwargs)
+    set_icon(root, 'icon')
     root.mainloop()
 
 
@@ -1180,11 +1249,11 @@ def dcmpi_run_tui(*args, **kwargs):
     except ImportError:
         asciimatics = None
     # check if asciimatics is available
-    if not asciimatics:
-        warnings.warn('Text UI not supported. Using command-line interface...')
-        dcmpi_run_cli(**kwargs)
-    else:
-        pass
+    # if not asciimatics:
+    warnings.warn('Text UI not supported. Using command-line interface...')
+    dcmpi_run_cli(**kwargs)
+    # else:
+    #     pass
 
 
 # ======================================================================
@@ -1239,8 +1308,8 @@ def handle_arg():
         default=utl.TPL['acquire'],
         help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
-        '-n', '--nii_subpath',
-        default=utl.ID['nifti'],
+        '-n', '--niz_subpath',
+        default=utl.ID['niz'],
         help='Sub-path for NIfTI extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-m', '--meta_subpath',

@@ -162,8 +162,7 @@ def get_info(
                 out_filepath = os.path.join(
                     out_dirpath, group_id + '.' + utl.ID['info'])
                 out_filepath += ('.' + utl.EXT['json']) if type_ext else ''
-                info = {}
-                info['_series'] = group
+                info = {'_series': group}
                 in_filepath = sorted(
                     sources[groups[group_id][0]])[-1]
                 try:

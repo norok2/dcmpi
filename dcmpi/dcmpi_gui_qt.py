@@ -56,12 +56,12 @@ class Main(QtGui.QWidget):
         self.actions = [
             ('do_acquire_sources', 'Import Sources', True, None),
             ('do_sorting', 'Sort DICOM', True, None),
-            ('get_nifti', 'Get NIfTI images', True, utl.ID['nifti']),
+            ('get_nifti', 'Get NIfTI images', True, utl.ID['niz']),
             ('get_meta', 'Get metadata', True, utl.ID['meta']),
             ('get_prot', 'Get protocol', True, utl.ID['prot']),
             ('get_info', 'Get information', True, utl.ID['info']),
-            ('get_report', 'Create Report', True, utl.ID['get_report']),
-            ('get_backup', 'Backup DICOM Sources', True, utl.ID['get_backup']),
+            ('do_report', 'Create Report', True, utl.ID['do_report']),
+            ('do_backup', 'Backup DICOM Sources', True, utl.ID['do_backup']),
         ]
         self.options = [
             ('Force', bool, False, None),
@@ -289,7 +289,7 @@ class Main(QtGui.QWidget):
                         utl.D_ACTIONS)
                     if c.isChecked()]
                 for action, subdir in actions:
-                    if action[0] == 'get_report':
+                    if action[0] == 'do_report':
                         i_dirpath = os.path.join(
                             base_dirpath, self.actions[5][3])
                     else:

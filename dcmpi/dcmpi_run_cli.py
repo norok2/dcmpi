@@ -58,8 +58,8 @@ from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
-from dcmpi.do_backup import get_backup
-from dcmpi.get_report import get_report
+from dcmpi.do_backup import do_backup
+from dcmpi.do_report import do_report
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
@@ -72,8 +72,8 @@ ACTIONS = {
 #     (get_nifti, ),
 #     (get_meta, ),
 #     (get_prot, ),
-#     (get_report, ),
-#     (get_backup, ),
+#     (do_report, ),
+#     (do_backup, ),
 # )
 
 # ======================================================================
@@ -82,7 +82,7 @@ def process(
         out_dirpath,
         subpath=utl.TPL['acquire'],
         import_subpath=utl.ID['dicom'],
-        niz_subpath=utl.ID['nifti'],
+        niz_subpath=utl.ID['niz'],
         meta_subpath=utl.ID['meta'],
         prot_subpath=utl.ID['prot'],
         info_subpath=utl.ID['info'],
@@ -97,7 +97,7 @@ def process(
         in_dirpath (str|unicode): Path to input directory.
         out_dirpath (str|unicode): Path to output directory.
         subpath ():
-        nii_subpath ():
+        niz_subpath ():
         meta_subpath ():
         prot_subpath ():
         info_subpath ():
@@ -125,7 +125,7 @@ def process(
         # actions = [(a, d) for a, d in zip(utl.D_ACTIONS, subdirs)
         #            if d.strip()]
         # for action, subdir in actions:
-        #     i_dirpath = dcm_dirpath if action[0] != 'get_report' else \
+        #     i_dirpath = dcm_dirpath if action[0] != 'do_report' else \
         #         os.path.join(base_dirpath, info_subpath)
         #     o_dirpath = os.path.join(base_dirpath, subdir)
         #     if verbose >= VERB_LVL['debug']:
@@ -181,8 +181,8 @@ def handle_arg():
         default=utl.TPL['acquire'],
         help='Append DICOM-generated subpath to output [%(default)s]')
     arg_parser.add_argument(
-        '-n', '--nii_subpath',
-        default=utl.ID['nifti'],
+        '-n', '--niz_subpath',
+        default=utl.ID['niz'],
         help='Sub-path for NIfTI extraction. Empty to skip [%(default)s]')
     arg_parser.add_argument(
         '-m', '--meta_subpath',
@@ -224,7 +224,7 @@ def main():
 
     dcmpi_cli(
         args.in_dirpath, args.out_dirpath, args.subpath,
-        args.nii_subpath, args.meta_subpath, args.prot_subpath, args.info_subpath,
+        args.niz_subpath, args.meta_subpath, args.prot_subpath, args.info_subpath,
         args.report_subpath, args.backup_subpath,
         args.force, args.verbose)
 
