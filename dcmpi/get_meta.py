@@ -66,7 +66,7 @@ from dcmpi import msg, dbg
 def get_meta(
         in_dirpath,
         out_dirpath,
-        method='isis',
+        method='pydicom',
         type_ext=False,
         force=False,
         verbose=D_VERB_LVL):
@@ -107,23 +107,7 @@ def get_meta(
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
 
-        if method == 'isis':
-            for src_id, in_filepath_list in sorted(sources_dict.items()):
-                in_filepath = os.path.join(in_dirpath, src_id)
-                out_filepath = os.path.join(
-                    out_dirpath, src_id + '.' + utl.ID['meta'])
-                out_filepath += ('.' + utl.EXT['txt']) if type_ext else ''
-                msg('Metadata: {}'.format(out_filepath[len(out_dirpath):]))
-                opts = ' -np'  # do not include progress bar
-                opts += ' -rdialect withExtProtocols'  # extended prot info
-                opts += ' -chunks'  # information from each chunk
-                # cmd = 'isisdump -in {} {}'.format(in_filepath, opts)
-                # ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-                cmd = 'isisdump -in {} {} > {} &> {}'.format(
-                    in_filepath, opts, out_filepath, out_filepath)
-                utl.execute(cmd, mode='call', verbose=verbose)
-
-        elif method == 'pydicom':
+        if method == 'pydicom':
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 out_filepath = os.path.join(
                     out_dirpath, src_id + '.' + utl.ID['meta'])
@@ -140,6 +124,22 @@ def get_meta(
                 msg('Meta: {}'.format(out_filepath[len(out_dirpath):]))
                 with open(out_filepath, 'w') as info_file:
                     json.dump(info_dict, info_file, sort_keys=True, indent=4)
+
+        elif method == 'isis':
+            for src_id, in_filepath_list in sorted(sources_dict.items()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+                out_filepath = os.path.join(
+                    out_dirpath, src_id + '.' + utl.ID['meta'])
+                out_filepath += ('.' + utl.EXT['txt']) if type_ext else ''
+                msg('Metadata: {}'.format(out_filepath[len(out_dirpath):]))
+                opts = ' -np'  # do not include progress bar
+                opts += ' -rdialect withExtProtocols'  # extended prot info
+                opts += ' -chunks'  # information from each chunk
+                # cmd = 'isisdump -in {} {}'.format(in_filepath, opts)
+                # ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+                cmd = 'isisdump -in {} {} > {} &> {}'.format(
+                    in_filepath, opts, out_filepath, out_filepath)
+                utl.execute(cmd, mode='call', verbose=verbose)
 
         elif method == 'dcm_dump':
             # TODO: implement meaningful super-robust string method.

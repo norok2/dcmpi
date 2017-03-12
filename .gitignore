@@ -1,7 +1,7 @@
 # =====================================================================
 # :: Tools
 # PyCharm
-.idea
+.idea/
 # create changelog from git
 # (being a dump of git commits, does not need to be tracked)
 CHANGELOG.*
@@ -111,3 +111,4 @@ target/
 *.xbm
 
 _version.py
+tests/

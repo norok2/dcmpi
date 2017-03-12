@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Create a do_report of the acquisitions from imaged data.
+Create a report of the acquisitions from imaged data.
 """
 
 #    Copyright (C) 2015 Riccardo Metere <metere@cbs.mpg.de>
@@ -66,11 +66,6 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# import mri_tools.modules.base as mrb
-# import mri_tools.modules.utils as mru
-# import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
-# from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
 from dcmpi import INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
@@ -236,7 +231,7 @@ def do_report(
     None.
 
     """
-    msg(':: Creating HTML and PDF do_report...')
+    msg(':: Creating HTML and PDF report...')
     msg('Input:  {}'.format(in_dirpath))
     msg('Output: {}'.format(out_dirpath))
 
@@ -253,7 +248,7 @@ def do_report(
             os.makedirs(out_dirpath)
 
         # :: create temporary info data
-        from get_info import get_info
+        from dcmpi.get_info import get_info
         info_dirpath = os.path.join(os.path.dirname(in_dirpath), utl.ID['info'])
         get_info(in_dirpath, info_dirpath, method, force=force, verbose=verbose)
 
@@ -280,11 +275,11 @@ def do_report(
         else:
             msg('W: Unknown method `{}`.'.format(method))
 
-        # :: create do_report
+        # :: create report
         tpl_dirpath = os.path.join(
             os.path.dirname(__file__), 'report_templates')
         if summary and acquisitions and os.path.isdir(tpl_dirpath):
-            # :: always create HTML do_report
+            # :: always create HTML report
             # import templates
             template = {
                 'report': 'report_template.html',

@@ -1157,14 +1157,14 @@ class MainGui(ttk.Frame):
             parent=self, title=title, initialdir=self.cfg['add_path'],
             mustexist=True)
         # : adding multiple files
-        # if target:
-        #     for subdir in os.listdir(target):
-        #         tmp = os.path.join(target, subdir)
-        #         self.lsvInput.add_item(tmp, unique=True)
-        #     self.cfg['add_path'] = target
         if target:
-            self.lsvInput.add_item(target, unique=True)
+            for subdir in os.listdir(target):
+                tmp = os.path.join(target, subdir)
+                self.lsvInput.add_item(tmp, unique=True)
             self.cfg['add_path'] = target
+        # if target:
+        #     self.lsvInput.add_item(target, unique=True)
+        #     self.cfg['add_path'] = target
         return target
 
     def actionRemove(self, event=None):
