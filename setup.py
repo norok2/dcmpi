@@ -139,15 +139,12 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['pydicom'],
+    install_requires=['appdirs', 'pydicom', 'pytk', 'blessed'],
 
     setup_requires=['setuptools', 'setuptools_scm'],
 
     extras_require={
-        # 'pymrt': 'pymrt',
-        'pyside': 'PySide',
-        'blessed': 'blessed',
-        'appdirs': 'appdirs',
+        'blessings': 'blessings',
     },
 
     package_data={

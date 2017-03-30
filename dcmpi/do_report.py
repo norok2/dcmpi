@@ -67,7 +67,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: Local Imports
 import dcmpi.utils as utl
-from dcmpi import INFO
+from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
@@ -252,7 +252,7 @@ def do_report(
         info_dirpath = os.path.join(os.path.dirname(in_dirpath), utl.ID['info'])
         get_info(in_dirpath, info_dirpath, method, force=force, verbose=verbose)
 
-        # :: import information
+        # :: get information
         summary, extra = {}, {}
         acquisitions = []
         if method == 'pydicom':

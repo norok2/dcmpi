@@ -71,7 +71,7 @@ import dicom  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-# from dcmpi import INFO
+# from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
@@ -185,32 +185,107 @@ def has_term(ui_mode):
 
 
 # ======================================================================
-def has_decorator(text, pre_decor='"', post_decor='"'):
+def has_decorator(
+        text,
+        pre_decor='"',
+        post_decor='"'):
     """
     Determine if a string is delimited by some characters (decorators).
+
+    Args:
+        text (str): The text input string.
+        pre_decor (str): initial string decorator.
+        post_decor (str): final string decorator.
+
+    Returns:
+        has_decorator (bool): True if text is delimited by the specified chars.
+
+    Examples:
+        >>> has_decorator('"test"')
+        True
+        >>> has_decorator('"test')
+        False
+        >>> has_decorator('<test>', '<', '>')
+        True
     """
     return text.startswith(pre_decor) and text.endswith(post_decor)
 
 
 # ======================================================================
-def auto_convert(val_str, pre_decor=None, post_decor=None):
+def strip_decorator(
+        text,
+        pre_decor='"',
+        post_decor='"'):
     """
-    Convert value to numeric if possible, or strip delimiters from strings.
+    Strip initial and final character sequences (decorators) from a string.
+
+    Args:
+        text (str): The text input string.
+        pre_decor (str): initial string decorator.
+        post_decor (str): final string decorator.
+
+    Returns:
+        text (str): the text without the specified decorators.
+
+    Examples:
+        >>> strip_decorator('"test"')
+        'test'
+        >>> strip_decorator('"test')
+        'test'
+        >>> strip_decorator('<test>', '<', '>')
+        'test'
     """
-    if pre_decor and post_decor and \
-            has_decorator(val_str, pre_decor, post_decor):
-        val = val_str[len(pre_decor):-len(post_decor)]
-    else:
+    begin = len(pre_decor) if text.startswith(pre_decor) else None
+    end = -len(post_decor) if text.endswith(post_decor) else None
+    return text[begin:end]
+
+
+# ======================================================================
+def auto_convert(
+        text,
+        pre_decor=None,
+        post_decor=None):
+    """
+    Convert value to numeric if possible, or strip delimiters from string.
+
+    Args:
+        text (str|int|float|complex): The text input string.
+        pre_decor (str): initial string decorator.
+        post_decor (str): final string decorator.
+
+    Returns:
+        val (int|float|complex): The numeric value of the string.
+
+    Examples:
+        >>> auto_convert('<100>', '<', '>')
+        100
+        >>> auto_convert('<100.0>', '<', '>')
+        100.0
+        >>> auto_convert('100.0+50j')
+        (100+50j)
+        >>> auto_convert('1e3')
+        1000.0
+        >>> auto_convert(1000)
+        1000
+        >>> auto_convert(1000.0)
+        1000.0
+    """
+    if isinstance(text, str):
+        if pre_decor and post_decor and \
+                has_decorator(text, pre_decor, post_decor):
+            text = strip_decorator(text, pre_decor, post_decor)
         try:
-            val = int(val_str)
-        except ValueError:
+            val = int(text)
+        except (TypeError, ValueError):
             try:
-                val = float(val_str)
-            except ValueError:
+                val = float(text)
+            except (TypeError, ValueError):
                 try:
-                    val = complex(val_str)
-                except ValueError:
-                    val = val_str
+                    val = complex(text)
+                except (TypeError, ValueError):
+                    val = text
+    else:
+        val = text
     return val
 
 
@@ -842,9 +917,9 @@ def dcm_dump(
         try:
             val = field.value
             if isinstance(val, str):
-                val = filter(lambda x: x in string.printable, val)
+                val = ''.join(s for s in val if s in string.printable)
                 # val = val.encode('string-escape')
-            json.dumps(val)
+            val = json.dumps(val)
         except:
             val = []
             for item in field.value:

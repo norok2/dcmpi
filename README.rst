@@ -1,6 +1,9 @@
-====================================
-dcmpi: DICOM Preprocessing Interface
-====================================
+=====================================
+DCMPI - DICOM Preprocessing Interface
+=====================================
+
+**DCMPI** - **D**I**C**O**M** **P**reprocessing **I**nterface:
+explore/distill DICOM data.
 
 This software implements an automated information extraction tool from DICOM
 files containing MRI acquisitions. It is specifically targeted at the output

@@ -63,15 +63,11 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import scipy.integrate  # SciPy: Integrations facilities
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
+import dicom2nifti
 
 # :: Local Imports
-# import mri_tools.modules.base as mrb
-# import mri_tools.modules.utils as mru
-# import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
-# from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
-from dcmpi import INFO
+from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
@@ -180,8 +176,11 @@ def get_nifti(
                         os.rename(old_filepath, out_filepath)
 
         elif method == 'dicom2nifti':
-            # todo: implement
-            msg('W: method `{}` not supported yet.'.format(method))
+            for src_id in sorted(sources_dict.keys()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+                out_filepath = os.path.join(out_dirpath, src_id + d_ext)
+                dicom2nifti.dicom_series_to_nifti(
+                in_filepath, out_filepath, reorient_nifti=True)
 
         else:
             msg('W: Unknown method `{}`.'.format(method))

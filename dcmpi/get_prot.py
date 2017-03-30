@@ -55,7 +55,7 @@ import dicom  # PyDicom (Read, modify and write DICOM files.)
 # :: Local Imports
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
-from dcmpi import INFO
+from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 

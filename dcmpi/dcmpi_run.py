@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-DCMPI: Extract and preprocess DICOM files.
+DCMPI: DICOM preprocessing.
 """
 
 # ======================================================================
@@ -21,27 +21,24 @@ import multiprocessing  # Process-based parallelism
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 import warnings  # Warning control
 
-# Python interface to Tcl/Tk
-try:
-    import tkinter as tk
-    import tkinter.ttk as ttk
-    import tkinter.messagebox as messagebox
-    import tkinter.filedialog as filedialog
-    import tkinter.simpledialog as simpledialog
-except ImportError:
-    import Tkinter as tk
-    import ttk
-    import tkMessageBox as messagebox
-    import tkFileDialog as filedialog
-    import tkSimpleDialog as simpledialog
 
 # :: External Imports
 
 # :: External Imports Submodules
 
+# from pytk import tk
+# from pytk import ttk
+from pytk import messagebox
+from pytk import filedialog
+from pytk import simpledialog
+
+import pytk.utils
+import pytk.widgets
+
 # :: Local Imports
+import dcmpi
 import dcmpi.utils as utl
-from dcmpi import INFO
+from dcmpi import DIRS, INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
@@ -228,430 +225,52 @@ def dcmpi_run(
             for key, val in kws.items():
                 if isinstance(val, str):
                     kws[key] = val.format_map(locals())
+            kws.update(dict(force=force, verbose=verbose))
             func(**kws)
 
         msg('Done: {}'.format(dcm_dirpath))
 
 
 # ======================================================================
-def get_curr_screen_geometry():
-    """
-    Workaround to get the size of the current screen in a multi-screen setup.
-
-    Returns:
-        geometry (str): The standard Tk geometry string.
-            [width]x[height]+[left]+[top]
-    """
-    temp = tk.Tk()
-    temp.update()
-    temp.attributes('-fullscreen', True)
-    temp.state('iconic')
-    geometry = temp.winfo_geometry()
-    temp.destroy()
-    return geometry
-
-
-# ======================================================================
-def set_icon(
-        root,
-        basename,
-        dirpath=os.path.abspath(os.path.dirname(__file__))):
-    basepath = os.path.join(dirpath, basename) if dirpath else basename
-
-    # first try modern file formats
-    for file_ext in ['png', 'gif']:
-        if not basepath.endswith('.' + file_ext):
-            filepath = basepath + '.' + file_ext
-        else:
-            filepath = basepath
-        try:
-            icon = tk.PhotoImage(file=filepath)
-            root.tk.call('wm', 'iconphoto', root._w, icon)
-        except tk.TclError:
-            msg('E: Could not use `{}` as icon.'.format(filepath))
-        else:
-            return
-
-    # fall back to ico/xbm format
-    tk_sys = root.tk.call('tk', 'windowingsystem')
-    if tk_sys.startswith('win'):
-        filepath = basename + '.ico'
-    else:  # if tk_sys == 'x11':
-        filepath = '@' + basename + '.xbm'
-    try:
-        root.iconbitmap(filepath)
-    except tk.TclError:
-        msg('E: Could not use `{}` as icon.'.format(filepath))
-    else:
-        return
-
-
-# ======================================================================
-def center(target, parent=None):
-    target.update_idletasks()
-    if parent is None:
-        parent_geom = Geometry(get_curr_screen_geometry())
-    else:
-        parent.update_idletasks()
-        parent_geom = Geometry(parent.winfo_geometry())
-    target_geom = Geometry(target.winfo_geometry()).set_to_center(parent_geom)
-    target.geometry(target_geom.as_str())
-
-
-# ======================================================================
-class Geometry():
-    def __init__(self, geometry_text=None):
-        """
-        Generate a geometry object from the standard Tk geometry string.
-
-        Args:
-            geometry_text (str): The standard Tk geometry string.
-                [width]x[height]+[left]+[top]
-
-        Returns:
-            None.
-        """
-        try:
-            tokens1 = geometry_text.split('+')
-            tokens2 = tokens1[0].split('x')
-            self.width = int(tokens2[0])
-            self.height = int(tokens2[1])
-            self.left = int(tokens1[1])
-            self.top = int(tokens1[2])
-        except:
-            self.width, self.height, self.left, self.top = 0, 0, 0, 0
-
-    def __repr__(self):
-        return self.as_str()
-
-    def as_dict(self):
-        return {
-            'w': self.width,
-            'h': self.height,
-            'l': self.left,
-            't': self.top}
-
-    def as_tuple(self):
-        return self.width, self.height, self.left, self.top
-
-    def as_str(self):
-        return '{w:d}x{h:d}+{l:d}+{t:d}'.format(**self.as_dict())
-
-    def set_to_center(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-    def set_to_origin(self):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = 0
-        self.top = 0
-        return self
-
-    def set_to_top_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_top(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_top_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-    def set_to_bottom_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_bottom(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_bottom_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-
-# ======================================================================
-class Entry(ttk.Entry):
-    def __init__(self, *args, **kwargs):
-        ttk.Entry.__init__(self, *args, **kwargs)
-
-    def get_val(self):
-        return self.get()
-
-    def set_val(self, val=''):
-        try:
-            if val is not None:
-                val = str(val)
-            else:
-                raise ValueError
-        except ValueError:
-            val = ''
-        state = self['state']
-        self['state'] = 'enabled'
-        self.delete(0, tk.END)
-        self.insert(0, val)
-        self['state'] = state
-
-
-# ======================================================================
-class Checkbutton(ttk.Checkbutton):
-    def __init__(self, *args, **kwargs):
-        ttk.Checkbutton.__init__(self, *args, **kwargs)
-
-    def get_val(self):
-        return 'selected' in self.state()
-
-    def set_val(self, val=True):
-        # if (val and not self.get_val()) or (not val and self.get_val()):
-        if bool(val) ^ bool(self.get_val()):  # bitwise xor
-            self.toggle()
-
-    def toggle(self):
-        self.invoke()
-
-
-# ======================================================================
-class Spinbox(tk.Spinbox):
-    def __init__(self, *args, **kwargs):
-        if 'start' in kwargs:
-            kwargs['from_'] = kwargs.pop('start')
-        if 'stop' in kwargs:
-            kwargs['to'] = kwargs.pop('stop')
-        if 'step' in kwargs:
-            kwargs['increment'] = kwargs.pop('step')
-        tk.Spinbox.__init__(self, *args, **kwargs)
-        self.values = kwargs['values'] if 'values' in kwargs else None
-        self.start = kwargs['from_'] if 'from_' in kwargs else None
-        self.stop = kwargs['to'] if 'to' in kwargs else None
-        self.step = kwargs['increment'] if 'increment' in kwargs else None
-        self.bind('<MouseWheel>', self.mouseWheel)
-        self.bind('<Button-4>', self.mouseWheel)
-        self.bind('<Button-5>', self.mouseWheel)
-        self.sys_events = {
-            'scroll_up': {'unix': 4, 'win': +120},
-            'scroll_down': {'unix': 5, 'win': -120}}
-
-    def mouseWheel(self, event):
-        scroll_up = (
-            event.num == self.sys_events['scroll_up']['unix'] or
-            event.delta == self.sys_events['scroll_up']['win'])
-        scroll_down = (
-            event.num == self.sys_events['scroll_down']['unix'] or
-            event.delta == self.sys_events['scroll_down']['win'])
-        if scroll_up:
-            self.invoke('buttonup')
-        elif scroll_down:
-            self.invoke('buttondown')
-
-    def is_valid(self, val=''):
-        if self.values:
-            result = self.get_val() in self.values
-        else:
-            result = self.start <= self.get_val() <= self.stop
-        return result
-
-    def get_val(self):
-        return utl.auto_convert(self.get())
-
-    def set_val(self, val=''):
-        if self.is_valid(val):
-            state = self['state']
-            self['state'] = 'normal'
-            self.delete(0, tk.END)
-            self.insert(0, val)
-            self['state'] = state
-        else:
-            raise ValueError('Spinbox: value `{}` not allowed.'.format(val))
-
-
-# ======================================================================
-class Listbox(ttk.Combobox):
-    def __init__(self, *args, **kwargs):
-        ttk.Combobox.__init__(self, *args, **kwargs)
-        self['state'] = 'readonly'
-
-    def get_values(self):
-        return self.configure('values')[-1]
-
-    def get_val(self):
-        return self.get()
-
-    def set_val(self, val=''):
-        self.set(val)
-
-
-# ======================================================================
-class Listview(ttk.Treeview):
-    def __init__(self, *args, **kwargs):
-        ttk.Treeview.__init__(self, *args, **kwargs)
-
-    def get_items(self):
-        return [self.item(child, 'text') for child in self.get_children('')]
-
-    def add_item(self, item, unique=False):
-        items = self.get_items()
-        if not unique or unique and item not in items:
-            self.insert('', tk.END, text=item)
-
-    def del_item(self, item):
-        for child in self.get_children(''):
-            if self.item(child, 'text') == item:
-                self.delete(child)
-
-    def clear(self):
-        for child in self.get_children(''):
-            self.delete(child)
-
-
-# ======================================================================
-class About(tk.Toplevel):
+class About(pytk.Window):
     def __init__(self, parent):
-        self.win = tk.Toplevel.__init__(self, parent)
+        self.win = pytk.Window.__init__(self, parent)
         self.transient(parent)
         self.parent = parent
         self.title('About {}'.format(INFO['name']))
         self.resizable(False, False)
-        self.frm = ttk.Frame(self)
-        self.frm.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frm)
-        self.frmMain.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
+        self.frm = pytk.widgets.Frame(self)
+        self.frm.pack(fill='both', expand=True)
+        self.frmMain = pytk.widgets.Frame(self.frm)
+        self.frmMain.pack(fill='both', padx=1, pady=1, expand=True)
 
         about_txt = '\n'.join((
             MY_GREETINGS[1:],
-            'DCMPI: DICOM Preprocess Interface',
-            __doc__,
+            dcmpi.__doc__,
             '{} - ver. {}\n{} {}\n{}'.format(
                 INFO['name'], INFO['version'],
                 INFO['copyright'], INFO['author'], INFO['notice'])
         ))
         msg(about_txt)
-        self.lblInfo = ttk.Label(
-            self.frmMain, text=about_txt, anchor=tk.CENTER,
+        self.lblInfo = pytk.widgets.Label(
+            self.frmMain, text=about_txt, anchor='center',
             background='#333', foreground='#ccc', font='TkFixedFont')
         self.lblInfo.pack(padx=8, pady=8, ipadx=8, ipady=8)
 
-        self.btnClose = ttk.Button(
+        self.btnClose = pytk.widgets.Button(
             self.frmMain, text='Close', command=self.destroy)
-        self.btnClose.pack(side=tk.BOTTOM, padx=8, pady=8)
+        self.btnClose.pack(side='bottom', padx=8, pady=8)
         self.bind('<Return>', self.destroy)
         self.bind('<Escape>', self.destroy)
 
-        center(self, self.parent)
+        pytk.utils.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
 
 
 # ======================================================================
-class Settings(tk.Toplevel):
+class Settings(pytk.Window):
     def __init__(self, parent, app):
         self.settings = collections.OrderedDict((
             ('use_mp', {'label': 'Use parallel processing', 'dtype': bool, }),
@@ -670,67 +289,67 @@ class Settings(tk.Toplevel):
             self.settings[name]['default'] = app.cfg[name]
         self.result = None
 
-        self.win = tk.Toplevel.__init__(self, parent)
+        self.win = pytk.Window.__init__(self, parent)
         self.transient(parent)
         self.parent = parent
         self.app = app
         self.title('{} Advanced Settings'.format(INFO['name']))
-        self.frm = ttk.Frame(self)
-        self.frm.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frm)
-        self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
+        self.frm = pytk.widgets.Frame(self)
+        self.frm.pack(fill='both', expand=True)
+        self.frmMain = pytk.widgets.Frame(self.frm)
+        self.frmMain.pack(fill='both', padx=8, pady=8, expand=True)
 
         self.frmSpacers = []
 
         self.wdgOptions = {}
         for name, info in self.settings.items():
             if info['dtype'] == bool:
-                chk = Checkbutton(self.frmMain, text=info['label'])
-                chk.pack(fill=tk.X, padx=1, pady=1)
+                chk = pytk.widgets.Checkbox(self.frmMain, text=info['label'])
+                chk.pack(fill='x', padx=1, pady=1)
                 chk.set_val(info['default'])
                 self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frm = ttk.Frame(self.frmMain)
-                frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
-                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                spb = Spinbox(frm, **info['values'])
+                frm = pytk.widgets.Frame(self.frmMain)
+                frm.pack(fill='x', padx=1, pady=1)
+                lbl = pytk.widgets.Label(frm, text=info['label'])
+                lbl.pack(side='left', fill='x', padx=1, pady=1, expand=True)
+                spb = pytk.widgets.Spinbox(frm, **info['values'])
                 spb.set_val(info['default'])
                 spb.pack(
-                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                    side='left', fill='x', anchor='w', padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
             elif info['dtype'] == tuple:
-                frm = ttk.Frame(self.frmMain)
-                frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
-                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                lst = Listbox(frm, values=info['values'])
+                frm = pytk.widgets.Frame(self.frmMain)
+                frm.pack(fill='x', padx=1, pady=1)
+                lbl = pytk.widgets.Label(frm, text=info['label'])
+                lbl.pack(side='left', fill='x', padx=1, pady=1, expand=True)
+                lst = pytk.widgets.Listbox(frm, values=info['values'])
                 lst.set_val(info['default'])
                 lst.pack(
-                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                    side='left', fill='x', anchor='w', padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'lst': lst}
 
-        self.frmButtons = ttk.Frame(self.frmMain)
-        self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmButtons)
-        spacer.pack(side=tk.LEFT, anchor='e', expand=True)
+        self.frmButtons = pytk.widgets.Frame(self.frmMain)
+        self.frmButtons.pack(side='bottom', padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmButtons)
+        spacer.pack(side='left', anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnOK = ttk.Button(
-            self.frmButtons, text='OK', compound=tk.LEFT,
+        self.btnOK = pytk.widgets.Button(
+            self.frmButtons, text='OK', compound='left',
             command=self.ok)
-        self.btnOK.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnReset = ttk.Button(
-            self.frmButtons, text='Reset', compound=tk.LEFT,
+        self.btnOK.pack(side='left', padx=4, pady=4)
+        self.btnReset = pytk.widgets.Button(
+            self.frmButtons, text='Reset', compound='left',
             command=self.reset)
-        self.btnReset.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnCancel = ttk.Button(
-            self.frmButtons, text='Cancel', compound=tk.LEFT,
+        self.btnReset.pack(side='left', padx=4, pady=4)
+        self.btnCancel = pytk.widgets.Button(
+            self.frmButtons, text='Cancel', compound='left',
             command=self.cancel)
-        self.btnCancel.pack(side=tk.LEFT, padx=4, pady=4)
+        self.btnCancel.pack(side='left', padx=4, pady=4)
         self.bind('<Return>', self.ok)
         self.bind('<Escape>', self.cancel)
 
-        center(self, self.parent)
+        pytk.utils.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -777,7 +396,7 @@ class Settings(tk.Toplevel):
 
 
 # ======================================================================
-class MainGui(ttk.Frame):
+class Main(pytk.widgets.Frame):
     def __init__(self, parent, args):
         # get_val config data
         cfg = {}
@@ -815,112 +434,113 @@ class MainGui(ttk.Frame):
         ))
 
         # :: initialization of the UI
-        ttk.Frame.__init__(self, parent)
+        pytk.widgets.Frame.__init__(self, parent)
         self.parent = parent
         self.parent.title('DCMPI: DICOM Preprocessing Interface')
         self.parent.protocol('WM_DELETE_WINDOW', self.actionExit)
 
-        self.style = ttk.Style()
+        self.style = pytk.Style()
         # print(self.style.theme_names())
         self.style.theme_use(self.cfg['gui_style_tk'])
-        self.pack(fill=tk.BOTH, expand=True)
+        self.pack(fill='both', expand=True)
 
         self._make_menu()
 
         # :: define UI items
-        self.frmMain = ttk.Frame(self)
-        self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
+        self.frmMain = pytk.widgets.Frame(self)
+        self.frmMain.pack(fill='both', padx=8, pady=8, expand=True)
         self.frmSpacers = []
 
         # left frame
-        self.frmLeft = ttk.Frame(self.frmMain)
+        self.frmLeft = pytk.widgets.Frame(self.frmMain)
         self.frmLeft.pack(
-            side=tk.LEFT, fill=tk.BOTH, padx=4, pady=4, expand=True)
+            side='left', fill='both', padx=4, pady=4, expand=True)
 
-        self.frmInput = ttk.Frame(self.frmLeft)
+        self.frmInput = pytk.widgets.Frame(self.frmLeft)
         self.frmInput.pack(
-            side=tk.TOP, fill=tk.BOTH, padx=4, pady=4, expand=True)
-        self.lblInput = ttk.Label(self.frmInput, text='Input')
+            side='top', fill='both', padx=4, pady=4, expand=True)
+        self.lblInput = pytk.widgets.Label(self.frmInput, text='Input')
         self.lblInput.pack(padx=1, pady=1)
-        self.lsvInput = Listview(self.frmInput, show='tree', height=4)
+        self.lsvInput = pytk.widgets.Listview(
+            self.frmInput, show='tree', height=4)
         self.lsvInput.bind('<Double-Button-1>', self.actionAdd)
-        self.lsvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
-        self.btnImport = ttk.Button(
-            self.frmInput, text='Import', compound=tk.LEFT,
+        self.lsvInput.pack(fill='both', padx=1, pady=1, expand=True)
+        self.btnImport = pytk.widgets.Button(
+            self.frmInput, text='Import', compound='left',
             command=self.actionImport)
-        self.btnImport.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnExport = ttk.Button(
-            self.frmInput, text='Export', compound=tk.LEFT,
+        self.btnImport.pack(side='left', padx=4, pady=4)
+        self.btnExport = pytk.widgets.Button(
+            self.frmInput, text='Export', compound='left',
             command=self.actionExport)
-        self.btnExport.pack(side=tk.LEFT, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmInput)
-        spacer.pack(side=tk.LEFT, anchor='e', expand=True)
+        self.btnExport.pack(side='left', padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmInput)
+        spacer.pack(side='left', anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnAdd = ttk.Button(
-            self.frmInput, text='Add', compound=tk.LEFT,
+        self.btnAdd = pytk.widgets.Button(
+            self.frmInput, text='Add', compound='left',
             command=self.actionAdd)
-        self.btnAdd.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
-        self.btnRemove = ttk.Button(
-            self.frmInput, text='Remove', compound=tk.LEFT,
+        self.btnAdd.pack(side='left', anchor='e', padx=4, pady=4)
+        self.btnRemove = pytk.widgets.Button(
+            self.frmInput, text='Remove', compound='left',
             command=self.actionRemove)
-        self.btnRemove.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
-        self.btnClear = ttk.Button(
-            self.frmInput, text='Clear', compound=tk.LEFT,
+        self.btnRemove.pack(side='left', anchor='e', padx=4, pady=4)
+        self.btnClear = pytk.widgets.Button(
+            self.frmInput, text='Clear', compound='left',
             command=self.actionClear)
-        self.btnClear.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
+        self.btnClear.pack(side='left', anchor='e', padx=4, pady=4)
 
-        self.frmOutput = ttk.Frame(self.frmLeft)
-        self.frmOutput.pack(fill=tk.X, padx=4, pady=4)
-        self.lblOutput = ttk.Label(self.frmOutput, text='Output')
-        self.lblOutput.pack(side=tk.TOP, padx=1, pady=1)
+        self.frmOutput = pytk.widgets.Frame(self.frmLeft)
+        self.frmOutput.pack(fill='x', padx=4, pady=4)
+        self.lblOutput = pytk.widgets.Label(self.frmOutput, text='Output')
+        self.lblOutput.pack(side='top', padx=1, pady=1)
 
-        self.frmPath = ttk.Frame(self.frmOutput)
-        self.frmPath.pack(fill=tk.X, expand=True)
-        self.lblPath = ttk.Label(self.frmPath, text='Path', width=8)
-        self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entPath = Entry(self.frmPath)
-        self.entPath.insert(0, self.cfg['output_path'])
-        self.entPath.bind('<Double-Button>', self.actionPath)
-        self.entPath.pack(
-            side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+        self.frmPath = pytk.widgets.Frame(self.frmOutput)
+        self.frmPath.pack(fill='x', expand=True)
+        self.lblPath = pytk.widgets.Label(self.frmPath, text='Path', width=8)
+        self.lblPath.pack(side='left', fill='x', padx=1, pady=1)
+        self.txtPath = pytk.widgets.Text(self.frmPath)
+        self.txtPath.insert(0, self.cfg['output_path'])
+        self.txtPath.bind('<Double-Button>', self.actionPath)
+        self.txtPath.pack(
+            side='left', fill='x', padx=1, pady=1, expand=True)
 
-        self.frmSubpath = ttk.Frame(self.frmOutput)
-        self.frmSubpath.pack(fill=tk.X, expand=True)
-        self.lblSubpath = ttk.Label(self.frmSubpath, text='Sub-Path', width=8)
-        self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entSubpath = Entry(self.frmSubpath)
-        self.entSubpath.insert(0, self.cfg['output_subpath'])
-        self.entSubpath.pack(
-            side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+        self.frmSubpath = pytk.widgets.Frame(self.frmOutput)
+        self.frmSubpath.pack(fill='x', expand=True)
+        self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path', width=8)
+        self.lblSubpath.pack(side='left', fill='x', padx=1, pady=1)
+        self.txtSubpath = pytk.widgets.Text(self.frmSubpath)
+        self.txtSubpath.insert(0, self.cfg['output_subpath'])
+        self.txtSubpath.pack(
+            side='left', fill='x', padx=1, pady=1, expand=True)
 
         # right frame
-        self.frmRight = ttk.Frame(self.frmMain)
-        self.frmRight.pack(side=tk.RIGHT, fill=tk.BOTH, padx=4, pady=4)
+        self.frmRight = pytk.widgets.Frame(self.frmMain)
+        self.frmRight.pack(side='right', fill='both', padx=4, pady=4)
 
-        self.lblActions = ttk.Label(
+        self.lblActions = pytk.widgets.Label(
             self.frmRight, text='Sub-Paths and Templates')
         self.lblActions.pack(padx=1, pady=1)
         self.wdgModules = collections.OrderedDict()
         for name, info in self.modules.items():
-            frm = ttk.Frame(self.frmRight)
-            frm.pack(fill=tk.X, padx=1, pady=1)
+            frm = pytk.widgets.Frame(self.frmRight)
+            frm.pack(fill='x', padx=1, pady=1)
             if 'subpath' in name:
-                chk = Checkbutton(frm, text=info['label'])
+                chk = pytk.widgets.Checkbox(frm, text=info['label'])
                 chk.pack(
-                    side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
+                    side='left', fill='x', padx=1, pady=1, expand=True)
                 chk.config(command=self.activateModules)
-                entry = Entry(frm, width=8)
-                entry.pack(side=tk.RIGHT, fill=tk.X, padx=1, pady=1)
+                entry = pytk.widgets.Text(frm, width=8)
+                entry.pack(side='right', fill='x', padx=1, pady=1)
             elif 'template' in name:
-                chk = Checkbutton(frm, text=info['label'])
-                chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                chk = pytk.widgets.Checkbox(frm, text=info['label'])
+                chk.pack(fill='x', padx=1, pady=1, expand=True)
                 # chk.set_val(info['default'])
                 chk.config(command=self.activateModules)
-                entry = Entry(frm, width=24)
-                entry.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                entry = pytk.widgets.Text(frm, width=24)
+                entry.pack(fill='x', padx=1, pady=1, expand=True)
             else:
-                chk = Checkbutton(frm, text=info['label'])
-                chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
+                chk = pytk.widgets.Checkbox(frm, text=info['label'])
+                chk.pack(fill='x', padx=1, pady=1, expand=True)
                 chk.config(command=self.activateModules)
                 entry = None
             self.wdgModules[name] = {
@@ -928,53 +548,53 @@ class MainGui(ttk.Frame):
         # self.wdgModules['dcm_subpath']['chk']['state'] = 'readonly'
         self.activateModules()
 
-        spacer = ttk.Frame(self.frmRight)
-        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmRight)
+        spacer.pack(side='top', padx=4, pady=4)
         self.frmSpacers.append(spacer)
-        self.lblOptions = ttk.Label(self.frmRight, text='Options')
+        self.lblOptions = pytk.widgets.Label(self.frmRight, text='Options')
         self.lblOptions.pack(padx=1, pady=1)
         self.wdgOptions = {}
         for name, info in self.options.items():
             if info['dtype'] == bool:
-                chk = Checkbutton(self.frmRight, text=info['label'])
-                chk.pack(fill=tk.X, padx=1, pady=1)
+                chk = pytk.widgets.Checkbox(self.frmRight, text=info['label'])
+                chk.pack(fill='x', padx=1, pady=1)
                 self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frm = ttk.Frame(self.frmRight)
-                frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
-                lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spb = Spinbox(frm, **info['values'])
+                frm = pytk.widgets.Frame(self.frmRight)
+                frm.pack(fill='x', padx=1, pady=1)
+                lbl = pytk.widgets.Label(frm, text=info['label'])
+                lbl.pack(side='left', fill='x', padx=1, pady=1)
+                spb = pytk.widgets.Spinbox(frm, **info['values'])
                 spb.pack(
-                    side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
+                    side='left', fill='x', anchor='w', padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
             elif info['dtype'] == str:
                 pass
 
-        spacer = ttk.Frame(self.frmRight)
-        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmRight)
+        spacer.pack(side='top', padx=4, pady=4)
         self.frmSpacers.append(spacer)
-        self.pbrRunning = ttk.Progressbar(self.frmRight)
-        self.pbrRunning.pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.pbrRunning = pytk.widgets.Progressbar(self.frmRight)
+        self.pbrRunning.pack(side='top', fill='x', expand=True)
 
-        spacer = ttk.Frame(self.frmRight)
-        spacer.pack(side=tk.TOP, padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmRight)
+        spacer.pack(side='top', padx=4, pady=4)
         self.frmSpacers.append(spacer)
-        self.frmButtons = ttk.Frame(self.frmRight)
-        self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmButtons)
-        spacer.pack(side=tk.LEFT, anchor='e', expand=True)
+        self.frmButtons = pytk.widgets.Frame(self.frmRight)
+        self.frmButtons.pack(side='bottom', padx=4, pady=4)
+        spacer = pytk.widgets.Frame(self.frmButtons)
+        spacer.pack(side='left', anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnRun = ttk.Button(
-            self.frmButtons, text='Run', compound=tk.LEFT,
+        self.btnRun = pytk.widgets.Button(
+            self.frmButtons, text='Run', compound='left',
             command=self.actionRun)
-        self.btnRun.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnExit = ttk.Button(
-            self.frmButtons, text='Exit', compound=tk.LEFT,
+        self.btnRun.pack(side='left', padx=4, pady=4)
+        self.btnExit = pytk.widgets.Button(
+            self.frmButtons, text='Exit', compound='left',
             command=self.actionExit)
-        self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
+        self.btnExit.pack(side='left', padx=4, pady=4)
 
-        center(self.parent)
+        pytk.utils.center(self.parent)
 
         self._cfg_to_ui()
 
@@ -984,8 +604,8 @@ class MainGui(ttk.Frame):
         cfg = self.cfg
         cfg.update({
             'input_paths': self.lsvInput.get_items(),
-            'output_path': self.entPath.get(),
-            'output_subpath': self.entSubpath.get(),
+            'output_path': self.txtPath.get(),
+            'output_subpath': self.txtSubpath.get(),
             'save_on_exit': bool(self.save_on_exit.get()),
             'gui_style_tk': self.style.theme_use()
         })
@@ -1002,8 +622,8 @@ class MainGui(ttk.Frame):
         """Update the config information to the UI."""
         for target in self.cfg['input_paths']:
             self.lsvInput.add_item(target, unique=True)
-        self.entPath.set_val(self.cfg['output_path'])
-        self.entSubpath.set_val(self.cfg['output_subpath'])
+        self.txtPath.set_val(self.cfg['output_path'])
+        self.txtSubpath.set_val(self.cfg['output_subpath'])
         self.save_on_exit.set(self.cfg['save_on_exit'])
         self.style.theme_use(self.cfg['gui_style_tk'])
         for name, items in self.wdgModules.items():
@@ -1017,13 +637,14 @@ class MainGui(ttk.Frame):
         self.activateModules()
 
     def _make_menu(self):
-        self.save_on_exit = tk.BooleanVar(value=self.cfg['save_on_exit'])
+        self.save_on_exit = pytk.utils.tk.BooleanVar(
+            value=self.cfg['save_on_exit'])
 
-        self.mnuMain = tk.Menu(self.parent, tearoff=False)
+        self.mnuMain = pytk.widgets.Menu(self.parent, tearoff=False)
         self.parent.config(menu=self.mnuMain)
-        self.mnuFile = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuFile = pytk.widgets.Menu(self.mnuMain, tearoff=False)
         self.mnuMain.add_cascade(label='File', menu=self.mnuFile)
-        self.mnuFileInput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFileInput = pytk.widgets.Menu(self.mnuFile, tearoff=False)
         self.mnuFile.add_cascade(label='Input', menu=self.mnuFileInput)
         self.mnuFileInput.add_command(label='Add...', command=self.actionAdd)
         self.mnuFileInput.add_command(
@@ -1035,7 +656,7 @@ class MainGui(ttk.Frame):
             label='Import...', command=self.actionImport)
         self.mnuFileInput.add_command(
             label='Export...', command=self.actionExport)
-        self.mnuFileOutput = tk.Menu(self.mnuFile, tearoff=False)
+        self.mnuFileOutput = pytk.widgets.Menu(self.mnuFile, tearoff=False)
         self.mnuFile.add_cascade(label='Output', menu=self.mnuFileOutput)
         self.mnuFileOutput.add_command(
             label='Path...', command=self.actionPath)
@@ -1043,7 +664,7 @@ class MainGui(ttk.Frame):
         self.mnuFile.add_command(label='Run', command=self.actionRun)
         self.mnuFile.add_separator()
         self.mnuFile.add_command(label='Exit', command=self.actionExit)
-        self.mnuSettings = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuSettings = pytk.widgets.Menu(self.mnuMain, tearoff=False)
         self.mnuMain.add_cascade(label='Settings', menu=self.mnuSettings)
         self.mnuSettings.add_command(
             label='Advanced', command=self.actionAdvancedSettings)
@@ -1057,7 +678,7 @@ class MainGui(ttk.Frame):
             label='Save on Exit', variable=self.save_on_exit)
         self.mnuSettings.add_command(
             label='Reset Defaults', command=self.actionResetDefaults)
-        self.mnuHelp = tk.Menu(self.mnuMain, tearoff=False)
+        self.mnuHelp = pytk.widgets.Menu(self.mnuMain, tearoff=False)
         self.mnuMain.add_cascade(label='Help', menu=self.mnuHelp)
         self.mnuHelp.add_command(label='About', command=self.actionAbout)
 
@@ -1091,8 +712,8 @@ class MainGui(ttk.Frame):
                  if info['chk'].get_val() and _name_to_tag(name) in ACTIONS])
             kws.update({
                 'in_dirpath': in_dirpath,
-                'out_dirpath': os.path.expanduser(self.entPath.get()),
-                'subpath': self.entSubpath.get(),
+                'out_dirpath': os.path.expanduser(self.txtPath.get()),
+                'subpath': self.txtSubpath.get(),
                 'actions': triggered,
                 'force': force,
                 'verbose': verbose,
@@ -1156,15 +777,14 @@ class MainGui(ttk.Frame):
         target = filedialog.askdirectory(
             parent=self, title=title, initialdir=self.cfg['add_path'],
             mustexist=True)
-        # : adding multiple files
         if target:
-            for subdir in os.listdir(target):
-                tmp = os.path.join(target, subdir)
-                self.lsvInput.add_item(tmp, unique=True)
+            self.lsvInput.add_item(target, unique=True)
             self.cfg['add_path'] = target
-        # if target:
-        #     self.lsvInput.add_item(target, unique=True)
-        #     self.cfg['add_path'] = target
+            # : adding multiple files
+            # for subdir in os.listdir(target):
+            #     tmp = os.path.join(target, subdir)
+            #     self.lsvInput.add_item(tmp, unique=True)
+            # self.cfg['add_path'] = target
         return target
 
     def actionRemove(self, event=None):
@@ -1190,7 +810,7 @@ class MainGui(ttk.Frame):
             parent=self, title=title, initialdir=self.cfg['output_path'],
             mustexist=True)
         if target:
-            self.entPath.set_val(target)
+            self.txtPath.set_val(target)
         return target
 
     def activateModules(self, event=None):
@@ -1236,9 +856,9 @@ class MainGui(ttk.Frame):
 
 # ======================================================================
 def dcmpi_run_gui(*args, **kwargs):
-    root = tk.Tk()
-    app = MainGui(root, *args, **kwargs)
-    set_icon(root, 'icon')
+    root = pytk.tk.Tk()
+    app = Main(root, *args, **kwargs)
+    pytk.utils.set_icon(root, 'icon', DIRS['data'])
     root.mainloop()
 
 

@@ -60,7 +60,7 @@ from dcmpi.get_prot import get_prot
 from dcmpi.get_meta import get_meta
 from dcmpi.do_backup import do_backup
 from dcmpi.do_report import do_report
-from dcmpi import INFO
+from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 

@@ -30,7 +30,7 @@ except ImportError:
 
 # :: Local Imports
 import dcmpi.utils as utl
-from dcmpi import INFO
+from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
@@ -399,9 +399,9 @@ class Geometry():
 
 
 # ======================================================================
-class Entry(ttk.Entry):
+class Entry(pytk.widgets.Entry):
     def __init__(self, *args, **kwargs):
-        ttk.Entry.__init__(self, *args, **kwargs)
+        pytk.widgets.Entry.__init__(self, *args, **kwargs)
 
     def get_val(self):
         return self.get()
@@ -422,9 +422,9 @@ class Entry(ttk.Entry):
 
 
 # ======================================================================
-class Checkbutton(ttk.Checkbutton):
+class Checkbutton(pytk.widgets.Checkbutton):
     def __init__(self, *args, **kwargs):
-        ttk.Checkbutton.__init__(self, *args, **kwargs)
+        pytk.widgets.Checkbutton.__init__(self, *args, **kwargs)
 
     def get_val(self):
         return 'selected' in self.state()
@@ -493,9 +493,9 @@ class Spinbox(tk.Spinbox):
 
 
 # ======================================================================
-class Listbox(ttk.Combobox):
+class Listbox(pytk.widgets.Combobox):
     def __init__(self, *args, **kwargs):
-        ttk.Combobox.__init__(self, *args, **kwargs)
+        pytk.widgets.Combobox.__init__(self, *args, **kwargs)
         self['state'] = 'readonly'
 
     def get_values(self):
@@ -509,9 +509,9 @@ class Listbox(ttk.Combobox):
 
 
 # ======================================================================
-class Listview(ttk.Treeview):
+class Listview(pytk.widgets.Treeview):
     def __init__(self, *args, **kwargs):
-        ttk.Treeview.__init__(self, *args, **kwargs)
+        pytk.widgets.Treeview.__init__(self, *args, **kwargs)
 
     def get_items(self):
         return [self.item(child, 'text') for child in self.get_children('')]
@@ -539,9 +539,9 @@ class About(tk.Toplevel):
         self.parent = parent
         self.title('About {}'.format(INFO['name']))
         self.resizable(False, False)
-        self.frm = ttk.Frame(self)
+        self.frm = pytk.widgets.Frame(self)
         self.frm.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frm)
+        self.frmMain = pytk.widgets.Frame(self.frm)
         self.frmMain.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
 
         about_txt = '\n'.join((
@@ -553,12 +553,12 @@ class About(tk.Toplevel):
                 INFO['copyright'], INFO['author'], INFO['notice'])
         ))
         msg(about_txt)
-        self.lblInfo = ttk.Label(
+        self.lblInfo = pytk.widgets.Label(
             self.frmMain, text=about_txt, anchor=tk.CENTER,
             background='#333', foreground='#ccc', font='TkFixedFont')
         self.lblInfo.pack(padx=8, pady=8, ipadx=8, ipady=8)
 
-        self.btnClose = ttk.Button(
+        self.btnClose = pytk.widgets.Button(
             self.frmMain, text='Close', command=self.destroy)
         self.btnClose.pack(side=tk.BOTTOM, padx=8, pady=8)
         self.bind('<Return>', self.destroy)
@@ -595,9 +595,9 @@ class Settings(tk.Toplevel):
         self.parent = parent
         self.app = app
         self.title('{} Advanced Settings'.format(INFO['name']))
-        self.frm = ttk.Frame(self)
+        self.frm = pytk.widgets.Frame(self)
         self.frm.pack(fill=tk.BOTH, expand=True)
-        self.frmMain = ttk.Frame(self.frm)
+        self.frmMain = pytk.widgets.Frame(self.frm)
         self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
 
         self.frmSpacers = []
@@ -610,9 +610,9 @@ class Settings(tk.Toplevel):
                 chk.set_val(info['default'])
                 self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frm = ttk.Frame(self.frmMain)
+                frm = pytk.widgets.Frame(self.frmMain)
                 frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
+                lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
                 spb = Spinbox(frm, **info['values'])
                 spb.set_val(info['default'])
@@ -620,9 +620,9 @@ class Settings(tk.Toplevel):
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
             elif info['dtype'] == tuple:
-                frm = ttk.Frame(self.frmMain)
+                frm = pytk.widgets.Frame(self.frmMain)
                 frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
+                lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
                 lst = Listbox(frm, values=info['values'])
                 lst.set_val(info['default'])
@@ -630,20 +630,20 @@ class Settings(tk.Toplevel):
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'lst': lst}
 
-        self.frmButtons = ttk.Frame(self.frmMain)
+        self.frmButtons = pytk.widgets.Frame(self.frmMain)
         self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmButtons)
+        spacer = pytk.widgets.Frame(self.frmButtons)
         spacer.pack(side=tk.LEFT, anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnOK = ttk.Button(
+        self.btnOK = pytk.widgets.Button(
             self.frmButtons, text='OK', compound=tk.LEFT,
             command=self.ok)
         self.btnOK.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnReset = ttk.Button(
+        self.btnReset = pytk.widgets.Button(
             self.frmButtons, text='Reset', compound=tk.LEFT,
             command=self.reset)
         self.btnReset.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnCancel = ttk.Button(
+        self.btnCancel = pytk.widgets.Button(
             self.frmButtons, text='Cancel', compound=tk.LEFT,
             command=self.cancel)
         self.btnCancel.pack(side=tk.LEFT, padx=4, pady=4)
@@ -697,7 +697,7 @@ class Settings(tk.Toplevel):
 
 
 # ======================================================================
-class MainGui(ttk.Frame):
+class MainGui(pytk.widgets.Frame):
     def __init__(self, parent, args):
         # get_val config data
         cfg = {}
@@ -735,12 +735,12 @@ class MainGui(ttk.Frame):
         ))
 
         # :: initialization of the UI
-        ttk.Frame.__init__(self, parent)
+        pytk.widgets.Frame.__init__(self, parent)
         self.parent = parent
         self.parent.title('DCMPI: DICOM Preprocessing Interface')
         self.parent.protocol('WM_DELETE_WINDOW', self.actionExit)
 
-        self.style = ttk.Style()
+        self.style = pytk.widgets.Style()
         # print(self.style.theme_names())
         self.style.theme_use(self.cfg['gui_style_tk'])
         self.pack(fill=tk.BOTH, expand=True)
@@ -748,55 +748,55 @@ class MainGui(ttk.Frame):
         self._make_menu()
 
         # :: define UI items
-        self.frmMain = ttk.Frame(self)
+        self.frmMain = pytk.widgets.Frame(self)
         self.frmMain.pack(fill=tk.BOTH, padx=8, pady=8, expand=True)
         self.frmSpacers = []
 
         # left frame
-        self.frmLeft = ttk.Frame(self.frmMain)
+        self.frmLeft = pytk.widgets.Frame(self.frmMain)
         self.frmLeft.pack(
             side=tk.LEFT, fill=tk.BOTH, padx=4, pady=4, expand=True)
 
-        self.frmInput = ttk.Frame(self.frmLeft)
+        self.frmInput = pytk.widgets.Frame(self.frmLeft)
         self.frmInput.pack(
             side=tk.TOP, fill=tk.BOTH, padx=4, pady=4, expand=True)
-        self.lblInput = ttk.Label(self.frmInput, text='Input')
+        self.lblInput = pytk.widgets.Label(self.frmInput, text='Input')
         self.lblInput.pack(padx=1, pady=1)
         self.lsvInput = Listview(self.frmInput, show='tree', height=4)
         self.lsvInput.bind('<Double-Button-1>', self.actionAdd)
         self.lsvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
-        self.btnImport = ttk.Button(
+        self.btnImport = pytk.widgets.Button(
             self.frmInput, text='Import', compound=tk.LEFT,
             command=self.actionImport)
         self.btnImport.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnExport = ttk.Button(
+        self.btnExport = pytk.widgets.Button(
             self.frmInput, text='Export', compound=tk.LEFT,
             command=self.actionExport)
         self.btnExport.pack(side=tk.LEFT, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmInput)
+        spacer = pytk.widgets.Frame(self.frmInput)
         spacer.pack(side=tk.LEFT, anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnAdd = ttk.Button(
+        self.btnAdd = pytk.widgets.Button(
             self.frmInput, text='Add', compound=tk.LEFT,
             command=self.actionAdd)
         self.btnAdd.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
-        self.btnRemove = ttk.Button(
+        self.btnRemove = pytk.widgets.Button(
             self.frmInput, text='Remove', compound=tk.LEFT,
             command=self.actionRemove)
         self.btnRemove.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
-        self.btnClear = ttk.Button(
+        self.btnClear = pytk.widgets.Button(
             self.frmInput, text='Clear', compound=tk.LEFT,
             command=self.actionClear)
         self.btnClear.pack(side=tk.LEFT, anchor='e', padx=4, pady=4)
 
-        self.frmOutput = ttk.Frame(self.frmLeft)
+        self.frmOutput = pytk.widgets.Frame(self.frmLeft)
         self.frmOutput.pack(fill=tk.X, padx=4, pady=4)
-        self.lblOutput = ttk.Label(self.frmOutput, text='Output')
+        self.lblOutput = pytk.widgets.Label(self.frmOutput, text='Output')
         self.lblOutput.pack(side=tk.TOP, padx=1, pady=1)
 
-        self.frmPath = ttk.Frame(self.frmOutput)
+        self.frmPath = pytk.widgets.Frame(self.frmOutput)
         self.frmPath.pack(fill=tk.X, expand=True)
-        self.lblPath = ttk.Label(self.frmPath, text='Path', width=8)
+        self.lblPath = pytk.widgets.Label(self.frmPath, text='Path', width=8)
         self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entPath = Entry(self.frmPath)
         self.entPath.insert(0, self.cfg['output_path'])
@@ -804,9 +804,9 @@ class MainGui(ttk.Frame):
         self.entPath.pack(
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
 
-        self.frmSubpath = ttk.Frame(self.frmOutput)
+        self.frmSubpath = pytk.widgets.Frame(self.frmOutput)
         self.frmSubpath.pack(fill=tk.X, expand=True)
-        self.lblSubpath = ttk.Label(self.frmSubpath, text='Sub-Path', width=8)
+        self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path', width=8)
         self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
         self.entSubpath = Entry(self.frmSubpath)
         self.entSubpath.insert(0, self.cfg['output_subpath'])
@@ -814,15 +814,15 @@ class MainGui(ttk.Frame):
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
 
         # right frame
-        self.frmRight = ttk.Frame(self.frmMain)
+        self.frmRight = pytk.widgets.Frame(self.frmMain)
         self.frmRight.pack(side=tk.RIGHT, fill=tk.BOTH, padx=4, pady=4)
 
-        self.lblActions = ttk.Label(
+        self.lblActions = pytk.widgets.Label(
             self.frmRight, text='Sub-Paths and Templates')
         self.lblActions.pack(padx=1, pady=1)
         self.wdgModules = {}
         for name, info in self.modules.items():
-            frm = ttk.Frame(self.frmRight)
+            frm = pytk.widgets.Frame(self.frmRight)
             frm.pack(fill=tk.X, padx=1, pady=1)
             if 'subpath' in name:
                 chk = Checkbutton(frm, text=info['label'])
@@ -847,10 +847,10 @@ class MainGui(ttk.Frame):
                 'frm': frm, 'chk': chk, 'ent': entry}
         self.activateModules()
 
-        spacer = ttk.Frame(self.frmRight)
+        spacer = pytk.widgets.Frame(self.frmRight)
         spacer.pack(side=tk.TOP, padx=4, pady=4)
         self.frmSpacers.append(spacer)
-        self.lblOptions = ttk.Label(self.frmRight, text='Options')
+        self.lblOptions = pytk.widgets.Label(self.frmRight, text='Options')
         self.lblOptions.pack(padx=1, pady=1)
         self.wdgOptions = {}
         for name, info in self.options.items():
@@ -859,9 +859,9 @@ class MainGui(ttk.Frame):
                 chk.pack(fill=tk.X, padx=1, pady=1)
                 self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
-                frm = ttk.Frame(self.frmRight)
+                frm = pytk.widgets.Frame(self.frmRight)
                 frm.pack(fill=tk.X, padx=1, pady=1)
-                lbl = ttk.Label(frm, text=info['label'])
+                lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
                 spb = Spinbox(frm, **info['values'])
                 spb.pack(
@@ -870,25 +870,25 @@ class MainGui(ttk.Frame):
             elif info['dtype'] == str:
                 pass
 
-        # spacer = ttk.Frame(self.frmRight)
+        # spacer = pytk.widgets.Frame(self.frmRight)
         # spacer.pack(side=tk.TOP, padx=4, pady=4)
         # self.frmSpacers.append(spacer)
-        # self.pbrRunning = ttk.Progressbar(self.frmRight)
+        # self.pbrRunning = pytk.widgets.Progressbar(self.frmRight)
         # self.pbrRunning.pack(side=tk.TOP, fill=tk.X, expand=True)
 
-        spacer = ttk.Frame(self.frmRight)
+        spacer = pytk.widgets.Frame(self.frmRight)
         spacer.pack(side=tk.TOP, padx=4, pady=4)
         self.frmSpacers.append(spacer)
-        self.frmButtons = ttk.Frame(self.frmRight)
+        self.frmButtons = pytk.widgets.Frame(self.frmRight)
         self.frmButtons.pack(side=tk.BOTTOM, padx=4, pady=4)
-        spacer = ttk.Frame(self.frmButtons)
+        spacer = pytk.widgets.Frame(self.frmButtons)
         spacer.pack(side=tk.LEFT, anchor='e', expand=True)
         self.frmSpacers.append(spacer)
-        self.btnRun = ttk.Button(
+        self.btnRun = pytk.widgets.Button(
             self.frmButtons, text='Run', compound=tk.LEFT,
             command=self.actionRun)
         self.btnRun.pack(side=tk.LEFT, padx=4, pady=4)
-        self.btnExit = ttk.Button(
+        self.btnExit = pytk.widgets.Button(
             self.frmButtons, text='Exit', compound=tk.LEFT,
             command=self.actionExit)
         self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)

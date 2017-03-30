@@ -37,7 +37,7 @@ from dcmpi.get_meta import get_meta
 from dcmpi.backup import backup
 from dcmpi.report import report
 import dcmpi.utils as utl
-# from dcmpi_cli import INFO
+# from dcmpi_cli import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 

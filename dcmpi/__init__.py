@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-DCMPI: DICOM Preprocessing Interface
+DCMPI - DICOM Preprocessing Interface: explore/distill DICOM data.
 """
 
 # ======================================================================
@@ -19,13 +19,16 @@ __version__ = '0.0.1.4.dev37+ng6599902.d20160922'
 # :: Project Details
 INFO = {
     'name': 'DCMPI',
-    'author': 'Riccardo Metere <metere@cbs.mpg.de>',
-    'copyright': 'Copyright (C) 2016',
-    'license': 'License: GNU General Public License version 3 (GPLv3)',
+    'author': 'DCMPI developers',
+    'contrib': (
+        'Riccardo Metere <metere@cbs.mpg.de>',
+    ),
+    'copyright': 'Copyright (C) 2015-2017',
+    'license': 'GNU General Public License version 3 or later (GPLv3+)',
     'notice':
         """
 This program is free software and it comes with ABSOLUTELY NO WARRANTY.
-It is covered by the GNU General Public License version 3 (GPLv3).
+It is covered by the GNU General Public License version 3 (GPLv3+).
 You are welcome to redistribute it under its terms and conditions.
         """,
     'version': __version__
@@ -176,3 +179,48 @@ def dbg(name, fmt=None):
     name_str = outer_frame[4][0][:-1]
     msg(name_str, fmt=fmt, end=': ')
     msg(repr(name), fmt='')
+
+
+# ======================================================================
+def _app_dirs(
+        name=INFO['name'],
+        author=INFO['author'],
+        version=INFO['version']):
+    """
+    Generate application directories.
+
+    Args:
+        name (str): Application name.
+        author (str): Application author.
+        version (str): Application version.
+
+    Returns:
+        dirs (dict): The requested directory.
+            - 'config': directory for configuration files.
+            - 'cache': directory for caching files.
+            - 'data': directory for data files.
+            - 'log': directory for log files.
+
+    Examples:
+        >>> sorted(_app_dirs().keys())
+        ['cache', 'config', 'data', 'log']
+    """
+    import appdirs
+    dirs = dict((
+        ('config', appdirs.user_config_dir(name, author, version)),
+        ('cache', appdirs.user_cache_dir(name, author, version)),
+        ('data', appdirs.user_data_dir(name, author, version)),
+        ('log', appdirs.user_data_dir(name, author, version)),
+    ))
+    return dirs
+
+
+# ======================================================================
+if __name__ == '__main__':
+    import doctest
+
+    msg(__doc__.strip())
+    doctest.testmod()
+
+else:
+    DIRS = _app_dirs()
