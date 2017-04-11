@@ -21,7 +21,6 @@ import multiprocessing  # Process-based parallelism
 import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 import warnings  # Warning control
 
-
 # :: External Imports
 
 # :: External Imports Submodules
@@ -226,7 +225,10 @@ def dcmpi_run(
                 if isinstance(val, str):
                     kws[key] = val.format_map(locals())
             kws.update(dict(force=force, verbose=verbose))
-            func(**kws)
+            try:
+                func(**kws)
+            except Exception as e:
+                warnings.warn(str(e))
 
         msg('Done: {}'.format(dcm_dirpath))
 
@@ -506,7 +508,8 @@ class Main(pytk.widgets.Frame):
 
         self.frmSubpath = pytk.widgets.Frame(self.frmOutput)
         self.frmSubpath.pack(fill='x', expand=True)
-        self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path', width=8)
+        self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path',
+                                             width=8)
         self.lblSubpath.pack(side='left', fill='x', padx=1, pady=1)
         self.txtSubpath = pytk.widgets.Text(self.frmSubpath)
         self.txtSubpath.insert(0, self.cfg['output_subpath'])
