@@ -2,7 +2,7 @@
 DCMPI - DICOM Preprocessing Interface
 =====================================
 
-**DCMPI** - **D**I**C**O**M** **P**reprocessing **I**nterface:
+**DCMPI** - DICOM Preprocessing Interface:
 explore/distill DICOM data.
 
 This software implements an automated information extraction tool from DICOM
