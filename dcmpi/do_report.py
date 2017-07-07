@@ -247,30 +247,27 @@ def do_report(
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
 
-        # :: create temporary info data
-        from dcmpi.get_info import get_info
-        info_dirpath = os.path.join(os.path.dirname(in_dirpath), utl.ID['info'])
-        get_info(in_dirpath, info_dirpath, method, force=force, verbose=verbose)
-
         # :: get information
         summary, extra = {}, {}
         acquisitions = []
         if method == 'pydicom':
-            target = None
-            try:
-                for name in sorted(os.listdir(info_dirpath)):
-                    target = os.path.join(info_dirpath, name)
-                    with open(target, 'r') as target_file:
-                        if name.startswith('summary.info'):
-                            summary = json.load(target_file)
-                        elif name.startswith('extra.info'):
-                            extra = json.load(target_file)
-                        elif name.startswith('a'):
-                            acquisitions.append((
-                                name[:name.find(utl.INFO_SEP)],
-                                json.load(target_file)))
-            except:
-                msg('W: Could not process `{}`.'.format(target))
+            # :: create temporary info data
+            from dcmpi.get_info import get_info
+            info_dirpath = os.path.join(
+                os.path.dirname(in_dirpath), utl.ID['info'])
+            get_info(
+                in_dirpath, info_dirpath, method, force=force, verbose=verbose)
+            for name in sorted(os.listdir(info_dirpath)):
+                target = os.path.join(info_dirpath, name)
+                with open(target, 'r') as target_file:
+                    if name.startswith('summary.info'):
+                        summary = json.load(target_file)
+                    elif name.startswith('extra.info'):
+                        extra = json.load(target_file)
+                    elif name.startswith('a'):
+                        acquisitions.append((
+                            name[:name.find(utl.INFO_SEP)],
+                            json.load(target_file)))
 
         else:
             msg('W: Unknown method `{}`.'.format(method))
@@ -278,6 +275,7 @@ def do_report(
         # :: create report
         tpl_dirpath = os.path.join(
             os.path.dirname(__file__), 'report_templates')
+
         if summary and acquisitions and os.path.isdir(tpl_dirpath):
             # :: always create HTML report
             # import templates
@@ -398,17 +396,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'info'
-    # default method
-    d_format = 'pdf'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -425,7 +412,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -446,7 +433,7 @@ def handle_arg():
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-m', '--method', metavar='METHOD',
-        default='info',
+        default='pydicom',
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
         '-a', '--file_format', metavar='METHOD',
