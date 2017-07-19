@@ -109,7 +109,7 @@ def sorting(
     msg('Sort: {}'.format(dirpath))
 
     dirpath = os.path.realpath(dirpath)
-    input_list_dict = {}
+    sorted_sources = {}
     for in_filename in sorted(os.listdir(dirpath)):
         in_filepath = os.path.join(dirpath, in_filename)
         try:
@@ -122,14 +122,14 @@ def sorting(
                 verbose, VERB_LVL['debug'])
         else:
             src_id = utl.INFO_SEP.join(
-                (utl.PREFIX_ID['series'] + '{:0{size}d}'.format(
-                    dcm.SeriesNumber, size=utl.D_NUM_DIGITS),
+                (utl.PREFIX_ID['series'] +
+                 '{:0{size}d}'.format(dcm.SeriesNumber, size=utl.D_NUM_DIGITS),
                  dcm.SeriesDescription))
-            if src_id not in input_list_dict:
-                input_list_dict[src_id] = []
-            input_list_dict[src_id].append(in_filepath)
+            if src_id not in sorted_sources:
+                sorted_sources[src_id] = []
+            sorted_sources[src_id].append(in_filepath)
     # :: move dicom files to serie number folder
-    for src_id, sources in sorted(input_list_dict.items()):
+    for src_id, sources in sorted(sorted_sources.items()):
         out_subdirpath = os.path.join(dirpath, src_id)
         if not os.path.exists(out_subdirpath) or force:
             if not os.path.exists(out_subdirpath):
