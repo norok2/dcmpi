@@ -57,23 +57,26 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.utils as utl
-from dcmpi import INFO, DIRS
+from dcmpi import INFO  # , DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
 # ======================================================================
 ARCHIVE_EXT = {
+    'tlz': 'tar.lz',
+    'tgz': 'tar.gz',
+    'tbz2': 'tar.gz',
     '7z': '7z',
     'zip': 'zip',
     'txz': 'tar.xz',
-    'gxz': 'tar.gz'}
+}
 
 
 # ======================================================================
 def do_backup(
         in_dirpath,
         out_dirpath=None,
-        basename='{name}_{date}_{time}_{sys}',
+        name='{name}_{date}_{time}_{sys}',
         method='7z',
         keep=False,
         force=False,
@@ -82,9 +85,14 @@ def do_backup(
     Safely do_backup DICOM files and test the produced archive.
 
     Args:
-        in_dirpath (str|unicode): Path to input directory.
-        out_filepath (str|unicode): Path to output directory.
-        method (str|unicode): The Compression method.
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
+        name (str): The name of the backup file.
+            Extract and interpret fields from DICOM, according to field
+            specifications: <field::format>.
+            For more information on accepted syntax,
+            see `utl.fill_from_dicom()`.
+        method (str): The Compression method.
             Accepted values:
              - '7z': Use 7z compression format.
         keep (bool): Do NOT remove DICOM sources afterward.
@@ -94,6 +102,7 @@ def do_backup(
     Returns:
         None.
     """
+
     def _success(ret_code, p_stdout, p_stderr):
         # and p_stdout.find('Everything is Ok') > 0
         return not ret_code
@@ -101,7 +110,7 @@ def do_backup(
     msg(':: Backing up DICOM folder...')
     msg('Input:  {}'.format(in_dirpath))
     dcm_filename, compression = utl.find_a_dicom(in_dirpath)
-    out_basename = utl.fill_from_dicom(basename, dcm_filename)
+    out_basename = utl.fill_from_dicom(name, dcm_filename)
     if not out_dirpath:
         out_dirpath = os.path.dirname(in_dirpath)
     out_filepath = os.path.join(out_dirpath, out_basename)
@@ -110,7 +119,49 @@ def do_backup(
     msg('Output: {}'.format(out_filepath))
     success = False
     if not os.path.exists(out_filepath) or force:
-        if method == '7z':
+        if method == 'tlz':
+            cmd_token_list = [
+                'tar', '--lzip', '-cf', out_filepath, in_dirpath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = len(p_stderr) == 0
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            # :: test archive
+            cmd_token_list = ['lzip', '-t', out_filepath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
+        elif method == 'tgz':
+            cmd_token_list = [
+                'tar', '--gzip', '-cf', out_filepath, in_dirpath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = len(p_stderr) == 0
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            # :: test archive
+            cmd_token_list = ['gzip', '-t', out_filepath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
+        elif method == 'tbz2':
+            cmd_token_list = [
+                'tar', '--bzip2', '-cf', out_filepath, in_dirpath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = len(p_stderr) == 0
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            # :: test archive
+            cmd_token_list = ['bzip2', '-t', out_filepath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
+        elif method == '7z':
             cmd_token_list = [
                 '7z', 'a', '-mx9', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
@@ -132,7 +183,21 @@ def do_backup(
             success = len(p_stderr) == 0
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
-            cmd_token_list = ['7z', 't', out_filepath]
+            cmd_token_list = ['zip', '-T', out_filepath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = _success(ret_code, p_stdout, p_stderr)
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+
+        elif method == 'txz':
+            cmd_token_list = [
+                'tar', '--xz', '-cf', out_filepath, in_dirpath]
+            cmd = ' '.join(cmd_token_list)
+            ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+            success = len(p_stderr) == 0
+            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            # :: test archive
+            cmd_token_list = ['xz', '-t', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
@@ -170,6 +235,10 @@ def handle_arg():
         '-v', '--verbose',
         action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
+    arg_parser.add_argument(
+        '-q', '--quiet',
+        action='store_true',
+        help='override verbosity settings to suppress output [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
         '-f', '--force',
@@ -184,8 +253,12 @@ def handle_arg():
         default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
-        '-m', '--method', metavar='METHOD',
-        default='7z',
+        '-n', '--name', metavar='STR',
+        default='{name}_{date}_{time}_{sys}',
+        help='set output directory [%(default)s]')
+    arg_parser.add_argument(
+        '-m', '--method', metavar='tlz|tgz|tbz2|7z|zip|txz',
+        default='tlz',
         help='set compression method [%(default)s]')
     arg_parser.add_argument(
         '-k', '--keep',
@@ -202,6 +275,9 @@ def main():
     # :: handle program parameters
     arg_parser = handle_arg()
     args = arg_parser.parse_args()
+    # fix verbosity in case of 'quiet'
+    if args.quiet:
+        args.verbose = VERB_LVL['none']
     # :: print debug info
     if args.verbose >= VERB_LVL['debug']:
         arg_parser.print_help()
@@ -209,10 +285,9 @@ def main():
     msg(__doc__.strip())
     begin_time = datetime.datetime.now()
 
-    do_backup(
-        args.in_dirpath, args.out_dirpath,
-        args.method, args.keep,
-        args.force, args.verbose)
+    kws = vars(args)
+    kws.pop('quiet')
+    do_backup(**kws)
 
     exec_time = datetime.datetime.now() - begin_time
     msg('ExecTime: {}'.format(exec_time), args.verbose, VERB_LVL['debug'])
