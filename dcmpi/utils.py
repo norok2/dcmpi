@@ -478,15 +478,15 @@ def string_between(
     Isolate the string contained between two tokens
 
     Args:
-        text (str|unicode): String to parse
-        begin_str (str|unicode): Token at the beginning
-        end_str (str|unicode): Token at the ending
+        text (str): String to parse
+        begin_str (str): Token at the beginning
+        end_str (str): Token at the ending
         incl_begin (bool): Include 'begin_string' in the result
         incl_end (bool): Include 'end_str' in the result.
         greedy (bool): Output the largest possible string.
 
     Returns:
-        text (str|unicode): The string contained between the specified
+        text (str): The string contained between the specified
         tokens (if any)
 
     Examples:
@@ -530,7 +530,7 @@ def is_dicom(
     Check if the filepath is a valid DICOM file.
 
     Args:
-        filepath (str|unicode): The path to the file.
+        filepath (str): The path to the file.
         allow_dir (bool): accept DICOM directories as valid
         allow_report (bool): accept DICOM reports as valid
         allow_postprocess (bool): accept DICOM post-process data as valid
@@ -571,11 +571,11 @@ def is_compressed_dicom(
     Check if the compressed filepath contains a valid DICOM file.
 
     Args:
-        filepath (str|unicode): The path to the file.
+        filepath (str): The path to the file.
         allow_dir (bool): accept DICOM directories as valid
         allow_report (bool): accept DICOM reports as valid
         allow_postprocess (bool): accept DICOM post-process data as valid
-        tmp_path (str|unicode): The path for temporary extraction.
+        tmp_path (str): The path for temporary extraction.
         known_methods:
         tmp_path (str): The path for temporary extraction.
         compressions:
@@ -741,7 +741,7 @@ def get_date(text):
     Extract the date from 'Date' DICOM strings.
 
     Args:
-        text (str|unicode): The input string.
+        text (str): The input string.
 
     Returns:
         tm_struct (struct_time): The date information.
@@ -881,7 +881,7 @@ def dcm_sources(dirpath):
     Create sources dictionary from files in dirpath.
 
     Args:
-        dirpath (str|unicode): The path to the directory
+        dirpath (str): The path to the directory
 
     Returns:
         (dict):

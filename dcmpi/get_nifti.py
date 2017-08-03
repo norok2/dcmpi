@@ -86,8 +86,8 @@ def get_nifti(
 
     Parameters
     ==========
-    in_dirpath (str|unicode): Path to input directory containing sorted DICOM files.
-    out_dirpath (str|unicode): Path to output directory where to put NIfTI images.
+    in_dirpath (str): Path to input directory containing sorted DICOM files.
+    out_dirpath (str): Path to output directory where to put NIfTI images.
     method : str (optional)
         | Extraction method. Accepted values:
         * isis: Use Enrico Reimer's ISIS tool.

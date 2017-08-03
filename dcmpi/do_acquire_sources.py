@@ -92,18 +92,18 @@ def do_acquire_sources(
     Get all DICOM within an input directory.
 
     Args:
-        in_dirpath (str|unicode): Path to input directory.
-        out_dirpath (str|unicode): Path to output directory.
+        in_dirpath (str): Path to input directory.
+        out_dirpath (str): Path to output directory.
         method (str): DICOM sources fetch method.
             Available options are:
              - 'copy': Copy files from source to destination
              - 'move': Move files from source to destination (use with care!)
              - 'symlink': Create a symbolic link (must be supported by OS)
-        subpath (str|unicode): Extra subpath to append to output dirpath.
+        subpath (str): Extra subpath to append to output dirpath.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
             For more information on accepted syntax, see `utl.fill_from_dicom`.
-        extra_subpath (str|unicode):
+        extra_subpath (str):
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 

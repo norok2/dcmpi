@@ -155,7 +155,7 @@ def dbg(name, fmt=None):
 
     Args:
         name: The name to be inspected.
-        fmt (str|unicode): Format of the message (if `blessed` supported).
+        fmt (str): Format of the message (if `blessed` supported).
             If None, a standard formatting is used.
 
     Returns:

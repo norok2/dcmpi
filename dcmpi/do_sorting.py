@@ -94,8 +94,8 @@ def sorting(
     Results are saved to a summary file.
 
     Args:
-        dirpath (str|unicode): Path containing DICOM files to sort.
-        summary (str|unicode): File name or path where to save grouping summary.
+        dirpath (str): Path containing DICOM files to sort.
+        summary (str): File name or path where to save grouping summary.
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
 

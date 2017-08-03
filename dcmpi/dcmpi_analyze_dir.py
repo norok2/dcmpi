@@ -207,14 +207,14 @@ def dcm_analyze_dir(
     Analyze a DICOM, performing an action if its data match the request.
 
     Args:
-        dirpath (str|unicode): Directory where to look for DICOM files.
-        match (str|unicode): A JSON-encoded dict with matching information.
+        dirpath (str): Directory where to look for DICOM files.
+        match (str): A JSON-encoded dict with matching information.
             Any key not starting with `_` should specify a DICOM field, while
             the val should contain a regular expression.
             Keys starting with `_` contain special directives:
-             - `_concat` (str|unicode): the concatenation method for matching rules.
+             - `_concat` (str): the concatenation method for matching rules.
                Accepted values are: ['and'|'or']
-        action (str|unicode): Action to be performed.
+        action (str): Action to be performed.
             Accepted values are:
              - send_email: send an email to the first e-mail found.
              - dcmpi_cli: run dcmpi_cli pipeline.
