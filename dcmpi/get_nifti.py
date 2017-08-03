@@ -114,19 +114,19 @@ def get_nifti(
         # :: create output directory if not exists and extract images
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
-        sources_dict = utl.dcm_sources(in_dirpath)
+        sources = utl.dcm_sources(in_dirpath)
         d_ext = '.' + utl.EXT['niz'] if compressed else utl.EXT['nii']
 
         # :: extract nifti
         if method == 'pydicom':
-            for src_id in sorted(sources_dict.keys()):
+            for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
             # TODO: implement to avoid dependencies
             msg('W: Pure Python method not implemented.',
                 verbose, VERB_LVL['medium'])
 
         if method == 'isis':
-            for src_id in sorted(sources_dict.keys()):
+            for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 cmd = 'isisconv -in {} -out {}'.format(
@@ -138,7 +138,7 @@ def get_nifti(
                         verbose, VERB_LVL['medium'])
 
         elif method == 'dcm2nii':
-            for src_id in sorted(sources_dict.keys()):
+            for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 # produce nifti file
                 opts = ' -t n'
@@ -149,25 +149,26 @@ def get_nifti(
                     opts, out_dirpath, in_filepath)
                 ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
                 term_str = 'GZip...' if compressed else 'Saving '
+                lines = p_stdout.split('\n') if p_stdout else ()
                 # parse result
-                old_name_list = []
-                for line in p_stdout.split('\n'):
+                old_names = []
+                for line in lines:
                     if term_str in line:
                         old_name = line[line.find(term_str) + len(term_str):]
-                        old_name_list.append(old_name)
-                if old_name_list:
+                        old_names.append(old_name)
+                if old_names:
                     msg('Parsed names: ', verbose, VERB_LVL['debug'])
-                    msg(''.join([': {}\n'.format(n) for n in old_name_list]),
+                    msg(''.join([': {}\n'.format(n) for n in old_names]),
                         verbose, VERB_LVL['debug'])
                 else:
                     msg('E: Could not locate filename in `dcm2nii`.')
-                if len(old_name_list) == 1:
-                    old_filepath = os.path.join(out_dirpath, old_name_list[0])
+                if len(old_names) == 1:
+                    old_filepath = os.path.join(out_dirpath, old_names[0])
                     out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                     msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
                     os.rename(old_filepath, out_filepath)
                 else:
-                    for num, old_name in enumerate(old_name_list):
+                    for num, old_name in enumerate(old_names):
                         old_filepath = os.path.join(out_dirpath, old_name)
                         out_filepath = os.path.join(
                             out_dirpath,
@@ -176,7 +177,7 @@ def get_nifti(
                         os.rename(old_filepath, out_filepath)
 
         elif method == 'dicom2nifti':
-            for src_id in sorted(sources_dict.keys()):
+            for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
                 dicom2nifti.dicom_series_to_nifti(
