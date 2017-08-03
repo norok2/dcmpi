@@ -194,15 +194,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default method
-    d_method = 'dcm2nii'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -219,7 +210,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -228,15 +219,15 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-i', '--in_dirpath', metavar='DIR',
-        default=d_input_dir,
+        default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
         '-o', '--out_dirpath', metavar='DIR',
-        default=d_output_dir,
+        default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
         '-m', '--method', metavar='METHOD',
-        default=d_method,
+        default='dicom2nifti',
         help='set extraction method [%(default)s]')
     arg_parser.add_argument(
         '-u', '--uncompressed',
