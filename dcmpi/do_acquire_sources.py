@@ -83,7 +83,7 @@ from dcmpi import msg, dbg
 def do_acquire_sources(
         in_dirpath,
         out_dirpath,
-        clean=False,
+        method='symlink',
         subpath='{study}/{name}_{date}_{time}_{sys}',
         extra_subpath=utl.ID['dicom'],
         force=False,
@@ -94,7 +94,11 @@ def do_acquire_sources(
     Args:
         in_dirpath (str|unicode): Path to input directory.
         out_dirpath (str|unicode): Path to output directory.
-        clean (bool): Move DICOM sources instead of copying.
+        method (str): DICOM sources fetch method.
+            Available options are:
+             - 'copy': Copy files from source to destination
+             - 'move': Move files from source to destination (use with care!)
+             - 'symlink': Create a symbolic link (must be supported by OS)
         subpath (str|unicode): Extra subpath to append to output dirpath.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
@@ -120,7 +124,10 @@ def do_acquire_sources(
     msg(':: Importing sources...')
     msg('Input:  {}'.format(in_dirpath))
     msg('Output: {}'.format(out_dirpath))
-    if clean:
+
+    method = method.lower()
+
+    if method == 'move':
         msg('W: Files will be moved!', fmt='{t.yellow}{t.bold}')
     if os.path.exists(in_dirpath):
         # :: analyze directory tree
@@ -165,10 +172,18 @@ def do_acquire_sources(
                     dcm_dirpaths.add(dcm_dirpath)
                 if not os.path.isfile(os.path.join(dcm_dirpath, filename)) \
                         or force:
-                    if clean:
+                    if method == 'move':
                         shutil.move(filepath, dcm_dirpath)
-                    else:
+                    elif method == 'copy':
                         shutil.copy(filepath, dcm_dirpath)
+                    elif method == 'symlink':
+                        os.symlink(
+                            filepath, os.path.join(
+                                dcm_dirpath, os.path.basename(filepath)))
+                    elif method == 'link':
+                        os.link(
+                            filepath, os.path.join(
+                                dcm_dirpath, os.path.basename(filepath)))
                 else:
                     msg('I: Skipping existing output path. '
                         'Use `force` to override.')
@@ -186,15 +201,6 @@ def handle_arg():
     """
     Handle command-line application arguments.
     """
-    # :: Define DEFAULT values
-    # verbosity
-    d_verbose = D_VERB_LVL
-    # default input directory
-    d_input_dir = '.'
-    # default output directory
-    d_output_dir = '.'
-    # default subpath
-    d_subpath = '/dcm'
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
@@ -211,7 +217,7 @@ def handle_arg():
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',
-        action='count', default=d_verbose,
+        action='count', default=D_VERB_LVL,
         help='increase the level of verbosity [%(default)s]')
     # :: Add additional arguments
     arg_parser.add_argument(
@@ -220,20 +226,24 @@ def handle_arg():
         help='force new processing [%(default)s]')
     arg_parser.add_argument(
         '-i', '--in_dirpath', metavar='DIR',
-        default=d_input_dir,
+        default='.',
         help='set input directory [%(default)s]')
     arg_parser.add_argument(
         '-o', '--out_dirpath', metavar='DIR',
-        default=d_output_dir,
+        default='.',
         help='set output directory [%(default)s]')
     arg_parser.add_argument(
-        '-c', '--clean',
-        action='store_true',
+        '-m', '--method', metavar='copy|move|symlink|link',
+        default='symlink',
         help='Move DICOM sources instead of copying [%(default)s]')
     arg_parser.add_argument(
         '-s', '--subpath',
-        default=d_subpath,
+        default='{study}/{name}_{date}_{time}_{sys}',
         help='Append DICOM-generated subpath to output [%(default)s]')
+    arg_parser.add_argument(
+        '-e', '--extra_subpath',
+        default='dcm',
+        help='Append static subpath to output [%(default)s]')
     return arg_parser
 
 
@@ -254,7 +264,7 @@ def main():
 
     do_acquire_sources(
         args.in_dirpath, args.out_dirpath,
-        args.clean, args.subpath,
+        args.method, args.subpath, args.extra_subpath,
         args.force, args.verbose)
 
     exec_time = datetime.datetime.now() - begin_time
