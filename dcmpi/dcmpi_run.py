@@ -204,7 +204,7 @@ def dcmpi_run(
 
     # import
     dcm_dirpaths = do_acquire_sources(
-        in_dirpath, out_dirpath, False, subpath, dcm_subpath, force, verbose)
+        in_dirpath, out_dirpath, 'copy', subpath, dcm_subpath, force, verbose)
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
         # sort

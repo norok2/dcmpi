@@ -25,8 +25,10 @@ except ImportError:
     import tkSimpleDialog as simpledialog
 
 # :: External Imports
+import pytk
 
 # :: External Imports Submodules
+import pytk.widgets
 
 # :: Local Imports
 import dcmpi.utils as utl
@@ -178,7 +180,8 @@ def dcmpi_run(
         backup_template)
     # import
     dcm_dirpaths = do_acquire_sources(
-        in_dirpath, out_dirpath, False, subpath, import_subpath, force, verbose)
+        in_dirpath, out_dirpath, 'copy', subpath, import_subpath,
+        force, verbose)
     for dcm_dirpath in dcm_dirpaths:
         base_dirpath = os.path.dirname(dcm_dirpath)
         # sort
