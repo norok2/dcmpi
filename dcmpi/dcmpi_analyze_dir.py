@@ -57,7 +57,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-import dicom  # PyDicom (Read, modify and write DICOM files.)
+import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -156,7 +156,7 @@ def send_mail_dcm(
          lambda t: t),
     )
     try:
-        dcm = dicom.read_file(dcm_filepath)
+        dcm = pydcm.read_file(dcm_filepath)
         # get recipient
         recipient = ''
         for key in recipient_fields:
@@ -226,7 +226,7 @@ def dcm_analyze_dir(
     """
     dcm_filepath = utl.find_a_dicom(dirpath)[0]
     try:
-        dcm = dicom.read_file(dcm_filepath)
+        dcm = pydcm.read_file(dcm_filepath)
         # check matching
         conditions = json.loads(match)
         concat = conditions.pop('_concat').lower() \

@@ -55,7 +55,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import nibabel as nib  # NiBabel (NeuroImaging I/O Library)
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
-# import dicom  # PyDicom (Read, modify and write DICOM files.)
+# import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax

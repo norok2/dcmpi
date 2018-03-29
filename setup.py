@@ -138,12 +138,13 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['appdirs', 'pydicom', 'pytk', 'blessed'],
+    install_requires=['appdirs', 'pydicom', 'pytk', 'blessed', 'dicom2nifti'],
 
     setup_requires=['setuptools', 'setuptools_scm'],
 
     extras_require={
         'blessings': 'blessings',
+        # 'dicom': 'dicom',
     },
 
     package_data={

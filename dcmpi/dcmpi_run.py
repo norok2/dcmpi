@@ -7,7 +7,7 @@ DCMPI: DICOM preprocessing.
 # ======================================================================
 # :: Future Imports
 from __future__ import (
-    division, absolute_import, print_function, unicode_literals)
+    division, absolute_import, print_function, unicode_literals, )
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -43,7 +43,7 @@ from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
 
 from dcmpi import (
-    get_nifti, get_meta, get_prot, get_info, do_report, do_backup)
+    get_nifti, get_meta, get_prot, get_info, do_report, do_backup, )
 
 # ======================================================================
 # :: determine initial configuration
@@ -80,10 +80,10 @@ ACTIONS = collections.OrderedDict((
               dict(in_dirpath='{dcm_dirpath}', out_dirpath='{dirpath[info]}'))),
     ('report', (do_report.do_report,
                 dict(in_dirpath='{dcm_dirpath}', out_dirpath='{base_dirpath}',
-                     basename='{report_template}'))),
+                    basename='{report_template}'))),
     ('backup', (do_backup.do_backup,
                 dict(in_dirpath='{dcm_dirpath}', out_dirpath='{base_dirpath}',
-                     basename='{backup_template}'))),))
+                    basename='{backup_template}'))),))
 
 
 # ======================================================================
@@ -509,7 +509,7 @@ class Main(pytk.widgets.Frame):
         self.frmSubpath = pytk.widgets.Frame(self.frmOutput)
         self.frmSubpath.pack(fill='x', expand=True)
         self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path',
-                                             width=8)
+            width=8)
         self.lblSubpath.pack(side='left', fill='x', padx=1, pady=1)
         self.txtSubpath = pytk.widgets.Text(self.frmSubpath)
         self.txtSubpath.insert(0, self.cfg['output_subpath'])
