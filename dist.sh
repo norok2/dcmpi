@@ -38,7 +38,8 @@ echo -e "${CHANGELOG} successfully created."
 
 # ======================================================================
 title "Create package"
-python setup.py bdist_wheel --universal
+python3 setup.py bdist_wheel --universal
+echo -e "WARNING: if version is \`0.0.0.0\`, install \`setuptools-scm\`".
 
 
 # ======================================================================
