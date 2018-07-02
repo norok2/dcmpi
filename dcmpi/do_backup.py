@@ -76,8 +76,8 @@ ARCHIVE_EXT = {
 def do_backup(
         in_dirpath,
         out_dirpath=None,
-        name='{name}_{date}_{time}_{sys}',
-        method='7z',
+        basename='{name}_{date}_{time}_{sys}',
+        method='tlz',
         keep=False,
         force=False,
         verbose=D_VERB_LVL):
@@ -87,7 +87,7 @@ def do_backup(
     Args:
         in_dirpath (str): Path to input directory.
         out_dirpath (str): Path to output directory.
-        name (str): The name of the backup file.
+        basename (str): The name of the backup file.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
             For more information on accepted syntax,
@@ -110,7 +110,7 @@ def do_backup(
     msg(':: Backing up DICOM folder...')
     msg('Input:  {}'.format(in_dirpath))
     dcm_filename, compression = utl.find_a_dicom(in_dirpath)
-    out_basename = utl.fill_from_dicom(name, dcm_filename)
+    out_basename = utl.fill_from_dicom(basename, dcm_filename)
     if not out_dirpath:
         out_dirpath = os.path.dirname(in_dirpath)
     out_filepath = os.path.join(out_dirpath, out_basename)
@@ -124,7 +124,7 @@ def do_backup(
                 'tar', '--lzip', '-cf', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = len(p_stderr) == 0
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['lzip', '-t', out_filepath]
@@ -138,7 +138,7 @@ def do_backup(
                 'tar', '--gzip', '-cf', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = len(p_stderr) == 0
+            _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['gzip', '-t', out_filepath]
@@ -152,7 +152,7 @@ def do_backup(
                 'tar', '--bzip2', '-cf', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = len(p_stderr) == 0
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['bzip2', '-t', out_filepath]
@@ -180,7 +180,7 @@ def do_backup(
                 'zip', 'a', '-mx9', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = len(p_stderr) == 0
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['zip', '-T', out_filepath]
@@ -194,7 +194,7 @@ def do_backup(
                 'tar', '--xz', '-cf', out_filepath, in_dirpath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-            success = len(p_stderr) == 0
+            success = _success(ret_code, p_stdout, p_stderr)
             msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
             # :: test archive
             cmd_token_list = ['xz', '-t', out_filepath]
