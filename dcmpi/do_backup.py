@@ -125,13 +125,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['lzip', '-t', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         elif method == 'tgz':
             cmd_token_list = [
@@ -139,13 +139,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['gzip', '-t', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         elif method == 'tbz2':
             cmd_token_list = [
@@ -153,13 +153,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['bzip2', '-t', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         elif method == '7z':
             cmd_token_list = [
@@ -167,13 +167,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['7z', 't', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         elif method == 'zip':
             cmd_token_list = [
@@ -181,13 +181,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['zip', '-T', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         elif method == 'txz':
             cmd_token_list = [
@@ -195,13 +195,13 @@ def do_backup(
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Backup was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Backup' + (' ' if success else ' NOT ') + 'successful.')
             # :: test archive
             cmd_token_list = ['xz', '-t', out_filepath]
             cmd = ' '.join(cmd_token_list)
             ret_code, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
             success = _success(ret_code, p_stdout, p_stderr)
-            msg(':: Test was' + (' ' if success else ' NOT ') + 'sucessful.')
+            msg(':: Test was' + (' ' if success else ' NOT ') + 'successful.')
 
         else:
             msg('W: Unknown method `{}`.'.format(method))
