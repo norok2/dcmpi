@@ -73,7 +73,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.utils as utl
+from dcmpi import utils
 from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
@@ -85,7 +85,7 @@ def do_acquire_sources(
         out_dirpath,
         method='symlink',
         subpath='{study}/{name}_{date}_{time}_{sys}',
-        extra_subpath=utl.ID['dicom'],
+        extra_subpath=utils.ID['dicom'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -102,7 +102,8 @@ def do_acquire_sources(
         subpath (str): Extra subpath to append to output dirpath.
             Extract and interpret fields from DICOM, according to field
             specifications: <field::format>.
-            For more information on accepted syntax, see `utl.fill_from_dicom`.
+            For more info on the accepted syntax, see
+            `utils.fill_from_dicom()`.
         extra_subpath (str):
         force (bool): Force new processing.
         verbose (int): Set level of verbosity.
@@ -112,8 +113,8 @@ def do_acquire_sources(
         Paths to directories containing DICOM files separated by session.
 
     See Also:
-        utl.fill_from_dicom,
-        utl.find_a_dicom
+        utils.fill_from_dicom,
+        utils.find_a_dicom
     """
 
     def get_filepaths(dirpath):
@@ -129,6 +130,8 @@ def do_acquire_sources(
 
     if method == 'move':
         msg('W: Files will be moved!', fmt='{t.yellow}{t.bold}')
+    elif method == 'symlink':
+        msg('W: Files will be linked!', fmt='{t.yellow}{t.bold}')
     if os.path.exists(in_dirpath):
         # :: analyze directory tree
         dcm_dirpaths = set()
@@ -136,13 +139,13 @@ def do_acquire_sources(
             msg('Analyzing `{}`...'.format(filepath),
                 verbose, VERB_LVL['debug'])
             filename = os.path.basename(filepath)
-            is_dicom = utl.is_dicom(
+            is_dicom = utils.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
             if not is_dicom:
-                is_compressed, compression = utl.is_compressed_dicom(
+                is_compressed, compression = utils.is_compressed_dicom(
                     filepath,
                     allow_dir=False,
                     allow_report=True,
@@ -150,7 +153,7 @@ def do_acquire_sources(
             else:
                 is_compressed = False
                 compression = None
-            if is_dicom or is_compressed and compression in utl.COMPRESSIONS:
+            if is_dicom or is_compressed and compression in utils.COMPRESSIONS:
                 dcm_subpath = None
                 if subpath or extra_subpath:
                     full_subpath = os.path.join(subpath, extra_subpath)
@@ -159,7 +162,7 @@ def do_acquire_sources(
                 else:  # if extra_subpath:
                     full_subpath = extra_subpath
                 if full_subpath:
-                    dcm_subpath = utl.fill_from_dicom(full_subpath, filepath)
+                    dcm_subpath = utils.fill_from_dicom(full_subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
                     dcm_dirpath = out_dirpath
@@ -170,20 +173,19 @@ def do_acquire_sources(
                         msg('Subpath: {}'.format(dcm_subpath),
                             verbose, VERB_LVL['low'])
                     dcm_dirpaths.add(dcm_dirpath)
-                if not os.path.isfile(os.path.join(dcm_dirpath, filename)) \
-                        or force:
+                fake_path = os.path.dirname(os.path.relpath(
+                    filepath, in_dirpath)).replace(
+                    os.path.sep, utils.INFO_SEP) + utils.INFO_SEP
+                out_filepath = os.path.join(dcm_dirpath, fake_path + filename)
+                if not os.path.isfile(out_filepath) or force:
                     if method == 'move':
-                        shutil.move(filepath, dcm_dirpath)
+                        shutil.move(filepath, out_filepath)
                     elif method == 'copy':
-                        shutil.copy(filepath, dcm_dirpath)
+                        shutil.copy(filepath, out_filepath)
                     elif method == 'symlink':
-                        os.symlink(
-                            filepath, os.path.join(
-                                dcm_dirpath, os.path.basename(filepath)))
+                        os.symlink(filepath, out_filepath)
                     elif method == 'link':
-                        os.link(
-                            filepath, os.path.join(
-                                dcm_dirpath, os.path.basename(filepath)))
+                        os.link(filepath, out_filepath)
                 else:
                     msg('I: Skipping existing output path. '
                         'Use `force` to override.')
@@ -192,6 +194,7 @@ def do_acquire_sources(
                 msg('W: Invalid source found `{}`'.format(name),
                     verbose, VERB_LVL['medium'])
     else:
+        dcm_dirpaths = None
         msg('W: Input path does NOT exists.', verbose, VERB_LVL['low'])
     return dcm_dirpaths
 
