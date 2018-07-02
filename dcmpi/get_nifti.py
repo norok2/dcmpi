@@ -22,10 +22,8 @@ Extract images from DICOM files and store them as NIfTI images.
 
 # ======================================================================
 # :: Future Imports
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (
+    division, absolute_import, print_function, unicode_literals)
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -43,6 +41,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import multiprocessing  # Process-based parallelism
 # import csv  # CSV File Reading and Writing [CSV: Comma-Separated Values]
 # import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
+import glob  # Unix style pathname pattern expansion
 
 # :: External Imports
 # import numpy as np  # NumPy (multidimensional numerical arrays library)
@@ -76,7 +75,7 @@ from dcmpi import msg, dbg
 def get_nifti(
         in_dirpath,
         out_dirpath,
-        method='dcm2nii',
+        method='dcm2niix',
         compressed=True,
         merged=True,
         force=False,
@@ -84,26 +83,24 @@ def get_nifti(
     """
     Extract images from DICOM files and store them as NIfTI images.
 
-    Parameters
-    ==========
-    in_dirpath (str): Path to input directory containing sorted DICOM files.
-    out_dirpath (str): Path to output directory where to put NIfTI images.
-    method : str (optional)
-        | Extraction method. Accepted values:
-        * isis: Use Enrico Reimer's ISIS tool.
-        * dcm2nii: Use Chris Rorden's dcm2nii tool.
-    compressed : boolean (optional)
-        Produce compressed images (using GZip).
-    merged : boolean (optional)
-        Produce merged images (in the 4th dimension, usually time).
-    force : boolean (optional)
-        Force new processing.
-    verbose : int (optional)
-        Set level of verbosity.
+    Args:
+        in_dirpath (str): Input path containing sorted DICOM files.
+        out_dirpath (str): Output path where to store NIfTI images.
+        method (str): DICOM to NIfTI conversion method.
+            Accepted values:
+             - 'dicom2nifti': use pure Python converter.
+             - 'isis': use Enrico Reimer's ISIS tool.
+                https://github.com/isis-group/isis
+             - 'dcm2nii': Use Chris Rorden's `dcm2nii` tool (old version).
+             - 'dcm2niix': Use Chris Rorden's `dcm2niix` tool (new version).
+        compressed (bool): Produce compressed NIfTI using GNU Zip.
+            The resulting files will have `.nii.gz` extension.
+        merged (bool): Merge images in the 4th dimension.
+            Not supported by all methods.
+        force (bool): Force computation to be re-done.
+        verbose (int): Set level of verbosity.
 
-    Returns
-    =======
-    None.
+    Returns:
 
     """
     msg(':: Exporting NIfTI images ({})...'.format(method))
@@ -118,34 +115,22 @@ def get_nifti(
         d_ext = '.' + utl.EXT['niz'] if compressed else utl.EXT['nii']
 
         # :: extract nifti
-        if method == 'pydicom':
-            for src_id in sorted(sources.keys()):
-                in_filepath = os.path.join(in_dirpath, src_id)
-            # TODO: implement to avoid dependencies
-            msg('W: Pure Python method not implemented.',
-                verbose, VERB_LVL['medium'])
-
-        if method == 'isis':
+        if method == 'dicom2nifti':
             for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
-                cmd = 'isisconv -in {} -out {}'.format(
-                    in_filepath, out_filepath)
-                ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
-                if merged:
-                    # TODO: implement volume merging
-                    msg('W: (isisconv) merging after not implemented.',
-                        verbose, VERB_LVL['medium'])
+                dicom2nifti.dicom_series_to_nifti(
+                    in_filepath, out_filepath, reorient_nifti=True)
 
         elif method == 'dcm2nii':
             for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 # produce nifti file
-                opts = ' -t n'
-                opts += ' -p n -i n -f n -d n -e y'  # influences the filename
+                opts = ' -f n '  # influences the filename
+                opts += ' -t n -p n -i n -d n -e y'
                 opts += ' -4 ' + 'y' if merged else 'n'
                 opts += ' -g ' + 'y' if compressed else 'n'
-                cmd = 'dcm2nii {} -o {} {}'.format(
+                cmd = method + ' {} -o {} {}'.format(
                     opts, out_dirpath, in_filepath)
                 ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
                 term_str = 'GZip...' if compressed else 'Saving '
@@ -173,15 +158,48 @@ def get_nifti(
                         out_filepath = os.path.join(
                             out_dirpath,
                             src_id + utl.INFO_SEP + str(num + 1) + d_ext)
-                        msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
+                        msg('NIfTI: {}'.format(
+                            out_filepath[len(out_dirpath):]))
                         os.rename(old_filepath, out_filepath)
 
-        elif method == 'dicom2nifti':
+        elif method == 'dcm2niix':
+            for src_id in sorted(sources.keys()):
+                in_filepath = os.path.join(in_dirpath, src_id)
+                # produce nifti file
+                opts = ' -f __img__ '  # set the filename
+                opts += ' -9 -t n -p y -i n -d n -b n '
+                opts += ' -z ' + 'y' if compressed else 'n'
+                cmd = method + ' {} -o {} {}'.format(
+                    opts, out_dirpath, in_filepath)
+                utl.execute(cmd, verbose=verbose)
+                old_names = glob.glob(os.path.join(
+                    out_dirpath, '__img__*.nii' + '.gz' if compressed else ''))
+                if len(old_names) == 1:
+                    old_filepath = os.path.join(out_dirpath, old_names[0])
+                    out_filepath = os.path.join(out_dirpath, src_id + d_ext)
+                    msg('NIfTI: {}'.format(out_filepath[len(out_dirpath):]))
+                    os.rename(old_filepath, out_filepath)
+                else:
+                    for num, old_name in enumerate(old_names):
+                        old_filepath = os.path.join(out_dirpath, old_name)
+                        out_filepath = os.path.join(
+                            out_dirpath,
+                            src_id + utl.INFO_SEP + str(num + 1) + d_ext)
+                        msg('NIfTI: {}'.format(
+                            out_filepath[len(out_dirpath):]))
+                        os.rename(old_filepath, out_filepath)
+
+        elif method == 'isis':
             for src_id in sorted(sources.keys()):
                 in_filepath = os.path.join(in_dirpath, src_id)
                 out_filepath = os.path.join(out_dirpath, src_id + d_ext)
-                dicom2nifti.dicom_series_to_nifti(
-                in_filepath, out_filepath, reorient_nifti=True)
+                cmd = 'isisconv -in {} -out {}'.format(
+                    in_filepath, out_filepath)
+                ret_val, p_stdout, p_stderr = utl.execute(cmd, verbose=verbose)
+                if merged:
+                    # TODO: implement volume merging
+                    msg('W: (isisconv) merging after not implemented.',
+                        verbose, VERB_LVL['medium'])
 
         else:
             msg('W: Unknown method `{}`.'.format(method))
