@@ -539,6 +539,8 @@ def is_dicom(
         (bool) True if the file is a valid DICOM, false otherwise.
     """
     import pydicom.errors
+
+
     try:
         dcm = pydcm.read_file(filepath)
         # check if it is a DICOM dir.
@@ -897,11 +899,54 @@ def dcm_sources(dirpath):
 
 
 # ======================================================================
+def to_json_type(val, encoding):
+    if isinstance(val, str):
+        val = ''.join(s for s in val if s in string.printable)
+    elif isinstance(val, bytes):
+        val = str(val.decode(encoding))
+    elif isinstance(val, int):
+        val = int(val)
+    elif isinstance(val, float):
+        val = float(val)
+    elif isinstance(val, complex):
+        val = complex(val)
+    else:
+        try:
+            sub_field = next(iter(val))
+        except (TypeError, StopIteration):
+            val = str(val)
+        else:
+            if hasattr(sub_field, 'value') and (
+                        hasattr(sub_field, 'tag') and hasattr(sub_field,
+                                                              'name')):
+                val = dcm_field_parser(val, encoding)
+            else:
+                val = [to_json_type(x, encoding) for x in val]
+    return val
+
+
+# ======================================================================
+def dcm_field_parser(fields, encoding, mask=None):
+    if mask is None:
+        mask = ()
+    result = {}
+    for field in fields:
+        tag = tuple([int(x, 0x10) for x in str(field.tag)[1:-1].split(', ')])
+        key = ''.join(s for s in str(field.name) if s not in " []'-")
+        val = to_json_type(field.value, encoding)
+        if tag not in mask:
+            if key == 'Unknown' or not key:
+                key = '_(0x{:04x},0x{:04x})'.format(*tag)
+            result[key] = val
+    return result
+
+
+# ======================================================================
 def dcm_dump(
         dcm,
         mask=DICOM_BINARY):
     """
-
+    Convert DICOM to JSON (excluding binary data).
 
     Args:
         dcm:
@@ -910,26 +955,11 @@ def dcm_dump(
     Returns:
 
     """
-    dump = {}
-    for field in dcm:
-        tag = tuple([int(x, 0x10) for x in str(field.tag)[1:-1].split(', ')])
-        key = filter(lambda x: x not in " []'-", str(field.name))
-        try:
-            val = field.value
-            if isinstance(val, str):
-                val = ''.join(s for s in val if s in string.printable)
-                # val = val.encode('string-escape')
-            val = json.dumps(val)
-        except:
-            val = []
-            for item in field.value:
-                val.append(dcm_dump(item, mask))
-
-        if tag not in mask:
-            if key == 'Unknown' or not key:
-                key = '_(0x{:04x},0x{:04x})'.format(*tag)
-            dump[key] = [val]
-    return dump
+    try:
+        encoding = next(iter(dcm._character_set))
+    except TypeError:
+        encoding = dcm._character_set
+    return {k: [v] for k, v in dcm_field_parser(dcm, encoding, mask).items()}
 
 
 # ======================================================================
