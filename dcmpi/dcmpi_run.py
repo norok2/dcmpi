@@ -223,7 +223,7 @@ def dcmpi_run(
             kws = func_kws.copy()
             for key, val in kws.items():
                 if isinstance(val, str):
-                    kws[key] = val.format_map(locals())
+                    kws[key] = val.format(**locals())
             kws.update(dict(force=force, verbose=verbose))
             try:
                 func(**kws)
