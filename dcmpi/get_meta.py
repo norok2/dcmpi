@@ -100,14 +100,15 @@ def get_meta(
     msg('Input:  {}'.format(in_dirpath))
     msg('Output: {}'.format(out_dirpath))
     sources_dict = utl.dcm_sources(in_dirpath)
+    msg('Sources: {}'.format(sources_dict), verbose, VERB_LVL['debug'])
     # groups_dict = utl.group_series(in_dirpath)
     # proceed only if output is not likely to be there
     if not os.path.exists(out_dirpath) or force:
         # :: create output directory if not exists and copy files there
         if not os.path.exists(out_dirpath):
             os.makedirs(out_dirpath)
-
         if method == 'pydicom':
+            msg(sources_dict)
             for src_id, in_filepath_list in sorted(sources_dict.items()):
                 out_filepath = os.path.join(
                     out_dirpath, src_id + '.' + utl.ID['meta'])
@@ -116,12 +117,16 @@ def get_meta(
                 for in_filepath in in_filepath_list:
                     try:
                         dcm = pydcm.read_file(in_filepath)
-                    except:
-                        msg('E: failed processing `{}`'.format(in_filepath))
+                    except Exception as e:
+                        msg('E: failed processing `{}`'.format(in_filepath),
+                            verbose, D_VERB_LVL)
+                        msg('E: ...with exception: {}'.format(e),
+                            verbose, VERB_LVL['debug'])
                     else:
                         dcm_dict = utl.dcm_dump(dcm)
                         info_dict = utl.dcm_merge_info(info_dict, dcm_dict)
-                msg('Meta: {}'.format(out_filepath[len(out_dirpath):]))
+                msg('Meta: {}'.format(out_filepath[len(out_dirpath):]),
+                    verbose, D_VERB_LVL)
                 with open(out_filepath, 'w') as info_file:
                     json.dump(info_dict, info_file, sort_keys=True, indent=4)
 
