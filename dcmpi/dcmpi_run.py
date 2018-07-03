@@ -3,6 +3,7 @@
 """
 DCMPI: DICOM preprocessing.
 """
+#todo: separate gui/tui/cli
 
 # ======================================================================
 # :: Future Imports
@@ -24,7 +25,6 @@ import warnings  # Warning control
 # :: External Imports
 
 # :: External Imports Submodules
-
 # from pytk import tk
 # from pytk import ttk
 from pytk import messagebox
