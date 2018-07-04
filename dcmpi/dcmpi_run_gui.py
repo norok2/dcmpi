@@ -455,14 +455,14 @@ class Spinbox(tk.Spinbox):
         self.start = kwargs['from_'] if 'from_' in kwargs else None
         self.stop = kwargs['to'] if 'to' in kwargs else None
         self.step = kwargs['increment'] if 'increment' in kwargs else None
-        self.bind('<MouseWheel>', self.mouseWheel)
-        self.bind('<Button-4>', self.mouseWheel)
-        self.bind('<Button-5>', self.mouseWheel)
+        self.bind('<MouseWheel>', self.mousewheel)
+        self.bind('<Button-4>', self.mousewheel)
+        self.bind('<Button-5>', self.mousewheel)
         self.sys_events = {
             'scroll_up': {'unix': 4, 'win': +120},
             'scroll_down': {'unix': 5, 'win': -120}}
 
-    def mouseWheel(self, event):
+    def mousewheel(self, event):
         scroll_up = (
             event.num == self.sys_events['scroll_up']['unix'] or
             event.delta == self.sys_events['scroll_up']['win'])
