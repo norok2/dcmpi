@@ -89,7 +89,7 @@ def get_session(dirpath, summary):
     try:
         subdirs = dirpath.split(os.sep)
         sample_id, study_id = subdirs[-2:-4:-1]
-    except:
+    except IndexError:
         info = []
         for key, func in fields:
             info.append(func(summary[key]))
@@ -109,7 +109,8 @@ def html_input(typ, opt_str=''):
             opts = json.loads(opt_str)
             for key, val in opts.items():
                 opt_html += ' {}="{}"'.format(key, val)
-        except:
+        except Exception as e:
+            print(e)
             opt_html = opt_str
     output = '<input type="{}"{} />'.format(typ, opt_html)
     return output

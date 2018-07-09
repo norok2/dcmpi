@@ -110,7 +110,8 @@ def dcmpi_update(
                             msg('W: DICOM attr: `` not found.',
                                 verbose, VERB_LVL['medium'])
                     dcm.save_as(dcm_filepath)
-                except:
+                except Exception as e:
+                    print(e)
                     msg('E: Could not open DICOM: {}.'.format(dcm_filepath))
                 finally:
                     if is_compressed and compression in utl.COMPRESSIONS:

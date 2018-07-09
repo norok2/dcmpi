@@ -711,7 +711,8 @@ def fill_from_dicom(
         dcm_filepath = temp_filepath
     try:
         dcm = pydcm.read_file(dcm_filepath)
-    except:
+    except Exception as e:
+        print(e)
         print('E: Could not open DICOM file: {}.'.format(dcm_filepath))
         out_str = ''
     else:
@@ -835,7 +836,8 @@ def group_series(
             src_dcm = sources[0]
             try:
                 dcm = pydcm.read_file(src_dcm)
-            except:
+            except Exception as e:
+                print(e)
                 msg('W: failed processing `{}`'.format(src_dcm),
                     verbose, VERB_LVL['medium'])
             else:
@@ -1072,7 +1074,8 @@ def postprocess_info(
             try:
                 if fmt:
                     field_val = fmt(field_val, fmt_params)
-            except:
+            except Exception as e:
+                print(e)
                 msg('W: Unable to post-process `{}`.'.format(src_id),
                     verbose, VERB_LVL['medium'])
         else:

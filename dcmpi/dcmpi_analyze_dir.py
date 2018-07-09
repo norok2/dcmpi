@@ -176,8 +176,8 @@ def send_mail_dcm(
         session = '{} / {}'.format(study_id, sample_id)
         # get dirpath
         dirpath = os.sep.join(dcm_filepath.split(os.sep)[:-2])
-    except Exception as ex:
-        print(ex)
+    except Exception as e:
+        print(e)
         msg('E: Could not get information from `{}`.'.format(dcm_filepath))
     else:
         cmd = 'sendmail -t <<{}'.format(
@@ -248,8 +248,8 @@ def dcm_analyze_dir(
                     break
         else:
             raise ValueError('Unknown concatenation method.')
-    except Exception as ex:
-        print(ex)
+    except Exception as e:
+        print(e)
         msg('E: Could not get information from `{}`.'.format(dcm_filepath))
     else:
         # perform action

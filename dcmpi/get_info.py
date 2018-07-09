@@ -128,9 +128,9 @@ def get_info(
                     else:
                         idx -= 1
 
-            except Exception as ex:
+            except Exception as e:
                 print(sources)
-                msg('E: failed during get_info (exception: {})'.format(ex))
+                msg('E: failed during get_info (exception: {})'.format(e))
             else:
                 # DICOM's-ready information
                 info.update(utl.postprocess_info(
@@ -147,7 +147,8 @@ def get_info(
                         '%Y-%m-%d_%H:%M:%S'))
                     field_val = str(
                         datetime.timedelta(0, end_time - begin_time))
-                except:
+                except Exception as e:
+                    print(e)
                     field_val = 'N/A'
                     msg('W: Cannot process `{}`.'.format(field_id),
                         verbose, VERB_LVL['medium'])
@@ -167,7 +168,8 @@ def get_info(
                     sources[groups[group_id][0]])[-1]
                 try:
                     dcm = pydcm.read_file(in_filepath)
-                except:
+                except Exception as e:
+                    print(e)
                     msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
                     info.update(utl.postprocess_info(
@@ -196,7 +198,8 @@ def get_info(
                             '%Y-%m-%d_%H:%M:%S'))
                         field_val = str(
                             datetime.timedelta(0, end_time - begin_time))
-                    except:
+                    except Exception as e:
+                        print(e)
                         field_val = 'N/A'
                         msg('W: Cannot process `{}`.'.format(field_id),
                             verbose, VERB_LVL['medium'])
@@ -217,7 +220,8 @@ def get_info(
                         info['_acquisition'] = acq
                     try:
                         dcm = pydcm.read_file(in_filepath)
-                    except:
+                    except Exception as e:
+                        print(e)
                         msg('E: failed processing `{}`'.format(in_filepath))
                     else:
                         info.update(utl.postprocess_info(

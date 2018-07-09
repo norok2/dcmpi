@@ -328,7 +328,8 @@ class Main(QtGui.QWidget):
                     input_list = json.load(target_file)
                 for item in input_list:
                     self.lstInput.addItem(item)
-            except:
+            except Exception as e:
+                print(e)
                 title = self.btnImport.text().strip('&') + ' Failed'
                 msg = 'Could not import input list from:\n{}'.format(target)
                 QtGui.QMessageBox.warning(

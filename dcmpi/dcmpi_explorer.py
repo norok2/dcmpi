@@ -73,7 +73,8 @@ def dcmpi_explorer_gui(*args, **kwargs):
         root = tk.Tk()
         # app = Main(root, args)
         root.mainloop()
-    except:
+    except Exception as e:
+        print(e)
         warnings.warn(
             'Failed to use Graphical UI (GUI).'
             ' Fallback to Text UI (TUI)...')

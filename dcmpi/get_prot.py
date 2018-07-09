@@ -112,7 +112,8 @@ def get_prot(
                     dcm = pydcm.read_file(in_filepath)
                     prot_src = dcm[utl.DCM_ID['hdr_nfo']].value
                     prot_str = utl.get_protocol(prot_src)
-                except:
+                except Exception as e:
+                    print(e)
                     msg('E: failed processing \'{}\''.format(in_filepath))
                 else:
                     msg('Protocol: {}'.format(out_filepath[len(out_dirpath):]))

@@ -117,7 +117,8 @@ def sorting(
         except IOError:
             msg('W: unable to process `{}`'.format(in_filepath),
                 verbose, VERB_LVL['debug'])
-        except:
+        except Exception as e:
+            print(e)
             msg('W: failed processing `{}`'.format(in_filepath),
                 verbose, VERB_LVL['debug'])
         else:
