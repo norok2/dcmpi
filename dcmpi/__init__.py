@@ -6,14 +6,20 @@ DCMPI - DICOM Preprocessing Interface: explore/distill DICOM data.
 
 # ======================================================================
 # :: Future Imports
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (
+    division, absolute_import, print_function, unicode_literals, )
 
 # ======================================================================
-# :: Versioning
-__version__ = '0.0.1.4.dev37+ng6599902.d20160922'
+# :: Python Standard Library Imports
+import datetime  # Basic date and time types
+# import inspect  # Inspect live objects
+import os  # Miscellaneous operating system interfaces
+import appdirs  # Determine appropriate platform-specific dirs
+import pkg_resources  # Manage package resource (from setuptools module)
+
+# ======================================================================
+# :: Version
+from ._version import __version__
 
 # ======================================================================
 # :: Project Details
@@ -175,6 +181,7 @@ def dbg(name, fmt=None):
     """
     import inspect
 
+
     outer_frame = inspect.getouterframes(inspect.currentframe())[1]
     name_str = outer_frame[4][0][:-1]
     msg(name_str, fmt=fmt, end=': ')
@@ -203,17 +210,24 @@ def _app_dirs(
 
     Examples:
         >>> sorted(_app_dirs().keys())
-        ['cache', 'config', 'data', 'log']
+        ['base', 'cache', 'config', 'data', 'log']
     """
-    import appdirs
-    dirs = dict((
+    dirpaths = dict((
+        ('base', os.path.dirname(__file__)),  # todo: fix for pyinstaller
+        ('resources', pkg_resources.resource_filename('dcmpi', 'resources')),
         ('config', appdirs.user_config_dir(name, author, version)),
         ('cache', appdirs.user_cache_dir(name, author, version)),
         ('data', appdirs.user_data_dir(name, author, version)),
         ('log', appdirs.user_data_dir(name, author, version)),
     ))
-    return dirs
+    for name, dirpath in dirpaths.items():
+        if not os.path.isdir(dirpath):
+            os.makedirs(dirpath)
+    return dirpaths
 
+
+# ======================================================================
+DIRS = _app_dirs()
 
 # ======================================================================
 if __name__ == '__main__':

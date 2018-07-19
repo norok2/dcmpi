@@ -861,7 +861,7 @@ class Main(pytk.widgets.Frame):
 def dcmpi_run_gui(*args, **kwargs):
     root = pytk.tk.Tk()
     app = Main(root, *args, **kwargs)
-    pytk.utils.set_icon(root, 'icon', DIRS['data'])
+    pytk.utils.set_icon(root, 'icon', DIRS['resources'])
     root.mainloop()
 
 

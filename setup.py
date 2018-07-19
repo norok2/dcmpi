@@ -144,20 +144,23 @@ setup(
 
     extras_require={
         'blessings': 'blessings',
-        # 'dicom': 'dicom',
     },
 
     package_data={
-        'dcmpi': ['report_templates/*.html', ],
+        'dcmpi': [
+            'resources/icon.*',
+            'report_templates/*.html',],
     },
+    include_package_data=True,
 
-    # data_files=[('my_data', ['data/data_file'])],
+    data_files=[('share/icons', ['artwork/dcmpi_logo.svgz'])],
 
     entry_points={
         'console_scripts': [
             'dcmpi=dcmpi.dcmpi_run:main',
             'dcmpi_tui=dcmpi.dcmpi_run:main_tui',
             'dcmpi_cli=dcmpi.dcmpi_run:main_cli',
+            'dcmpi_gui=dcmpi.dcmpi_run:main_gui',
 
             'dcmpi_run=dcmpi.dcmpi_run:main',
             'dcmpi_run_tui=dcmpi.dcmpi_run:main_tui',
