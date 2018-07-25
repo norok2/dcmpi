@@ -37,7 +37,7 @@ import pytk.widgets
 # :: Local Imports
 import dcmpi
 import dcmpi.utils as utl
-from dcmpi import DIRS, INFO
+from dcmpi import PATH, INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 from dcmpi import MY_GREETINGS
@@ -861,7 +861,7 @@ class Main(pytk.widgets.Frame):
 def dcmpi_run_gui(*args, **kwargs):
     root = pytk.tk.Tk()
     app = Main(root, *args, **kwargs)
-    pytk.utils.set_icon(root, 'icon', DIRS['resources'])
+    pytk.utils.set_icon(root, 'icon', PATH['resources'])
     root.mainloop()
 
 

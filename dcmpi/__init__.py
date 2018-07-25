@@ -4,6 +4,8 @@
 DCMPI - DICOM Preprocessing Interface: explore/distill DICOM data.
 """
 
+# Copyright (c) Riccardo Metere <rick@metere.it>
+
 # ======================================================================
 # :: Future Imports
 from __future__ import (
@@ -11,11 +13,12 @@ from __future__ import (
 
 # ======================================================================
 # :: Python Standard Library Imports
-import datetime  # Basic date and time types
-# import inspect  # Inspect live objects
-import os  # Miscellaneous operating system interfaces
-import appdirs  # Determine appropriate platform-specific dirs
-import pkg_resources  # Manage package resource (from setuptools module)
+
+# ======================================================================
+# :: External Imports
+# import flyingcircus as fc
+from flyingcircus import msg, dbg, elapsed, report, pkg_paths
+from flyingcircus import VERB_LVL, VERB_LVL_NAMES, D_VERB_LVL
 
 # ======================================================================
 # :: Version
@@ -27,9 +30,9 @@ INFO = {
     'name': 'DCMPI',
     'author': 'DCMPI developers',
     'contrib': (
-        'Riccardo Metere <metere@cbs.mpg.de>',
+        'Riccardo Metere <rick@metere.it>',
     ),
-    'copyright': 'Copyright (C) 2015-2017',
+    'copyright': 'Copyright (C) 2015-2018',
     'license': 'GNU General Public License version 3 or later (GPLv3+)',
     'notice':
         """
@@ -39,14 +42,6 @@ You are welcome to redistribute it under its terms and conditions.
         """,
     'version': __version__
 }
-
-# ======================================================================
-# :: supported verbosity levels (level 4 skipped on purpose)
-VERB_LVL_NAMES = (
-    'none', 'lowest', 'lower', 'low', 'medium', 'high', 'higher', 'highest',
-    'warning', 'debug')
-VERB_LVL = {k: v for v, k in enumerate(VERB_LVL_NAMES)}
-D_VERB_LVL = VERB_LVL['lowest']
 
 # ======================================================================
 # Greetings
@@ -62,179 +57,13 @@ MY_GREETINGS = r"""
 # :: Causes the greetings to be printed any time the library is loaded.
 print(MY_GREETINGS)
 
-
 # ======================================================================
-def msg(
-        text,
-        verb_lvl=D_VERB_LVL,
-        verb_threshold=D_VERB_LVL,
-        fmt=None,
-        *args,
-        **kwargs):
-    """
-    Display a feedback message to the standard output.
-
-    Args:
-        text (str|Any): Message to display or object with `__repr__`.
-        verb_lvl (int): Current level of verbosity.
-        verb_threshold (int): Threshold level of verbosity.
-        fmt (str): Format of the message (if `blessed` supported).
-            If None, a standard formatting is used.
-        *args (tuple): Positional arguments to be passed to `print`.
-        **kwargs (dict): Keyword arguments to be passed to `print`.
-
-    Returns:
-        None.
-
-    Examples:
-        >>> s = 'Hello World!'
-        >>> msg(s)
-        Hello World!
-        >>> msg(s, VERB_LVL['medium'], VERB_LVL['low'])
-        Hello World!
-        >>> msg(s, VERB_LVL['low'], VERB_LVL['medium'])  # no output
-        >>> msg(s, fmt='{t.green}')  # if ANSI Terminal, green text
-        Hello World!
-        >>> msg('   :  a b c', fmt='{t.red}{}')  # if ANSI Terminal, red text
-           :  a b c
-        >>> msg(' : a b c', fmt='cyan')  # if ANSI Terminal, cyan text
-         : a b c
-    """
-    if verb_lvl >= verb_threshold and text:
-        # if blessed is not present, no coloring
-        try:
-            import blessed
-        except ImportError:
-            try:
-                import blessings as blessed
-            except ImportError:
-                blessed = None
-
-        if blessed:
-            text = str(text)
-            try:
-                t = blessed.Terminal()
-            except ValueError:
-                pass
-            else:
-                if not fmt:
-                    if VERB_LVL['low'] < verb_threshold <= VERB_LVL['medium']:
-                        e = t.cyan
-                    elif VERB_LVL['medium'] < verb_threshold < \
-                            VERB_LVL['debug']:
-                        e = t.magenta
-                    elif verb_threshold >= VERB_LVL['debug']:
-                        e = t.blue
-                    elif text.startswith('I:'):
-                        e = t.green
-                    elif text.startswith('W:'):
-                        e = t.yellow
-                    elif text.startswith('E:'):
-                        e = t.red
-                    else:
-                        e = t.white
-                    # first non-whitespace word
-                    txt1 = text.split(None, 1)[0]
-                    # initial whitespaces
-                    n = text.find(txt1)
-                    txt0 = text[:n]
-                    # rest
-                    txt2 = text[n + len(txt1):]
-                    txt_kws = dict(
-                        e1=e + (t.bold if e == t.white else ''),
-                        e2=e + (t.bold if e != t.white else ''),
-                        t0=txt0, t1=txt1, t2=txt2, n=t.normal)
-                    text = '{t0}{e1}{t1}{n}{e2}{t2}{n}'.format(**txt_kws)
-                else:
-                    if 't.' not in fmt:
-                        fmt = '{{t.{}}}'.format(fmt)
-                    if '{}' not in fmt:
-                        fmt += '{}'
-                    text = fmt.format(text, t=t) + t.normal
-        print(text, *args, **kwargs)
-
-
-# ======================================================================
-def dbg(name, fmt=None):
-    """
-    Print content of a variable for debug purposes.
-
-    Args:
-        name: The name to be inspected.
-        fmt (str): Format of the message (if `blessed` supported).
-            If None, a standard formatting is used.
-
-    Returns:
-        None.
-
-    Examples:
-        >>> my_dict = {'a': 1, 'b': 1}
-        >>> dbg(my_dict)
-        dbg(my_dict): {
-            "a": 1,
-            "b": 1
-        }
-        <BLANKLINE>
-        >>> dbg(my_dict['a'])
-        dbg(my_dict['a']): 1
-        <BLANKLINE>
-    """
-    import inspect
-
-
-    outer_frame = inspect.getouterframes(inspect.currentframe())[1]
-    name_str = outer_frame[4][0][:-1]
-    msg(name_str, fmt=fmt, end=': ')
-    msg(repr(name), fmt='')
-
-
-# ======================================================================
-def _app_dirs(
-        name=INFO['name'],
-        author=INFO['author'],
-        version=INFO['version']):
-    """
-    Generate application directories.
-
-    Args:
-        name (str): Application name.
-        author (str): Application author.
-        version (str): Application version.
-
-    Returns:
-        dirs (dict): The requested directory.
-            - 'config': directory for configuration files.
-            - 'cache': directory for caching files.
-            - 'data': directory for data files.
-            - 'log': directory for log files.
-
-    Examples:
-        >>> sorted(_app_dirs().keys())
-        ['base', 'cache', 'config', 'data', 'log']
-    """
-    dirpaths = dict((
-        ('base', os.path.dirname(__file__)),  # todo: fix for pyinstaller
-        ('resources', pkg_resources.resource_filename('dcmpi', 'resources')),
-        ('config', appdirs.user_config_dir(name, author, version)),
-        ('cache', appdirs.user_cache_dir(name, author, version)),
-        ('data', appdirs.user_data_dir(name, author, version)),
-        ('log', appdirs.user_data_dir(name, author, version)),
-    ))
-    for name, dirpath in dirpaths.items():
-        if not os.path.isdir(dirpath):
-            os.makedirs(dirpath)
-    return dirpaths
-
-
-# ======================================================================
-DIRS = _app_dirs()
+PATH = pkg_paths()
 
 # ======================================================================
 if __name__ == '__main__':
-    import doctest
+    import doctest  # Test interactive Python examples
 
     msg(__doc__.strip())
     doctest.testmod()
-
-else:
-    DIRS = _app_dirs()
+    msg(report())

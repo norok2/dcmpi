@@ -43,7 +43,7 @@ import blessed  # Wrapper for terminal coloring, styling, and positioning
 
 # :: Local Imports
 import dcmpi.utils as utl
-from dcmpi import INFO, DIRS
+from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 

@@ -67,7 +67,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 
 # :: Local Imports
 import dcmpi.utils as utl
-from dcmpi import INFO, DIRS
+from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 

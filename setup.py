@@ -138,7 +138,10 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['appdirs', 'pydicom', 'pytk', 'blessed', 'dicom2nifti'],
+    install_requires=[
+        'appdirs', 'pydicom', 'pytk', 'blessed', 'dicom2nifti',
+        'flyingcircus'
+    ],
 
     setup_requires=['setuptools', 'setuptools_scm'],
 

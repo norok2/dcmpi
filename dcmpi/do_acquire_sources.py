@@ -74,7 +74,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
 from dcmpi import utils
-from dcmpi import INFO, DIRS
+from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
 
