@@ -22,10 +22,8 @@ DCMPI: generic and miscellaneous utilities.
 
 # ======================================================================
 # :: Future Imports
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import (
+    division, absolute_import, print_function, unicode_literals, )
 
 # ======================================================================
 # :: Python Standard Library Imports
@@ -61,6 +59,7 @@ import shlex  # Simple lexical analysis
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
+import flyingcircus as fc
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -69,6 +68,9 @@ import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import scipy.integrate  # SciPy: Integrations facilities
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
+from flyingcircus.util import (
+    EXT, has_decorator, strip_decorator, auto_convert, which, execute,
+    check_redo, string_between)
 
 # :: Local Imports
 # from dcmpi import INFO, DIRS
@@ -77,7 +79,7 @@ from dcmpi import msg, dbg
 
 # ======================================================================
 # :: General-purposes constants
-EXT = {
+EXT.update({
     'None': '',
     'txt': 'txt',
     'json': 'json',
@@ -85,7 +87,7 @@ EXT = {
     'dcr': 'sr',  # DICOM report
     'niz': 'nii.gz',
     'nii': 'nii'
-}
+})
 
 INFO_SEP = '__'
 FMT_SEP = '::'
@@ -158,7 +160,7 @@ DICOM_BINARY = (
 
 
 # ======================================================================
-def _nominal_B0(val):
+def _nominal_b0(val):
     """
     Infer Nominal Magnetic Field Strength from exact one.
     """
@@ -182,342 +184,6 @@ def has_term(ui_mode):
     result = sys.stdin.isatty()
     result *= ui_mode.lower() == 'tui'
     return result
-
-
-# ======================================================================
-def has_decorator(
-        text,
-        pre_decor='"',
-        post_decor='"'):
-    """
-    Determine if a string is delimited by some characters (decorators).
-
-    Args:
-        text (str): The text input string.
-        pre_decor (str): initial string decorator.
-        post_decor (str): final string decorator.
-
-    Returns:
-        has_decorator (bool): True if text is delimited by the specified chars.
-
-    Examples:
-        >>> has_decorator('"test"')
-        True
-        >>> has_decorator('"test')
-        False
-        >>> has_decorator('<test>', '<', '>')
-        True
-    """
-    return text.startswith(pre_decor) and text.endswith(post_decor)
-
-
-# ======================================================================
-def strip_decorator(
-        text,
-        pre_decor='"',
-        post_decor='"'):
-    """
-    Strip initial and final character sequences (decorators) from a string.
-
-    Args:
-        text (str): The text input string.
-        pre_decor (str): initial string decorator.
-        post_decor (str): final string decorator.
-
-    Returns:
-        text (str): the text without the specified decorators.
-
-    Examples:
-        >>> strip_decorator('"test"')
-        'test'
-        >>> strip_decorator('"test')
-        'test'
-        >>> strip_decorator('<test>', '<', '>')
-        'test'
-    """
-    begin = len(pre_decor) if text.startswith(pre_decor) else None
-    end = -len(post_decor) if text.endswith(post_decor) else None
-    return text[begin:end]
-
-
-# ======================================================================
-def auto_convert(
-        text,
-        pre_decor=None,
-        post_decor=None):
-    """
-    Convert value to numeric if possible, or strip delimiters from string.
-
-    Args:
-        text (str|int|float|complex): The text input string.
-        pre_decor (str): initial string decorator.
-        post_decor (str): final string decorator.
-
-    Returns:
-        val (int|float|complex): The numeric value of the string.
-
-    Examples:
-        >>> auto_convert('<100>', '<', '>')
-        100
-        >>> auto_convert('<100.0>', '<', '>')
-        100.0
-        >>> auto_convert('100.0+50j')
-        (100+50j)
-        >>> auto_convert('1e3')
-        1000.0
-        >>> auto_convert(1000)
-        1000
-        >>> auto_convert(1000.0)
-        1000.0
-    """
-    if isinstance(text, str):
-        if pre_decor and post_decor and \
-                has_decorator(text, pre_decor, post_decor):
-            text = strip_decorator(text, pre_decor, post_decor)
-        try:
-            val = int(text)
-        except (TypeError, ValueError):
-            try:
-                val = float(text)
-            except (TypeError, ValueError):
-                try:
-                    val = complex(text)
-                except (TypeError, ValueError):
-                    val = text
-    else:
-        val = text
-    return val
-
-
-# ======================================================================
-def which(args):
-    """
-    Determine the full path of an executable, if possible.
-
-    It mimics the behavior of the POSIX command `which`.
-
-    Args:
-        args (str|list[str]): Command to execute as a list of tokens.
-            Optionally can accept a string which will be tokenized.
-
-    Returns:
-        args (list[str]): Command to execute as a list of tokens.
-            The first item of the list is the full path of the executable.
-            If the executable is not found in path, returns the first token of
-            the input.
-            Other items are identical to input, if the input was a str list.
-            Otherwise it will be the tokenized version of the passed string,
-            except for the first token.
-        is_valid (bool): True if path of executable is found, False otherwise.
-    """
-
-    def is_executable(file_path):
-        return os.path.isfile(file_path) and os.access(file_path, os.X_OK)
-
-    # ensure args in the correct format
-    try:
-        args = shlex.split(args)
-    except AttributeError:
-        pass
-
-    cmd = args[0]
-    dirpath, filename = os.path.split(cmd)
-    if dirpath:
-        is_valid = is_executable(cmd)
-    else:
-        is_valid = False
-        for dirpath in os.environ['PATH'].split(os.pathsep):
-            dirpath = dirpath.strip('"')
-            tmp = os.path.join(dirpath, cmd)
-            is_valid = is_executable(tmp)
-            if is_valid:
-                cmd = tmp
-                break
-    return [cmd] + args[1:], is_valid
-
-
-# ======================================================================
-def execute(
-        args,
-        in_pipe=None,
-        mode='call',
-        timeout=None,
-        encoding='utf-8',
-        dry=False,
-        verbose=D_VERB_LVL):
-    """
-    Execute command and retrieve/print output at the end of execution.
-
-    Args:
-        args (str|list[str]): Command to execute as a list of tokens.
-            Optionally can accept a string.
-        in_pipe (str|None): Input data to be used as stdin of the process.
-        mode (str): Set the execution mode (affects the return values).
-            Allowed modes:
-             - 'spawn': Spawn a new process. stdout and stderr will be lost.
-             - 'call': Call new process and wait for execution.
-                Once completed, obtain the return code, stdout, and stderr.
-             - 'flush': Call new process and get stdout+stderr immediately.
-                Once completed, obtain the return code.
-                Unfortunately, there is no easy
-        timeout (float): Timeout of the process in seconds.
-        encoding (str): The encoding to use.
-        dry (bool): Print rather than execute the command (dry run).
-        verbose (int): Set level of verbosity.
-
-    Returns:
-        ret_code (int|None): if mode not `spawn`, return code of the process.
-        p_stdout (str|None): if mode not `spawn`, the stdout of the process.
-        p_stderr (str|None): if mode is `call`, the stderr of the process.
-    """
-    ret_code, p_stdout, p_stderr = None, None, None
-
-    args, is_valid = which(args)
-    if is_valid:
-        msg('{} {}'.format('$$' if dry else '>>', ' '.join(args)),
-            verbose, D_VERB_LVL if dry else VERB_LVL['medium'])
-    else:
-        msg('W: `{}` is not in available in $PATH.'.format(args[0]))
-
-    if not dry and is_valid:
-        if in_pipe is not None:
-            msg('< {}'.format(in_pipe),
-                verbose, VERB_LVL['highest'])
-
-        proc = subprocess.Popen(
-            args,
-            stdin=subprocess.PIPE if in_pipe and not mode == 'flush' else None,
-            stdout=subprocess.PIPE if mode != 'spawn' else None,
-            stderr=subprocess.PIPE if mode == 'call' else subprocess.STDOUT,
-            shell=False)
-
-        # handle stdout nd stderr
-        if mode == 'flush' and not in_pipe:
-            p_stdout, p_stderr = '', ''
-            while proc.poll() is None:
-                out_buff = proc.stdout.readline().decode(encoding)
-                p_stdout += out_buff
-                msg(out_buff, fmt='', end='')
-                sys.stdout.flush()
-        elif mode == 'call':
-            try:
-                p_stdout, p_stderr = proc.communicate(
-                    in_pipe.encode(encoding) if in_pipe else None, timeout)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                p_stdout, p_stderr = proc.communicate()
-            p_stdout = p_stdout.decode(encoding)
-            p_stderr = p_stderr.decode(encoding)
-            msg(p_stdout, verbose, VERB_LVL['high'], fmt='')
-            msg(p_stderr, verbose, VERB_LVL['high'], fmt='')
-        else:
-            msg('E: mode `{}` and `in_pipe` not supported.'.format(mode))
-
-    return ret_code, p_stdout, p_stderr
-
-
-# ======================================================================
-def check_redo(
-        in_filepaths,
-        out_filepaths,
-        force=False):
-    """
-    Check if input files are newer than output files, to force calculation.
-
-    Args:
-        in_filepaths (list[str|unicode]): Input filepaths for computation.
-        out_filepaths (list[str|unicode]): Output filepaths for computation.
-        force (bool): Force computation to be re-done.
-
-    Returns:
-        force (bool): True if the computation is to be re-done.
-
-    Raises:
-        IndexError: If the input filepath list is empty.
-        IOError: If any of the input files do not exist.
-    """
-    # todo: include output_dir autocreation
-    # check if input is not empty
-    if not in_filepaths:
-        raise IndexError('List of input files is empty.')
-
-    # check if input exists
-    for in_filepath in in_filepaths:
-        if not os.path.exists(in_filepath):
-            raise IOError('Input file does not exists.')
-
-    # check if output exists
-    if not force:
-        for out_filepath in out_filepaths:
-            if out_filepath:
-                if not os.path.exists(out_filepath):
-                    force = True
-                    break
-
-    # check if input is older than output
-    if not force:
-        for in_filepath, out_filepath in \
-                itertools.product(in_filepaths, out_filepaths):
-            if in_filepath and out_filepath:
-                if os.path.getmtime(in_filepath) \
-                        > os.path.getmtime(out_filepath):
-                    force = True
-                    break
-    return force
-
-
-# ======================================================================
-def string_between(
-        text,
-        begin_str,
-        end_str,
-        incl_begin=False,
-        incl_end=False,
-        greedy=True):
-    """
-    Isolate the string contained between two tokens
-
-    Args:
-        text (str): String to parse
-        begin_str (str): Token at the beginning
-        end_str (str): Token at the ending
-        incl_begin (bool): Include 'begin_string' in the result
-        incl_end (bool): Include 'end_str' in the result.
-        greedy (bool): Output the largest possible string.
-
-    Returns:
-        text (str): The string contained between the specified
-        tokens (if any)
-
-    Examples:
-        >>> string_between('roses are red violets are blue', 'ses', 'lets')
-        ' are red vio'
-        >>> string_between('roses are red, or not?', 'a', 'd')
-        're re'
-        >>> string_between('roses are red, or not?', ' ', ' ')
-        'are red, or'
-        >>> string_between('roses are red, or not?', ' ', ' ', greedy=False)
-        'are'
-        >>> string_between('roses are red, or not?', 'r', 'r')
-        'oses are red, o'
-        >>> string_between('roses are red, or not?', 'r', 'r', greedy=False)
-        'oses a'
-        >>> string_between('roses are red, or not?', 'r', 's', True, False)
-        'rose'
-    """
-    incl_begin = len(begin_str) if not incl_begin else 0
-    incl_end = len(end_str) if incl_end else 0
-    if begin_str in text and end_str in text:
-        if greedy:
-            begin = text.find(begin_str) + incl_begin
-            end = text.rfind(end_str) + incl_end
-        else:
-            begin = text.find(begin_str) + incl_begin
-            end = text[begin:].find(end_str) + incl_end + begin
-        text = text[begin:end]
-    else:
-        text = ''
-    return text
 
 
 # ======================================================================
@@ -918,9 +584,8 @@ def to_json_type(val, encoding):
         except (TypeError, StopIteration):
             val = str(val)
         else:
-            if hasattr(sub_field, 'value') and (
-                        hasattr(sub_field, 'tag') and hasattr(sub_field,
-                                                              'name')):
+            if hasattr(sub_field, 'value') and \
+                    (hasattr(sub_field, 'tag') and hasattr(sub_field, 'name')):
                 val = dcm_field_parser(val, encoding)
             else:
                 val = [to_json_type(x, encoding) for x in val]

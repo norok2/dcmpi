@@ -131,7 +131,7 @@ SESSION = {
         (0x0018, 0x0087), lambda x, p: '{}'.format(x), None),
     'NominalMagneticFieldStrength': (
         (0x0018, 0x0087),
-        lambda x, p: '{}'.format(utl._nominal_B0(x)), None),
+        lambda x, p: '{}'.format(utl._nominal_b0(x)), None),
     'BeginDate': (
         (0x0008, 0x0020),
         lambda x, p: time.strftime(p, utl.get_date(x)),
