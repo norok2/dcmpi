@@ -238,7 +238,7 @@ def do_report(
 
     dcm_filename, compression = utl.find_a_dicom(in_dirpath)
     out_basename = utl.fill_from_dicom(basename, dcm_filename)
-    html_basename = out_basename + '.html'
+    html_basename = out_basename + '.htm'
     msg('HTML: {}'.format(html_basename))
     out_filepath = os.path.join(out_dirpath, html_basename)
 
