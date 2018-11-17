@@ -29,6 +29,7 @@ import pytk
 
 # :: External Imports Submodules
 import pytk.widgets
+import pytk.util
 
 # :: Local Imports
 import dcmpi.utils as utl
@@ -192,349 +193,6 @@ def dcmpi_run(
 
 
 # ======================================================================
-def get_curr_screen_geometry():
-    """
-    Workaround to get the size of the current screen in a multi-screen setup.
-
-    Returns:
-        geometry (str): The standard Tk geometry string.
-            [width]x[height]+[left]+[top]
-    """
-    temp = tk.Tk()
-    temp.update()
-    temp.attributes('-fullscreen', True)
-    temp.state('iconic')
-    geometry = temp.winfo_geometry()
-    temp.destroy()
-    return geometry
-
-
-# ======================================================================
-def center(target, parent=None):
-    target.update_idletasks()
-    if parent is None:
-        parent_geom = Geometry(get_curr_screen_geometry())
-    else:
-        parent.update_idletasks()
-        parent_geom = Geometry(parent.winfo_geometry())
-    target_geom = Geometry(target.winfo_geometry()).set_to_center(parent_geom)
-    target.geometry(target_geom.as_str())
-
-
-# ======================================================================
-class Geometry():
-    def __init__(self, geometry_text=None):
-        """
-        Generate a geometry object from the standard Tk geometry string.
-
-        Args:
-            geometry_text (str): The standard Tk geometry string.
-                [width]x[height]+[left]+[top]
-
-        Returns:
-            None.
-        """
-        try:
-            tokens1 = geometry_text.split('+')
-            tokens2 = tokens1[0].split('x')
-            self.width = int(tokens2[0])
-            self.height = int(tokens2[1])
-            self.left = int(tokens1[1])
-            self.top = int(tokens1[2])
-        except IndexError:
-            self.width, self.height, self.left, self.top = 0, 0, 0, 0
-
-    def __repr__(self):
-        return self.as_str()
-
-    def as_dict(self):
-        return {
-            'w': self.width,
-            'h': self.height,
-            'l': self.left,
-            't': self.top}
-
-    def as_tuple(self):
-        return self.width, self.height, self.left, self.top
-
-    def as_str(self):
-        return '{w:d}x{h:d}+{l:d}+{t:d}'.format(**self.as_dict())
-
-    def set_to_center(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-    def set_to_origin(self):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = 0
-        self.top = 0
-        return self
-
-    def set_to_top_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_top(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_top_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.top
-        return self
-
-    def set_to_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-    def set_to_bottom_right(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width - self.width + parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_bottom(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.width // 2 - self.width // 2 + parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_bottom_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.height - self.height + parent.top
-        return self
-
-    def set_to_left(self, parent):
-        """
-        Update the geometry to be centered with respect to a container.
-
-        Args:
-            parent (Geometry): The geometry of the container.
-
-        Returns:
-            geometry (Geometry): The updated geometry.
-        """
-        self.left = parent.left
-        self.top = parent.height // 2 - self.height // 2 + parent.top
-        return self
-
-
-# ======================================================================
-class Entry(pytk.widgets.Entry):
-    def __init__(self, *args, **kwargs):
-        pytk.widgets.Entry.__init__(self, *args, **kwargs)
-
-    def get_val(self):
-        return self.get()
-
-    def set_val(self, val=''):
-        try:
-            if val is not None:
-                val = str(val)
-            else:
-                raise ValueError
-        except ValueError:
-            val = ''
-        state = self['state']
-        self['state'] = 'enabled'
-        self.delete(0, tk.END)
-        self.insert(0, val)
-        self['state'] = state
-
-
-# ======================================================================
-class Checkbutton(pytk.widgets.Checkbutton):
-    def __init__(self, *args, **kwargs):
-        pytk.widgets.Checkbutton.__init__(self, *args, **kwargs)
-
-    def get_val(self):
-        return 'selected' in self.state()
-
-    def set_val(self, val=True):
-        # if (val and not self.get_val()) or (not val and self.get_val()):
-        if bool(val) ^ bool(self.get_val()):  # bitwise xor
-            self.toggle()
-
-    def toggle(self):
-        self.invoke()
-
-
-# ======================================================================
-class Spinbox(tk.Spinbox):
-    def __init__(self, *args, **kwargs):
-        if 'start' in kwargs:
-            kwargs['from_'] = kwargs.pop('start')
-        if 'stop' in kwargs:
-            kwargs['to'] = kwargs.pop('stop')
-        if 'step' in kwargs:
-            kwargs['increment'] = kwargs.pop('step')
-        tk.Spinbox.__init__(self, *args, **kwargs)
-        self.values = kwargs['values'] if 'values' in kwargs else None
-        self.start = kwargs['from_'] if 'from_' in kwargs else None
-        self.stop = kwargs['to'] if 'to' in kwargs else None
-        self.step = kwargs['increment'] if 'increment' in kwargs else None
-        self.bind('<MouseWheel>', self.mousewheel)
-        self.bind('<Button-4>', self.mousewheel)
-        self.bind('<Button-5>', self.mousewheel)
-        self.sys_events = {
-            'scroll_up': {'unix': 4, 'win': +120},
-            'scroll_down': {'unix': 5, 'win': -120}}
-
-    def mousewheel(self, event):
-        scroll_up = (
-            event.num == self.sys_events['scroll_up']['unix'] or
-            event.delta == self.sys_events['scroll_up']['win'])
-        scroll_down = (
-            event.num == self.sys_events['scroll_down']['unix'] or
-            event.delta == self.sys_events['scroll_down']['win'])
-        if scroll_up:
-            self.invoke('buttonup')
-        elif scroll_down:
-            self.invoke('buttondown')
-
-    def is_valid(self, val=''):
-        if self.values:
-            result = self.get_val() in self.values
-        else:
-            result = self.start <= self.get_val() <= self.stop
-        return result
-
-    def get_val(self):
-        return utl.auto_convert(self.get())
-
-    def set_val(self, val=''):
-        if self.is_valid(val):
-            state = self['state']
-            self['state'] = 'normal'
-            self.delete(0, tk.END)
-            self.insert(0, val)
-            self['state'] = state
-        else:
-            raise ValueError('Spinbox: value `{}` not allowed.'.format(val))
-
-
-# ======================================================================
-class Listbox(pytk.widgets.Combobox):
-    def __init__(self, *args, **kwargs):
-        pytk.widgets.Combobox.__init__(self, *args, **kwargs)
-        self['state'] = 'readonly'
-
-    def get_values(self):
-        return self.configure('values')[-1]
-
-    def get_val(self):
-        return self.get()
-
-    def set_val(self, val=''):
-        self.set(val)
-
-
-# ======================================================================
-class Listview(pytk.widgets.Treeview):
-    def __init__(self, *args, **kwargs):
-        pytk.widgets.Treeview.__init__(self, *args, **kwargs)
-
-    def get_items(self):
-        return [self.item(child, 'text') for child in self.get_children('')]
-
-    def add_item(self, item, unique=False):
-        items = self.get_items()
-        if not unique or unique and item not in items:
-            self.insert('', tk.END, text=item)
-
-    def del_item(self, item):
-        for child in self.get_children(''):
-            if self.item(child, 'text') == item:
-                self.delete(child)
-
-    def clear(self):
-        for child in self.get_children(''):
-            self.delete(child)
-
-
-# ======================================================================
 class About(tk.Toplevel):
     def __init__(self, parent):
         self.win = tk.Toplevel.__init__(self, parent)
@@ -567,7 +225,7 @@ class About(tk.Toplevel):
         self.bind('<Return>', self.destroy)
         self.bind('<Escape>', self.destroy)
 
-        center(self, self.parent)
+        pytk.util.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -608,7 +266,8 @@ class Settings(tk.Toplevel):
         self.wdgOptions = {}
         for name, info in self.settings.items():
             if info['dtype'] == bool:
-                chk = Checkbutton(self.frmMain, text=info['label'])
+                chk =pytk.widgets.Checkbutton(
+                    self.frmMain, text=info['label'])
                 chk.pack(fill=tk.X, padx=1, pady=1)
                 chk.set_val(info['default'])
                 self.wdgOptions[name] = {'chk': chk}
@@ -617,7 +276,7 @@ class Settings(tk.Toplevel):
                 frm.pack(fill=tk.X, padx=1, pady=1)
                 lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                spb = Spinbox(frm, **info['values'])
+                spb = pytk.widgets.Spinbox(frm, **info['values'])
                 spb.set_val(info['default'])
                 spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
@@ -627,7 +286,7 @@ class Settings(tk.Toplevel):
                 frm.pack(fill=tk.X, padx=1, pady=1)
                 lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
-                lst = Listbox(frm, values=info['values'])
+                lst = pytk.widgets.Listbox(frm, values=info['values'])
                 lst.set_val(info['default'])
                 lst.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
@@ -653,7 +312,7 @@ class Settings(tk.Toplevel):
         self.bind('<Return>', self.ok)
         self.bind('<Escape>', self.cancel)
 
-        center(self, self.parent)
+        pytk.util.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -702,6 +361,7 @@ class Settings(tk.Toplevel):
 # ======================================================================
 class MainGui(pytk.widgets.Frame):
     def __init__(self, parent, args):
+        super(MainGui, self).__init__()
         # get_val config data
         cfg = {}
         self.cfg = default_config()
@@ -765,7 +425,8 @@ class MainGui(pytk.widgets.Frame):
             side=tk.TOP, fill=tk.BOTH, padx=4, pady=4, expand=True)
         self.lblInput = pytk.widgets.Label(self.frmInput, text='Input')
         self.lblInput.pack(padx=1, pady=1)
-        self.lsvInput = Listview(self.frmInput, show='tree', height=4)
+        self.lsvInput = pytk.widgets.Listview(
+            self.frmInput, show='tree', height=4)
         self.lsvInput.bind('<Double-Button-1>', self.actionAdd)
         self.lsvInput.pack(fill=tk.BOTH, padx=1, pady=1, expand=True)
         self.btnImport = pytk.widgets.Button(
@@ -801,7 +462,7 @@ class MainGui(pytk.widgets.Frame):
         self.frmPath.pack(fill=tk.X, expand=True)
         self.lblPath = pytk.widgets.Label(self.frmPath, text='Path', width=8)
         self.lblPath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entPath = Entry(self.frmPath)
+        self.entPath = pytk.widgets.Entry(self.frmPath)
         self.entPath.insert(0, self.cfg['output_path'])
         self.entPath.bind('<Double-Button>', self.actionPath)
         self.entPath.pack(
@@ -811,7 +472,7 @@ class MainGui(pytk.widgets.Frame):
         self.frmSubpath.pack(fill=tk.X, expand=True)
         self.lblSubpath = pytk.widgets.Label(self.frmSubpath, text='Sub-Path', width=8)
         self.lblSubpath.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-        self.entSubpath = Entry(self.frmSubpath)
+        self.entSubpath = pytk.widgets.Entry(self.frmSubpath)
         self.entSubpath.insert(0, self.cfg['output_subpath'])
         self.entSubpath.pack(
             side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
@@ -828,21 +489,21 @@ class MainGui(pytk.widgets.Frame):
             frm = pytk.widgets.Frame(self.frmRight)
             frm.pack(fill=tk.X, padx=1, pady=1)
             if 'subpath' in name:
-                chk = Checkbutton(frm, text=info['label'])
+                chk = pytk.widgets.Checkbutton(frm, text=info['label'])
                 chk.pack(
                     side=tk.LEFT, fill=tk.X, padx=1, pady=1, expand=True)
                 chk.config(command=self.activateModules)
-                entry = Entry(frm, width=8)
+                entry = pytk.widgets.Entry(frm, width=8)
                 entry.pack(side=tk.RIGHT, fill=tk.X, padx=1, pady=1)
             elif 'template' in name:
-                chk = Checkbutton(frm, text=info['label'])
+                chk = pytk.widgets.Checkbutton(frm, text=info['label'])
                 chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
                 # chk.set_val(info['default'])
                 chk.config(command=self.activateModules)
-                entry = Entry(frm, width=24)
+                entry = pytk.widgets.Entry(frm, width=24)
                 entry.pack(fill=tk.X, padx=1, pady=1, expand=True)
             else:
-                chk = Checkbutton(frm, text=info['label'])
+                chk = pytk.widgets.Checkbutton(frm, text=info['label'])
                 chk.pack(fill=tk.X, padx=1, pady=1, expand=True)
                 chk.config(command=self.activateModules)
                 entry = None
@@ -858,7 +519,8 @@ class MainGui(pytk.widgets.Frame):
         self.wdgOptions = {}
         for name, info in self.options.items():
             if info['dtype'] == bool:
-                chk = Checkbutton(self.frmRight, text=info['label'])
+                chk = pytk.widgets.Checkbutton(
+                    self.frmRight, text=info['label'])
                 chk.pack(fill=tk.X, padx=1, pady=1)
                 self.wdgOptions[name] = {'chk': chk}
             elif info['dtype'] == int:
@@ -866,7 +528,7 @@ class MainGui(pytk.widgets.Frame):
                 frm.pack(fill=tk.X, padx=1, pady=1)
                 lbl = pytk.widgets.Label(frm, text=info['label'])
                 lbl.pack(side=tk.LEFT, fill=tk.X, padx=1, pady=1)
-                spb = Spinbox(frm, **info['values'])
+                spb = pytk.widgets.Spinbox(frm, **info['values'])
                 spb.pack(
                     side=tk.LEFT, fill=tk.X, anchor=tk.W, padx=1, pady=1)
                 self.wdgOptions[name] = {'frm': frm, 'lbl': lbl, 'spb': spb}
@@ -896,7 +558,7 @@ class MainGui(pytk.widgets.Frame):
             command=self.actionExit)
         self.btnExit.pack(side=tk.LEFT, padx=4, pady=4)
 
-        center(self.parent)
+        pytk.util.center(self.parent)
 
         self._cfg_to_ui()
 
