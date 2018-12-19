@@ -13,8 +13,8 @@ from __future__ import (
 # ======================================================================
 # :: Python Standard Library Imports
 import os  # Miscellaneous operating system interfaces
-import sys  # System-specific parameters and functions
-import platform  # Access to underlying platform’s identifying data
+# import sys  # System-specific parameters and functions
+# import platform  # Access to underlying platform’s identifying data
 import datetime  # Basic date and time types
 import collections  # High-performance container datatypes
 import argparse  # Parser for command-line options, arguments and subcommands
