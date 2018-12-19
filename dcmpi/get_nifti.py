@@ -65,7 +65,7 @@ import glob  # Unix style pathname pattern expansion
 import dicom2nifti
 
 # :: Local Imports
-import dcmpi.utils as utl
+import dcmpi.util as utl
 from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg

@@ -56,7 +56,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.utils as utl
+import dcmpi.util as utl
 from dcmpi import INFO  # , DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg

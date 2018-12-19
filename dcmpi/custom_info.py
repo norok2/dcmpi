@@ -53,7 +53,7 @@ import functools  # Higher-order functions and operations on callable objects
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-import dcmpi.utils as utl
+import dcmpi.util as utl
 
 # from dcmpi_cli import INFO, DIRS
 # from dcmpi_cli import VERB_LVL

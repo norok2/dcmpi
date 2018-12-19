@@ -66,7 +66,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 
 # :: Local Imports
-import dcmpi.utils as utl
+import dcmpi.util as utl
 from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg

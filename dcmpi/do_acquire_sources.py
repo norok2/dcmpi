@@ -73,7 +73,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # import mri_tools.modules.nifti as mrn
 # import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
-from dcmpi import utils
+from dcmpi import util
 from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg
@@ -85,7 +85,7 @@ def do_acquire_sources(
         out_dirpath,
         method='symlink',
         subpath='{study}/{name}_{date}_{time}_{sys}',
-        extra_subpath=utils.ID['dicom'],
+        extra_subpath=util.ID['dicom'],
         force=False,
         verbose=D_VERB_LVL):
     """
@@ -139,13 +139,13 @@ def do_acquire_sources(
             msg('Analyzing `{}`...'.format(filepath),
                 verbose, VERB_LVL['debug'])
             filename = os.path.basename(filepath)
-            is_dicom = utils.is_dicom(
+            is_dicom = util.is_dicom(
                 filepath,
                 allow_dir=False,
                 allow_report=True,
                 allow_postprocess=True)
             if not is_dicom:
-                is_compressed, compression = utils.is_compressed_dicom(
+                is_compressed, compression = util.is_compressed_dicom(
                     filepath,
                     allow_dir=False,
                     allow_report=True,
@@ -153,7 +153,7 @@ def do_acquire_sources(
             else:
                 is_compressed = False
                 compression = None
-            if is_dicom or is_compressed and compression in utils.COMPRESSIONS:
+            if is_dicom or is_compressed and compression in util.COMPRESSIONS:
                 dcm_subpath = None
                 if subpath or extra_subpath:
                     full_subpath = os.path.join(subpath, extra_subpath)
@@ -162,7 +162,7 @@ def do_acquire_sources(
                 else:  # if extra_subpath:
                     full_subpath = extra_subpath
                 if full_subpath:
-                    dcm_subpath = utils.fill_from_dicom(full_subpath, filepath)
+                    dcm_subpath = util.fill_from_dicom(full_subpath, filepath)
                     dcm_dirpath = os.path.join(out_dirpath, dcm_subpath)
                 else:
                     dcm_dirpath = out_dirpath
@@ -175,7 +175,7 @@ def do_acquire_sources(
                     dcm_dirpaths.add(dcm_dirpath)
                 fake_path = os.path.dirname(os.path.relpath(
                     filepath, in_dirpath)).replace(
-                    os.path.sep, utils.INFO_SEP) + utils.INFO_SEP
+                    os.path.sep, util.INFO_SEP) + util.INFO_SEP
                 out_filepath = os.path.join(dcm_dirpath, fake_path + filename)
                 if not os.path.isfile(out_filepath) or force:
                     if method == 'move':

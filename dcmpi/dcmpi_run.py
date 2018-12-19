@@ -36,7 +36,7 @@ import pytk.widgets
 
 # :: Local Imports
 import dcmpi
-import dcmpi.utils as utl
+import dcmpi.util as utl
 from dcmpi import PATH, INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
 from dcmpi import msg, dbg

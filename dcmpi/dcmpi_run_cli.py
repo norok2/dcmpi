@@ -53,7 +53,7 @@ import argparse  # Parser for command-line options, arguments and sub-commands
 # :: Local Imports
 from dcmpi.do_acquire_sources import do_acquire_sources
 from dcmpi.do_sorting import sorting
-import dcmpi.utils as utl
+import dcmpi.util as utl
 from dcmpi.get_nifti import get_nifti
 from dcmpi.get_info import get_info
 from dcmpi.get_prot import get_prot
