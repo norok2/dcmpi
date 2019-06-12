@@ -74,7 +74,6 @@ import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
 # import mri_tools.modules.base as mrb
 # import mri_tools.modules.utils as mru
 # import mri_tools.modules.nifti as mrn
-# import mri_tools.modules.geometry as mrg
 # from mri_tools.modules.sequences import mp2rage
 import dcmpi.util as utl
 from dcmpi import INFO, PATH

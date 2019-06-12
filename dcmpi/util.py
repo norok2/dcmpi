@@ -59,7 +59,7 @@ import shlex  # Simple lexical analysis
 # import nipy  # NiPy (NeuroImaging in Python)
 # import nipype  # NiPype (NiPy Pipelines and Interfaces)
 import pydicom as pydcm  # PyDicom (Read, modify and write DICOM files.)
-import flyingcircus as fc
+import flyingcircus as fc  # Everything you always wanted to have in Python.*
 
 # :: External Imports Submodules
 # import matplotlib.pyplot as plt  # Matplotlib's pyplot: MATLAB-like syntax
@@ -68,7 +68,7 @@ import flyingcircus as fc
 # import scipy.integrate  # SciPy: Integrations facilities
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
-from flyingcircus.util import (
+from flyingcircus.base import (
     EXT, has_decorator, strip_decorator, auto_convert, which, execute,
     check_redo, string_between)
 
@@ -386,16 +386,16 @@ def fill_from_dicom(
             for item in dir(dcm):
                 if item[0].isupper():
                     fields[item] = (item, None, None)
-        format_kwargs = {}
+        format_kws = {}
         for field_id, field_formatter in sorted(fields.items()):
             dcm_id, fmt_func, field_fmt = field_formatter
             try:
-                format_kwargs[field_id] = \
+                format_kws[field_id] = \
                     fmt_func(getattr(dcm, dcm_id), field_fmt) \
                         if fmt_func else getattr(dcm, dcm_id)
             except TypeError:
-                format_kwargs[field_id] = getattr(dcm, dcm_id)
-        out_str = format_str.format(**format_kwargs)
+                format_kws[field_id] = getattr(dcm, dcm_id)
+        out_str = format_str.format(**format_kws)
     finally:
         if os.path.isfile(temp_filepath):
             os.remove(temp_filepath)

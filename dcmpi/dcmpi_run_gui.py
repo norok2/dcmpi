@@ -805,7 +805,7 @@ class MainGui(pytk.widgets.Frame):
 
 
 # ======================================================================
-def dcmpi_run_gui(*args, **kwargs):
+def dcmpi_run_gui(*_args, **_kws):
     root = tk.Tk()
-    app = MainGui(root, *args, **kwargs)
+    app = MainGui(root, *_args, **_kws)
     root.mainloop()

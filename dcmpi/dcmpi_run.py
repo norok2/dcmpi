@@ -219,8 +219,8 @@ def dcmpi_run(
             'info': info_subpath, }
         dirpath = {
             k: os.path.join(base_dirpath, v) for k, v in dirpath.items() if v}
-        for action, (func, func_kws) in actions.items():
-            kws = func_kws.copy()
+        for action, (func, kws) in actions.items():
+            kws = kws.copy()
             for key, val in kws.items():
                 if isinstance(val, str):
                     kws[key] = val.format(**locals())
@@ -858,15 +858,15 @@ class Main(pytk.widgets.Frame):
 
 
 # ======================================================================
-def dcmpi_run_gui(*args, **kwargs):
+def dcmpi_run_gui(*_args, **_kws):
     root = pytk.tk.Tk()
-    app = Main(root, *args, **kwargs)
+    app = Main(root, *_args, **_kws)
     pytk.utils.set_icon(root, 'icon', PATH['resources'])
     root.mainloop()
 
 
 # ======================================================================
-def dcmpi_run_tui(*args, **kwargs):
+def dcmpi_run_tui(*_args, **_kws):
     try:
         import asciimatics
     except ImportError:
@@ -874,13 +874,13 @@ def dcmpi_run_tui(*args, **kwargs):
     # check if asciimatics is available
     # if not asciimatics:
     warnings.warn('Text UI not supported. Using command-line interface...')
-    dcmpi_run_cli(**kwargs)
+    dcmpi_run_cli(**_kws)
     # else:
     #     pass
 
 
 # ======================================================================
-def dcmpi_run_cli(*args, **kwargs):
+def dcmpi_run_cli(*_args, **_kws):
     msg('We-are-doomed...')
     pass
 

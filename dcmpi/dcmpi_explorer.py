@@ -68,7 +68,7 @@ CFG_DIRPATHS = (
 
 
 # ======================================================================
-def dcmpi_explorer_gui(*args, **kwargs):
+def dcmpi_explorer_gui(*_args, **_kws):
     try:
         root = tk.Tk()
         # app = Main(root, args)
@@ -78,11 +78,11 @@ def dcmpi_explorer_gui(*args, **kwargs):
         warnings.warn(
             'Failed to use Graphical UI (GUI).'
             ' Fallback to Text UI (TUI)...')
-        dcmpi_explorer_tui(**kwargs)
+        dcmpi_explorer_tui(**_kws)
 
 
 # ======================================================================
-def dcmpi_explorer_tui(*args, **kwargs):
+def dcmpi_explorer_tui(*_args, **_kws):
     try:
         import asciimatics
     except ImportError:
@@ -94,13 +94,13 @@ def dcmpi_explorer_tui(*args, **kwargs):
         warnings.warn(
             'Failed to use Text UI (TUI).'
             ' Fallback to command-line interface (CLI)...')
-        dcmpi_explorer_cli(**kwargs)
+        dcmpi_explorer_cli(**_kws)
     else:
         pass
 
 
 # ======================================================================
-def dcmpi_explorer_cli(*args, **kwargs):
+def dcmpi_explorer_cli(*_args, **_kws):
     msg('We-are-doomed...')
     pass
 
