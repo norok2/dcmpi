@@ -22,7 +22,7 @@ from flyingcircus import VERB_LVL, VERB_LVL_NAMES, D_VERB_LVL
 
 # ======================================================================
 # :: Version
-from ._version import __version__
+from dcmpi._version import __version__
 
 # ======================================================================
 # :: Project Details
