@@ -403,7 +403,7 @@ class MainGui(pytk.widgets.Frame):
         self.parent.title('DCMPI: DICOM Preprocessing Interface')
         self.parent.protocol('WM_DELETE_WINDOW', self.actionExit)
 
-        self.style = pytk.widgets.Style()
+        self.style = pytk.Style()
         # print(self.style.theme_names())
         self.style.theme_use(self.cfg['gui_style_tk'])
         self.pack(fill=tk.BOTH, expand=True)
