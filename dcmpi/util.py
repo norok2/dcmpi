@@ -730,15 +730,15 @@ def postprocess_info(
     """
     info = {}
     for pp_id, postproc in sorted(formats.items()):
-        src_id, fmt, fmt_params = postproc
+        src_id, fmt_func, fmt_params = postproc
         if src_id in sources:
             if access_val:
                 field_val = access_val(sources[src_id], access_val_params)
             else:
                 field_val = sources[src_id]
             try:
-                if fmt:
-                    field_val = fmt(field_val, fmt_params)
+                if fmt_func:
+                    field_val = fmt_func(field_val, fmt_params)
             except Exception as e:
                 print(e)
                 msg('W: Unable to post-process `{}`.'.format(src_id),
