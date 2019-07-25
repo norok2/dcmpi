@@ -31,7 +31,7 @@ from pytk import messagebox
 from pytk import filedialog
 from pytk import simpledialog
 
-import pytk.utils
+import pytk.util
 import pytk.widgets
 
 # :: Local Imports
@@ -39,7 +39,7 @@ import dcmpi
 import dcmpi.util as utl
 from dcmpi import PATH, INFO
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
-from dcmpi import msg, dbg
+from dcmpi import msg, dbg, fmt, fmtm
 from dcmpi import MY_GREETINGS
 
 from dcmpi import (
@@ -223,7 +223,7 @@ def dcmpi_run(
             kws = kws.copy()
             for key, val in kws.items():
                 if isinstance(val, str):
-                    kws[key] = val.format(**locals())
+                    kws[key] = fmtm(val)
             kws.update(dict(force=force, verbose=verbose))
             try:
                 func(**kws)
@@ -265,7 +265,7 @@ class About(pytk.Window):
         self.bind('<Return>', self.destroy)
         self.bind('<Escape>', self.destroy)
 
-        pytk.utils.center(self, self.parent)
+        pytk.util.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -351,7 +351,7 @@ class Settings(pytk.Window):
         self.bind('<Return>', self.ok)
         self.bind('<Escape>', self.cancel)
 
-        pytk.utils.center(self, self.parent)
+        pytk.util.center(self, self.parent)
 
         self.grab_set()
         self.wait_window(self)
@@ -597,7 +597,7 @@ class Main(pytk.widgets.Frame):
             command=self.actionExit)
         self.btnExit.pack(side='left', padx=4, pady=4)
 
-        pytk.utils.center(self.parent)
+        pytk.util.center(self.parent)
 
         self._cfg_to_ui()
 
@@ -640,7 +640,7 @@ class Main(pytk.widgets.Frame):
         self.activateModules()
 
     def _make_menu(self):
-        self.save_on_exit = pytk.utils.tk.BooleanVar(
+        self.save_on_exit = pytk.util.tk.BooleanVar(
             value=self.cfg['save_on_exit'])
 
         self.mnuMain = pytk.widgets.Menu(self.parent, tearoff=False)
@@ -861,7 +861,7 @@ class Main(pytk.widgets.Frame):
 def dcmpi_run_gui(*_args, **_kws):
     root = pytk.tk.Tk()
     app = Main(root, *_args, **_kws)
-    pytk.utils.set_icon(root, 'icon', PATH['resources'])
+    pytk.util.set_icon(root, 'icon', PATH['resources'])
     root.mainloop()
 
 
@@ -893,16 +893,14 @@ def handle_arg():
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
-        epilog='v.{} - {}\n{}'.format(
-            INFO['version'], INFO['author'], INFO['license']),
+        epilog=fmtm('v.{version} - {author}\n{license}', INFO),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
         '--ver', '--version',
-        version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'],
-            next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], INFO['author'], INFO['notice']),
+        version=fmt(
+            '%(prog)s - ver. {version}\n{}\n{copyright} {author}\n{notice}',
+            next(line for line in __doc__.splitlines() if line), **INFO),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

@@ -69,7 +69,7 @@ import json  # JSON encoder and decoder [JSON: JavaScript Object Notation]
 import dcmpi.util as utl
 from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
-from dcmpi import msg, dbg
+from dcmpi import msg, dbg, fmt, fmtm
 
 
 # ======================================================================
@@ -400,16 +400,14 @@ def handle_arg():
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
-        epilog='v.{} - {}\n{}'.format(
-            INFO['version'], INFO['author'], INFO['license']),
+        epilog=fmtm('v.{version} - {author}\n{license}', INFO),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
         '--ver', '--version',
-        version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'],
-            next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], INFO['author'], INFO['notice']),
+        version=fmt(
+            '%(prog)s - ver. {version}\n{}\n{copyright} {author}\n{notice}',
+            next(line for line in __doc__.splitlines() if line), **INFO),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

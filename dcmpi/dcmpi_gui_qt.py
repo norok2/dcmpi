@@ -39,7 +39,7 @@ from dcmpi.report import report
 import dcmpi.util as utl
 # from dcmpi_cli import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
-from dcmpi import msg, dbg
+from dcmpi import msg, dbg, fmt, fmtm
 
 # ======================================================================
 D_INPUT_DIR = '/scr/carlos1/xchg/RME/dcm'

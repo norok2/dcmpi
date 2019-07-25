@@ -45,7 +45,7 @@ import blessed  # Wrapper for terminal coloring, styling, and positioning
 import dcmpi.util as utl
 from dcmpi import INFO, PATH
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
-from dcmpi import msg, dbg
+from dcmpi import msg, dbg, fmt, fmtm
 
 
 # ======================================================================
@@ -82,10 +82,10 @@ def monitor_folder(
         sleep_delay = (delay + randomized) * sec_in_min
         if removed_dirs:
             msg(': {}  --  {}'.format(timestamp, removed_dirs),
-                fmt='{t.red}{t.bold}')
+                fmtt='{t.red}{t.bold}')
         if added_dirs:
             msg(': {}  ++  {}'.format(timestamp, added_dirs),
-                fmt='{t.green}{t.bold}')
+                fmtt='{t.green}{t.bold}')
         if not removed_dirs and not added_dirs:
             text = 'All quiet on the western front.'
             next_check = time.strftime(
@@ -115,16 +115,14 @@ def handle_arg():
     # :: Create Argument Parser
     arg_parser = argparse.ArgumentParser(
         description=__doc__,
-        epilog='v.{} - {}\n{}'.format(
-            INFO['version'], INFO['author'], INFO['license']),
+        epilog=fmtm('v.{version} - {author}\n{license}', INFO),
         formatter_class=argparse.RawDescriptionHelpFormatter)
     # :: Add POSIX standard arguments
     arg_parser.add_argument(
         '--ver', '--version',
-        version='%(prog)s - ver. {}\n{}\n{} {}\n{}'.format(
-            INFO['version'],
-            next(line for line in __doc__.splitlines() if line),
-            INFO['copyright'], INFO['author'], INFO['notice']),
+        version=fmt(
+            '%(prog)s - ver. {version}\n{}\n{copyright} {author}\n{notice}',
+            next(line for line in __doc__.splitlines() if line), **INFO),
         action='version')
     arg_parser.add_argument(
         '-v', '--verbose',

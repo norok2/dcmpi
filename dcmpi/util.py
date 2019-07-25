@@ -75,7 +75,7 @@ from flyingcircus.base import (
 # :: Local Imports
 # from dcmpi import INFO, DIRS
 from dcmpi import VERB_LVL, D_VERB_LVL, VERB_LVL_NAMES
-from dcmpi import msg, dbg
+from dcmpi import msg, dbg, fmt, fmtm
 
 # ======================================================================
 # :: General-purposes constants
@@ -395,7 +395,7 @@ def fill_from_dicom(
                         if fmt_func else getattr(dcm, dcm_id)
             except TypeError:
                 format_kws[field_id] = getattr(dcm, dcm_id)
-        out_str = format_str.format(**format_kws)
+        out_str = fmtm(format_str, format_kws)
     finally:
         if os.path.isfile(temp_filepath):
             os.remove(temp_filepath)
