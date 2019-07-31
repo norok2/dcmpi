@@ -192,7 +192,7 @@ def get_param(acq):
         ['{}/{}'.format(int(acq[key] * 8), 8) for key in pf_params])
 
     for key, val in acq.items():
-        if key not in mask and all([test(key) for test in mask_filter]) and \
+        if key not in mask and all(test(key) for test in mask_filter) and \
                         val != None and val != 'N/A':
             report[key] = json.dumps(val)
     return report
