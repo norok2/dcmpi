@@ -163,7 +163,7 @@ class Main(QtGui.QWidget):
         for name, label, default, subdir in self.actions:
             checkbox = QtGui.QCheckBox(label, self)
             if default:
-                checkbox.toggle()
+                checkbox.flip()
             if name == 'do_acquire_sources':
                 checkbox.stateChanged.connect(self.chkImport_stateChanged)
             checkbox.setToolTip('Warning: toggling actions is experimental.')
