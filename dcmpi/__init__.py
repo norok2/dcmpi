@@ -16,7 +16,7 @@ from __future__ import (
 
 # ======================================================================
 # :: External Imports
-# import flyingcircus as fc  # Everything you always wanted to have in Python.*
+# import flyingcircus as fc  # Everything you always wanted to have in Python*
 from flyingcircus import msg, dbg, fmt, fmtm, elapsed, report, pkg_paths
 from flyingcircus import VERB_LVL, VERB_LVL_NAMES, D_VERB_LVL
 
