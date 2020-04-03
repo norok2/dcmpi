@@ -69,7 +69,7 @@ import flyingcircus as fc  # Everything you always wanted to have in Python*
 # import scipy.constants  # SciPy: Mathematal and Physical Constants
 # import scipy.ndimage  # SciPy: ND-image Manipulation
 from flyingcircus.base import (
-    EXT, has_decorator, strip_decorator, auto_convert, which, execute,
+    EXT, has_delim, strip_delim, auto_convert, which, execute,
     check_redo, string_between)
 
 # :: Local Imports
