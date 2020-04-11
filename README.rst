@@ -59,13 +59,13 @@ The recommended way of installing the software is through
     $ pip install dcmpi
 
 Alternatively, you can the clone the source repository from
-`Bitbucket <https://bitbucket.org/norok2/dcmpi>`_:
+`GitHub <https://github.com/norok2/dcmpi>`_:
 
 .. code:: shell
 
     $ mkdir dcmpi
     $ cd dcmpi
-    $ git clone git@bitbucket.org:norok2/dcmpi.git
+    $ git clone git@github.com:norok2/dcmpi.git
     $ python setup.py install
 
 For more details see also ``INSTALL.rst``.
