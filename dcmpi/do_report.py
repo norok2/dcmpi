@@ -119,7 +119,7 @@ def html_input(typ, opt_str=''):
 # ======================================================================
 def check_box(key, info):
     return html_input(
-        'checkbox', ('checked' if key in info and info[key] == True else ''))
+        'checkbox', ('checked' if key in info and info[key] else ''))
 
 
 # ======================================================================
