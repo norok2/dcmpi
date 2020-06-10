@@ -185,7 +185,7 @@ ACQUISITION = {
     'ProtocolName': (
         (0x0018, 0x1030), None, None),
     'SAR': (
-        (0x0018, 0x1316), float, None),
+        (0x0018, 0x1316), None, None),
 }
 
 # ======================================================================
@@ -321,8 +321,8 @@ def get_sequence_info(info, prot):
                 lambda x, p: p[x] if x in p else x,
                 SIEMENS_PROT['coil_combine_mode']),
             # :: WiP parameters (useful for DEBUG)
-            # 'WipD': ('sWiPMemBlock.adFree[]', None, None),
-            # 'WipL': ('sWiPMemBlock.alFree[]', None, None),
+            'WipDouble': ('sWiPMemBlock.adFree[]', None, None),
+            'WipLong': ('sWiPMemBlock.alFree[]', None, None),
         },
 
         # :: Phoenix ZIP Report
