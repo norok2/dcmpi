@@ -9,7 +9,6 @@ DCMPI: Instructions to extract information from DICOM using pydicom.
 from __future__ import (
     division, absolute_import, print_function, unicode_literals, )
 
-
 # ======================================================================
 # :: Python Standard Library Imports
 # import os  # Miscellaneous operating system interfaces
@@ -110,7 +109,7 @@ SESSION = {
         (0x0010, 0x4000), lambda x, p: str(x), None),
     'StudyDescription': (
         (0x0040, 0x0254), lambda x, p: x.replace('^', '/'), None),
-        # (0x0008, 0x1030), lambda x, p: x.replace('^', '/'), None),
+    # (0x0008, 0x1030), lambda x, p: x.replace('^', '/'), None),
     'Performer': (
         (0x0008, 0x1050), None, None),
     'Operator': (
@@ -185,6 +184,8 @@ ACQUISITION = {
         (0x0018, 0x0024), None, None),
     'ProtocolName': (
         (0x0018, 0x1030), None, None),
+    'SAR': (
+        (0x0018, 0x1316), float, None),
 }
 
 # ======================================================================
